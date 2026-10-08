@@ -108,8 +108,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var ejectingDiskId: String?
 
     /// 上一次观测的偏好值，用于判断 UserDefaults 变更后是否需要真正响应。
+    ///
+    /// ⚠️ **这里只留「Dock 图标」一项**。此前还有一个平行的 `lastVisualStyleRaw`，
+    /// 但 `handleDefaultsChange()` 里对应的分支体是**空的** —— 视觉风格由
+    /// `ContentView` 的 `@AppStorage` 自动响应，不需要 AppDelegate 再记一份副本。
+    /// 留着一个只被读、比较、赋值却不产生任何效果的变量，会让后来者以为那里有逻辑。
     private var lastShowDockIcon: Bool?
-    private var lastVisualStyleRaw: String?
 
     /// popover 显示状态监听，关闭时按钮恢复未选中态。
     private var popoverEventMonitor: Any?
@@ -595,7 +599,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         lastShowDockIcon = UserDefaults.standard.bool(forKey: AppSettings.Key.showDockIcon)
-        lastVisualStyleRaw = UserDefaults.standard.string(forKey: AppSettings.Key.visualStyle)
         updateDockIconVisibility()
 
         LaunchAtLoginManager.syncAtLaunch()
@@ -1518,10 +1521,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// 没有这道 guard 就会**建出两个状态栏图标**（而且第二次会把 `statusItem` 覆盖掉，
     /// 第一个从此没人引用、无法移除）。注意 `rebuildStatusItemIfOffscreen()` 是**故意**
     /// 绕过本方法的 —— 它要的就是「销毁重建」，不能有这道 guard。
+    ///
+    /// ## ⚠️ 那道 guard 与「半初始化」是耦合的（2026-10-08 修）
+    ///
+    /// 原来这里是 `guard let button = statusItem.button else { return }`：
+    /// 若 `statusItem` 建出来了而 `button` 为 nil，就**什么都不做地返回** ——
+    /// 此时 `statusItem` 已非 nil，于是 :1525 那道幂等 guard 会让**之后所有调用全部空转**，
+    /// `statusPopover` 也永远不会被创建。表现是「菜单栏图标不出、点图标没反应」，
+    /// 且**没有任何错误日志**（不是崩了，是静默卡死）。
+    ///
+    /// 现在的处置：**button 拿不到就把这个半成品状态栏拆掉**，让 `statusItem` 回到 nil
+    /// ⇒ 下一次调用（换一次屏幕配置、或者压根没有下一次）仍有机会重建成功，
+    /// 而不会卡在一个「有 item、无 button、无 popover」的坏状态里。
     private func setupStatusItem() {
         guard statusItem == nil else { return }
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        guard let button = statusItem.button else { return }
+        guard let button = statusItem?.button else {
+            // 半初始化 ⇒ 立刻回滚，不留下「有 item、无 button」的坏状态。
+            if let halfBuilt = statusItem {
+                NSStatusBar.system.removeStatusItem(halfBuilt)
+            }
+            statusItem = nil
+            // ⚠️ 这里**不**写 `LogService`：那是「用户可见的磁盘日志」，而这是启动期的
+            // 基础设施告警，写进去会混进用户排查推出问题时看的那个文件。
+            // 本文件的生产路径本来也不落日志（`print` 只服务于 `--diagnostics` /
+            // `--preview-*` 自检），所以这里保持一致：不引新的日志依赖。
+            // 真的发生时的可见症状是「菜单栏图标不出」，且**不崩**。
+            return
+        }
 
         updateStatusItemImage()
         button.toolTip = L10n.tr(.appName)
@@ -1821,12 +1848,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // （浅壁纸上对比度差时看起来就是「颜色错了」）。启动时本就不染色，
         // 所以症状是「有时对有时错」——改过强调色的那个会话内才错。
         // 内容区（磁盘行/容量条/按钮）走 `@AppStorage` 自动响应，不需要这里接线。
-
-        let visualRaw = UserDefaults.standard.string(forKey: AppSettings.Key.visualStyle)
-        if visualRaw != lastVisualStyleRaw {
-            lastVisualStyleRaw = visualRaw
-            // 视觉风格变化需刷新主窗口背景（ContentView 通过 @AppStorage 自动响应）
-        }
+        //
+        // ⚠️ **视觉风格（`visualStyle`）同样不在这里接线**（2026-10-08 清理）：
+        // 主窗口背景由 `ContentView` 的 `@AppStorage` 自动响应。此前这里有一份
+        // `lastVisualStyleRaw` 副本加一个**分支体为空**的 if —— 只读、比较、赋值，
+        // 不产生任何效果，属于「看起来有逻辑、实际是空转」，现已连同那个变量一并删除。
+        // 若将来视觉风格真的需要 AppDelegate 介入（例如要重建窗口背景材质），
+        // 届时再加回来，并在这里写明**为什么 `@AppStorage` 不够**。
     }
 
     /// 依据「显示 Dock 图标」偏好切换激活策略，并在切换后把界面重新拉回前台。
