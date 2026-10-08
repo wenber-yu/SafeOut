@@ -371,6 +371,9 @@ struct MainActorBlockingTests {
     /// 若哪天有人把它们加回来，② 那一向会立刻报红、要求重新登记理由。
     private static let fileLevelMainActor: [String: String] = [
         "AlertLayoutTests.swift": "弹窗版式的离屏渲染 + `NSHostingController` 装配（`NSApplication.shared` 也要）",
+        "DiskListStoreConcurrencyTests.swift":
+            "`DiskListStore` 整个类标了 `@MainActor` ⇒ 它的 `init(fetch:monitoring:)` 与 `disks` "
+            + "都是主 actor 隔离的。实测摘掉文件级标注立刻 4 处编译错（建不出实例、读不到 `disks`）",
         "EjectFlowControllerTests.swift":
             "`EjectFlowController` / `EjectAlertPanel` / `EjectAlertPresenter` 都是主 actor；装配走 `NSHostingController`",
         "EmptyStateTests.swift": "离屏渲染 `OffscreenRender.bitmap` + `ViewFixtures.mainWindow`（两个都 `@MainActor`）",
