@@ -3,20 +3,20 @@
     <channel>
         <title>DiskEjector</title>
         <item>
-            <title>2026.10.01.2</title>
-            <pubDate>Thu, 01 Oct 2026 11:20:28 +0800</pubDate>
+            <title>2026.10.08.1</title>
+            <pubDate>Thu, 08 Oct 2026 19:39:11 +0800</pubDate>
             <link>https://github.com/wenber-yu/DiskEjector</link>
-            <sparkle:version>320</sparkle:version>
-            <sparkle:shortVersionString>2026.10.01.2</sparkle:shortVersionString>
+            <sparkle:version>325</sparkle:version>
+            <sparkle:shortVersionString>2026.10.08.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
             <description><![CDATA[<ul>
-<li><strong>左侧导航栏不再「上挤下空」</strong>：此前六个选项挤在栏目顶部，下面空出一大片（接近栏目高度的一半）。现在把选项之间的行距撑开，空白从 47% 收到 31%，整体疏密与系统的「设置」窗口接近，点击时也更好按</li>
-<li><strong>「设置」与上方磁盘列表分得更开</strong>：两段之间的界线一眼可辨，不会再被当成同一组</li>
-<li><strong>选中高亮、悬停效果、方向键切换、朗读顺序都没有变化</strong>——这些仍由系统负责，本次只调整了行与行之间的距离</li>
+<li><strong>插拔磁盘时，磁盘列表不再偶尔闪回旧内容</strong>：刷新磁盘列表有多个触发时机（插拔盘、点刷新、菜单栏展开），它们可能撞在一起。现在同一时刻只跑一次枚举、后到的请求会排队跟上，不会再出现「刚插上的盘又不见了」这种闪回</li>
+<li><strong>菜单栏图标偶发不出现时不再一直坏下去</strong>：极少数情况下系统没能创建出菜单栏按钮，旧的做法会卡在一个「有图标项、但按钮是空」的状态，之后每次都没反应。现在会把这个半成品拆掉重建 —— 你只会看到一次正常的图标，一次都看不到的情况不会再变成永久的</li>
+<li><strong>内部整理，本次不改变任何界面与操作</strong>：删掉了一处不起作用的冗余状态记录；以上两项都只影响「极端时机下不出错」，正常的插拔、刷新、推出流程与之前完全一致</li>
 </ul>
 ]]></description>
-            <enclosure url="https://github.com/wenber-yu/DiskEjector/releases/download/v2026.10.01.2/DiskEjector-2026.10.01.2.dmg" length="2836935" type="application/octet-stream" sparkle:edSignature="kBuFycD2FyFS43uWTjzZO1jl0o2zCsmbj7qk0gZnM/3KjjPO9dA7OTjwbKHQIo3ejfSC8O1GfD15T6vTqrUHBA=="/>
+            <enclosure url="https://github.com/wenber-yu/DiskEjector/releases/download/v2026.10.08.1/DiskEjector-2026.10.08.1.dmg" length="2837823" type="application/octet-stream" sparkle:edSignature="DtBfeZsFlk2yMlLNw3y4X6X1y0YB4+Ckrb/BgETKVnTsphXWL/OqJxNZzgFKiepsfHp48l9cbirg7eUxDgL5CQ=="/>
         </item>
     </channel>
 </rss>
