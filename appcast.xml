@@ -3,31 +3,21 @@
     <channel>
         <title>SafeOut</title>
         <item>
-            <title>2026.10.08.1</title>
-            <pubDate>Thu, 08 Oct 2026 19:39:11 +0800</pubDate>
+            <title>2026.10.09</title>
+            <pubDate>Fri, 09 Oct 2026 16:13:52 +0800</pubDate>
             <link>https://github.com/wenber-yu/SafeOut</link>
-            <sparkle:version>325</sparkle:version>
-            <sparkle:shortVersionString>2026.10.08.1</sparkle:shortVersionString>
+            <sparkle:version>329</sparkle:version>
+            <sparkle:shortVersionString>2026.10.09</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
             <description><![CDATA[<ul>
-<li><strong>插拔磁盘时，磁盘列表不再偶尔闪回旧内容</strong>：刷新磁盘列表有多个触发时机（插拔盘、点刷新、菜单栏展开），它们可能撞在一起。现在同一时刻只跑一次枚举、后到的请求会排队跟上，不会再出现「刚插上的盘又不见了」这种闪回</li>
-<li><strong>菜单栏图标偶发不出现时不再一直坏下去</strong>：极少数情况下系统没能创建出菜单栏按钮，旧的做法会卡在一个「有图标项、但按钮是空」的状态，之后每次都没反应。现在会把这个半成品拆掉重建 —— 你只会看到一次正常的图标，一次都看不到的情况不会再变成永久的</li>
-<li><strong>内部整理，本次不改变任何界面与操作</strong>：删掉了一处不起作用的冗余状态记录；以上两项都只影响「极端时机下不出错」，正常的插拔、刷新、推出流程与之前完全一致</li>
+<li><strong>应用改名为 SafeOut</strong>：英文名从 DiskEjector 改为 SafeOut，中文名「磁盘推出助手」保持不变。功能、界面与操作方式完全没有变化，只有名字和图标所在的位置变了</li>
+<li><strong>更新后需要重新授权「完全磁盘访问」</strong>：系统按「应用身份 + 签名」记录这项授权，而应用身份随改名一起更新了，旧的授权因此不再适用。首次打开会重新出现引导，按提示到「系统设置 → 隐私与安全性 → 完全磁盘访问」里把 SafeOut 打开即可。不做这一步，应用仍能推出磁盘，但看不到「是哪个程序占着它」</li>
+<li><strong>「应用程序」里可能同时出现新旧两个版本</strong>：新旧版本的应用身份不同，系统会把它们当作两个不同的应用。装好后如果看到 DiskEjector 和 SafeOut 并存，把旧的那个拖进废纸篓即可 —— 旧版本不会再收到更新</li>
+<li><strong>下载地址换了，旧链接会自动跳转</strong>：项目地址随改名一起更新，老链接仍能打开并自动跳到新地址。已经下载过的旧版本可以正常使用，只是不再更新</li>
 </ul>
 ]]></description>
-            <!-- ⚠️ 历史条目的**资产名仍是旧名**，这是刻意保留的例外，不是漏改。
-                 改名（DiskEjector → SafeOut）时仓库路径已全部改新，但**已发布 release
-                 的资产文件在 GitHub 上没有被重命名** —— 实测（2026-10-09）：
-                     .../SafeOut/.../SafeOut-2026.10.08.1.dmg     → HTTP 404
-                     .../SafeOut/.../DiskEjector-2026.10.08.1.dmg → HTTP 200
-                 URL 里的资产名**逐字对应 GitHub 上的真实文件名** ⇒ 跟着改名会让这条
-                 更新链接直接失效，已装该版本的用户点「检查更新」会拿不到包。
-                 且 EdDSA 签名与下载内容绑定，改资产名必坏。
-                 ⇒ **规则：历史 item 永远指向真实存在的资产；新 item 才用新名。**
-                 （`Scripts/release.sh` 的 `asset_name_matches_enclosure` 会在发版时强制
-                  校验「新资产名 == enclosure 末段」，新版本自此一律走 SafeOut。）-->
-            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.10.08.1/DiskEjector-2026.10.08.1.dmg" length="2837823" type="application/octet-stream" sparkle:edSignature="DtBfeZsFlk2yMlLNw3y4X6X1y0YB4+Ckrb/BgETKVnTsphXWL/OqJxNZzgFKiepsfHp48l9cbirg7eUxDgL5CQ=="/>
+            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.10.09/SafeOut-2026.10.09.dmg" length="2838337" type="application/octet-stream" sparkle:edSignature="FKCmViBNcogWxmKVBswfOs3TxJRHcx8pxrPLgwmJ33jwcGWcMKKsqsa4C3VVSsc8ejZbfTF2FD2UlAjifzTwDA=="/>
         </item>
     </channel>
 </rss>
