@@ -409,7 +409,17 @@ SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-https://raw.githubusercontent.com/wenber-y
 #
 # ⚠️ **私钥不在这里**，在登录钥匙串（`acct=ed25519`）。丢了它，这个公钥就再也签不出
 #    能被验证的更新 —— 换钥匙要同时改这里和 appcast 的签名（详见 §8.39.7）。
-DEFAULT_SPARKLE_PUBLIC_ED_KEY="DZSAElJGUg13m+uorm7qlJhQKPyxk4D1DXMYGEOtbBs="
+#
+# 🔴 **2026-10-09 轮换过一次，原因是私钥丢了**（这是本项目实际发生过的事故）：
+#    上一版公钥 `DZSAElJGUg13m+uorm7qlJhQKPyxk4D1DXMYGEOtbBs=` 对应的私钥**只存在于登录钥匙串**，
+#    而那次钥匙串被误删 ⇒ 私钥不可恢复（钥匙串无备份、Time Machine 与 APFS 快照均为空）。
+#    后果：**用旧公钥打包出来的客户端永远收不到可验证的更新**（签不出来）。
+#    ⇒ 必须换钥匙重新打包；已装旧版本的少数用户只能手动重新下载（本项目下载量个位数）。
+#    ⚠️ **教训**：只把私钥放在钥匙串里等于没有备份。现在**另有一份文件备份**：
+#      `~/.sparkle/ed25519.pem`（0600，由 `generate_keys -x` 导出）
+#      换机器 / 重装时用 `generate_keys -f ~/.sparkle/ed25519.pem` 导回钥匙串。
+#      这个文件丢了就真的没了 —— 它对每个发行包的更新链路都是单点。
+DEFAULT_SPARKLE_PUBLIC_ED_KEY="VL7NZc6FZ+ZLXTbVH3NsxsOmFiaZedBi0CfVungXuBE="
 SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-$DEFAULT_SPARKLE_PUBLIC_ED_KEY}"
 
 SPARKLE_PUBLIC_ED_KEY_PLIST=""
