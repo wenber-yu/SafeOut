@@ -52,7 +52,7 @@ REPO = Path(__file__).resolve().parents[2]
 NOTIFICATION = REPO / "Sources/Services/EjectNotificationService.swift"
 DISMISSER = REPO / "Sources/Services/SystemEjectDialogDismisser.swift"
 ATTENTION = REPO / "Sources/Services/EjectAttentionCenter.swift"
-APP_DELEGATE = REPO / "Sources/DiskEjectorApp/DiskEjectorApp.swift"
+APP_DELEGATE = REPO / "Sources/SafeOutApp/SafeOutApp.swift"
 
 TEST_RUN_RE = re.compile(r"Test run with (\d+) tests?")
 BUILD_OK_RE = re.compile(r"^\s*Build complete!", re.M)

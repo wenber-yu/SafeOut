@@ -56,7 +56,7 @@ def fingerprint():
 def md_bold(s):
     # xcstrings 英文里用 markdown `**...**` 加粗 —— 直接回填会显示成裸星号。
     # 转成 <b>...</b>，回填后由 ds.js 的 hydrate 当 HTML 渲染。
-    # ⚠️ 只动成对的 `**X**`；孤立的星号（产品名 `DiskEjector*` 之类的）保留。
+    # ⚠️ 只动成对的 `**X**`；孤立的星号（产品名 `SafeOut*` 之类的）保留。
     return re.sub(r'\*\*([^*]+)\*\*', r'<b>\1</b>', s)
 
 def nl2br(s):
@@ -144,7 +144,7 @@ def main():
 
     body = [
         '/* ============================================================================',
-        '   DiskEjector UI v2 — 设计稿语言包（**生成物，不要手改**）',
+        '   SafeOut UI v2 — 设计稿语言包（**生成物，不要手改**）',
         '   ----------------------------------------------------------------------------',
         '   生成：python3 Tools/build_i18n.py',
         '   来源：Sources/Localization/Localizable.xcstrings',

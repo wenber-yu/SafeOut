@@ -1,11 +1,11 @@
 <?xml version="1.0" standalone="yes"?>
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
-        <title>DiskEjector</title>
+        <title>SafeOut</title>
         <item>
             <title>2026.10.08.1</title>
             <pubDate>Thu, 08 Oct 2026 19:39:11 +0800</pubDate>
-            <link>https://github.com/wenber-yu/DiskEjector</link>
+            <link>https://github.com/wenber-yu/SafeOut</link>
             <sparkle:version>325</sparkle:version>
             <sparkle:shortVersionString>2026.10.08.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
@@ -16,7 +16,18 @@
 <li><strong>内部整理，本次不改变任何界面与操作</strong>：删掉了一处不起作用的冗余状态记录；以上两项都只影响「极端时机下不出错」，正常的插拔、刷新、推出流程与之前完全一致</li>
 </ul>
 ]]></description>
-            <enclosure url="https://github.com/wenber-yu/DiskEjector/releases/download/v2026.10.08.1/DiskEjector-2026.10.08.1.dmg" length="2837823" type="application/octet-stream" sparkle:edSignature="DtBfeZsFlk2yMlLNw3y4X6X1y0YB4+Ckrb/BgETKVnTsphXWL/OqJxNZzgFKiepsfHp48l9cbirg7eUxDgL5CQ=="/>
+            <!-- ⚠️ 历史条目的**资产名仍是旧名**，这是刻意保留的例外，不是漏改。
+                 改名（DiskEjector → SafeOut）时仓库路径已全部改新，但**已发布 release
+                 的资产文件在 GitHub 上没有被重命名** —— 实测（2026-10-09）：
+                     .../SafeOut/.../SafeOut-2026.10.08.1.dmg     → HTTP 404
+                     .../SafeOut/.../DiskEjector-2026.10.08.1.dmg → HTTP 200
+                 URL 里的资产名**逐字对应 GitHub 上的真实文件名** ⇒ 跟着改名会让这条
+                 更新链接直接失效，已装该版本的用户点「检查更新」会拿不到包。
+                 且 EdDSA 签名与下载内容绑定，改资产名必坏。
+                 ⇒ **规则：历史 item 永远指向真实存在的资产；新 item 才用新名。**
+                 （`Scripts/release.sh` 的 `asset_name_matches_enclosure` 会在发版时强制
+                  校验「新资产名 == enclosure 末段」，新版本自此一律走 SafeOut。）-->
+            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.10.08.1/DiskEjector-2026.10.08.1.dmg" length="2837823" type="application/octet-stream" sparkle:edSignature="DtBfeZsFlk2yMlLNw3y4X6X1y0YB4+Ckrb/BgETKVnTsphXWL/OqJxNZzgFKiepsfHp48l9cbirg7eUxDgL5CQ=="/>
         </item>
     </channel>
 </rss>

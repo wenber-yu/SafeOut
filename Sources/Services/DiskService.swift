@@ -37,7 +37,7 @@ class DiskService: @unchecked Sendable {
     /// 开放给测试注入 mock 子类；生产环境一律使用 `shared`。
     init() {}
 
-    private static let logger = Logger(subsystem: "com.diskejector.app", category: "DiskService")
+    private static let logger = Logger(subsystem: "com.safeout.app", category: "DiskService")
 
     /// 枚举当前所有外置可推出卷。
     ///

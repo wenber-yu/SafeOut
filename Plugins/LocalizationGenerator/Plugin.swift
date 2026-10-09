@@ -1,6 +1,6 @@
-// LocalizationGenerator — DiskEjector 本地化 BuildToolPlugin（单一可信源）。
+// LocalizationGenerator — SafeOut 本地化 BuildToolPlugin（单一可信源）。
 //
-// 在 `swift build` / `swift test`（以及发布流程的 swift build）编译 DiskEjectorApp target 前，
+// 在 `swift build` / `swift test`（以及发布流程的 swift build）编译 SafeOutApp target 前，
 // 自动读取包内的 `Localizable.xcstrings`，调用 gen_l10n_tool 生成 L10n.generated.swift。
 // 生成的文件位于 plugin 工作目录，SwiftPM 会自动将其作为该 target 的额外源文件编译——
 // 因此无需把生成文件提交到 git，也无需在 run.sh/build.sh/发布插件里手动调用 gen_l10n。
@@ -21,7 +21,7 @@ struct LocalizationGenerator: BuildToolPlugin {
     /// （2026-09-24 改，原实现是后者）：
     ///
     /// `.xcstrings` 只要待在 target 目录下，SwiftPM 就会**顺手把它当 resource 再编一遍**，
-    /// 产出 `.build/out/Products/<配置>/DiskEjectorApp_DiskEjectorApp.bundle`
+    /// 产出 `.build/out/Products/<配置>/SafeOutApp_SafeOutApp.bundle`
     /// （内含 en / zh-Hans / zh-Hant 三份 `Localizable.strings`）—— 而**没有任何代码读它**：
     /// 本插件是把文案**内嵌**进 `L10n.generated.swift`（不需要 `Bundle.module`），
     /// `build_app.sh` 也不拷那个 `.bundle`。⇒ `Package.swift` 用 `exclude:` 把它摘出 target，

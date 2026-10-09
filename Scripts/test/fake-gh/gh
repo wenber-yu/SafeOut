@@ -24,7 +24,7 @@ case "$1 $2" in
         exit 0
         ;;
     "run view")
-        echo 'failed to get run: Get "https://api.github.com/repos/wenber-yu/DiskEjector/actions/runs/35504440757?exclude_pull_requests=true": EOF' >&2
+        echo 'failed to get run: Get "https://api.github.com/repos/wenber-yu/SafeOut/actions/runs/35504440757?exclude_pull_requests=true": EOF' >&2
         exit 1
         ;;
     *)

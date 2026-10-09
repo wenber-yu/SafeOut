@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================
-# DiskEjector — 一键启动脚本
+# SafeOut — 一键启动脚本
 # 用法：
 #   ./run.sh                # 编译并启动（菜单栏 App）
 #   ./run.sh --reset        # 透传参数给程序本身
@@ -10,7 +10,7 @@
 #                           #   退出码 0=绿 / 1=红 / 2=没拿到结论（2 ≠ 绿）
 #   ./run.sh release        # 发版一条命令（门槛 → 提交 → tag → 构建 → push → Release → appcast）
 #                           #   先 `./run.sh release --dry-run` 预演；详见 Scripts/release.sh 头部
-# 说明：在源码目录编译并启动 DiskEjector（菜单栏 App）。
+# 说明：在源码目录编译并启动 SafeOut（菜单栏 App）。
 # =============================================================
 set -euo pipefail
 
@@ -47,7 +47,7 @@ if [ ! -f "$PACKAGE_DIR/Package.swift" ]; then
 fi
 
 cd "$PACKAGE_DIR"
-echo "▶ 启动 DiskEjector ..."
+echo "▶ 启动 SafeOut ..."
 # `-Xlinker -rpath -Xlinker @loader_path`：给链接期补一条 rpath。
 #
 # ⚠️ **为什么必须有**（2026-09-24 实测）：Sparkle 是动态框架，可执行文件里记的是
@@ -71,4 +71,4 @@ echo "▶ 启动 DiskEjector ..."
 # 侧栏浮岛 / 玻璃 / hover 整体退回旧形态）——详见该脚本头部说明。
 source "$SCRIPT_DIR/Scripts/lib/macos_link_version_args.sh" "$PACKAGE_DIR"
 exec swift run ${MACOS_LINK_VERSION_ARGS[@]+"${MACOS_LINK_VERSION_ARGS[@]}"} \
-    -Xlinker -rpath -Xlinker '@loader_path' DiskEjectorApp "$@"
+    -Xlinker -rpath -Xlinker '@loader_path' SafeOutApp "$@"

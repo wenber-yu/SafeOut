@@ -69,7 +69,7 @@
   ],
   "ds.alert.updateTitle": [
     "磁盘推出助手 1.1.0 已发布",
-    "DiskEjector 1.1.0 is available",
+    "SafeOut 1.1.0 is available",
     "磁碟推出助理 1.1.0 已發佈"
   ],
   "ds.alert.updateSub": [
@@ -238,9 +238,9 @@
     "關閉它們會遺失未儲存的內容。"
   ],
   "ds.alert.busyFull": [
-    "关闭它们会丢失未保存的内容。DiskEjector 会先请求正常退出，几秒后仍未退出的将被强制结束，然后重新尝试推出。",
-    "Quitting them loses any unsaved work. DiskEjector first asks them to quit, force-quits any that are still running a few seconds later, then tries to eject again.",
-    "關閉它們會遺失未儲存的內容。DiskEjector 會先請求正常退出，幾秒後仍未退出的將被強制結束，然後重新嘗試退出。"
+    "关闭它们会丢失未保存的内容。SafeOut 会先请求正常退出，几秒后仍未退出的将被强制结束，然后重新尝试推出。",
+    "Quitting them loses any unsaved work. SafeOut first asks them to quit, force-quits any that are still running a few seconds later, then tries to eject again.",
+    "關閉它們會遺失未儲存的內容。SafeOut 會先請求正常退出，幾秒後仍未退出的將被強制結束，然後重新嘗試退出。"
   ],
   "ds.alert.failedLogged": [
     "这次失败已记入日志（时间、磁盘名、错误原因），可在设置中查看。",

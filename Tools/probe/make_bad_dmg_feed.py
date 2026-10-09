@@ -32,8 +32,8 @@ UDIF（dmg）把压缩流放在文件头附近。写坏头部 ⇒ 解压时立�
 然后：
 
     python Tools/probe/feedsrv.py 8899 --log <hits.log>          # 起 feed
-    defaults write com.diskejector.app SUFeedURL http://127.0.0.1:8899/appcast.xml
-    defaults delete com.diskejector.app SULastCheckTime
+    defaults write com.safeout.app SUFeedURL http://127.0.0.1:8899/appcast.xml
+    defaults delete com.safeout.app SULastCheckTime
 
 ⚠️ **要验「用户触发」那条路，就别开 `SUAutomaticallyUpdate`** ——
 自动路径不调 `showUpdaterError`，**根本不弹 UI**，等于白跑。
@@ -55,8 +55,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_SIGN_UPDATE = REPO / ".build/artifacts/sparkle/Sparkle/bin/sign_update"
-DEFAULT_BASE_DMG = REPO / "Dist/DiskEjector.dmg"
-DEFAULT_APP_PLIST = REPO / "Dist/DiskEjector.app/Contents/Info.plist"
+DEFAULT_BASE_DMG = REPO / "Dist/SafeOut.dmg"
+DEFAULT_APP_PLIST = REPO / "Dist/SafeOut.app/Contents/Info.plist"
 
 
 def sha256(p: Path) -> str:
@@ -97,7 +97,7 @@ def main() -> int:
     out_dir = Path(args.out).resolve()
     base_dmg = Path(args.base_dmg).resolve()
     sign_update = Path(args.sign_update).resolve()
-    bad_dmg = out_dir / "DiskEjector-bad.dmg"
+    bad_dmg = out_dir / "SafeOut-bad.dmg"
     appcast = out_dir / "appcast.xml"
 
     for p, what in ((base_dmg, "基准 dmg"), (sign_update, "sign_update"), (Path(args.app_plist), "Info.plist")):
@@ -147,7 +147,7 @@ def main() -> int:
     xml = f"""<?xml version="1.0" standalone="yes"?>
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
-        <title>DiskEjector</title>
+        <title>SafeOut</title>
         <item>
             <title>{short}</title>
             <pubDate>{pub}</pubDate>

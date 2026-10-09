@@ -32,7 +32,7 @@
     "appName" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "磁盘推出助手" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "DiskEjector" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "SafeOut" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "磁碟推出助手" } }
       }
     },
@@ -319,7 +319,7 @@
     "ejectBusyNoProcessInfo" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "磁盘「%@」正被占用，但当前无法列出具体程序。请确认已在「系统设置 › 隐私与安全性 › 完全磁盘访问」中允许磁盘推出助手后重试。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The disk \"%@\" is in use, but the specific apps cannot be listed. Make sure DiskEjector is granted Full Disk Access in System Settings › Privacy & Security, then try again." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The disk \"%@\" is in use, but the specific apps cannot be listed. Make sure SafeOut is granted Full Disk Access in System Settings › Privacy & Security, then try again." } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "磁碟「%@」正被佔用，但目前無法列出具體程式。請確認已在「系統設定 › 隱私與安全性 › 完全磁碟存取」中允許磁碟推出助手後再試。" } }
       }
     },
@@ -354,7 +354,7 @@
     "launchAtLoginErrorMessage" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请将磁盘推出助手移到「应用程序」文件夹后重试。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Move DiskEjector to the Applications folder and try again." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Move SafeOut to the Applications folder and try again." } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請將磁碟推出助手移到「應用程式」檔案夾後重試。" } }
       }
     },
@@ -368,14 +368,14 @@
     "launchAtLoginNeedsApprovalMessage" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "macOS 要求手动允许登录项。请前往「系统设置 → 通用 → 登录项」，开启磁盘推出助手的开关。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "macOS requires manual approval for login items. Go to System Settings \u2192 General \u2192 Login Items and enable DiskEjector." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "macOS requires manual approval for login items. Go to System Settings \u2192 General \u2192 Login Items and enable SafeOut." } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "macOS 要求手動允許登入項目。請前往「系統設定 \u2192 一般 \u2192 登入項目」，開啟磁碟推出助手的開關。" } }
       }
     },
     "launchAtLoginUnavailableMessage" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前无法设置登录项。请将磁盘推出助手移到「应用程序」文件夹后重试。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Login items are unavailable. Move DiskEjector to the Applications folder and try again." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Login items are unavailable. Move SafeOut to the Applications folder and try again." } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目前無法設定登入項目。請將磁碟推出助手移到「應用程式」檔案夾後再試一次。" } }
       }
     },
@@ -416,9 +416,9 @@
     },
     "fdaOnboardingBody" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "要知道**是哪个程序占着你的硬盘**，DiskEjector 需要这项系统权限。\nmacOS 不允许普通应用查看其他进程打开的文件——不给权限，就只剩一个空列表。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "To see **which app is using your drive**, DiskEjector needs this system permission.\nmacOS doesn’t let ordinary apps see files opened by other processes — without it, you’re left with an empty list." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "要知道**是哪個程式佔著你的硬碟**，DiskEjector 需要這項系統權限。\nmacOS 不允許一般應用程式查看其他行程開啟的檔案——不給權限，就只剩一個空清單。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "要知道**是哪个程序占着你的硬盘**，%@ 需要这项系统权限。\nmacOS 不允许普通应用查看其他进程打开的文件——不给权限，就只剩一个空列表。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "To see **which app is using your drive**, %@ needs this system permission.\nmacOS doesn’t let ordinary apps see files opened by other processes — without it, you’re left with an empty list." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "要知道**是哪個程式佔著你的硬碟**，%@ 需要這項系統權限。\nmacOS 不允許一般應用程式查看其他行程開啟的檔案——不給權限，就只剩一個空清單。" } }
       }
     },
     "fdaOnboardingStep1Text" : {
@@ -437,9 +437,9 @@
     },
     "fdaOnboardingStep2Text" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在列表中找到 **DiskEjector**，打开右侧开关" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Find **DiskEjector** in the list and turn on the switch" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在列表中找到 **DiskEjector**，開啟右側開關" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在列表中找到 **%@**，打开右侧开关" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Find **%@** in the list and turn on the switch" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在列表中找到 **%@**，開啟右側開關" } }
       }
     },
     "fdaOnboardingStep2Note" : {
@@ -458,9 +458,9 @@
     },
     "fdaOnboardingStep3Text" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "切回 DiskEjector 即可" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Switch back to DiskEjector" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "切回 DiskEjector 即可" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "切回 %@ 即可" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Switch back to %@" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "切回 %@ 即可" } }
       }
     },
     "fdaOnboardingStep3Note" : {
@@ -472,9 +472,9 @@
     },
     "fdaOnboardingPrivacy" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这项权限只用于读取「哪个进程打开了磁盘上的文件」，DiskEjector 不会读取你的文件内容。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This permission is only used to read which process has a file open on the disk. DiskEjector never reads your file contents." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這項權限只用於讀取「哪個行程開啟了磁碟上的檔案」，DiskEjector 不會讀取你的檔案內容。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这项权限只用于读取「哪个进程打开了磁盘上的文件」，%@ 不会读取你的文件内容。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This permission is only used to read which process has a file open on the disk. %@ never reads your file contents." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這項權限只用於讀取「哪個行程開啟了磁碟上的檔案」，%@ 不會讀取你的檔案內容。" } }
       }
     },
     "notNow" : {
@@ -893,14 +893,14 @@
     "menuAboutApp" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关于磁盘推出助手" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "About DiskEjector" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "About SafeOut" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "關於磁碟推出助手" } }
       }
     },
     "menuHideApp" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "隐藏磁盘推出助手" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hide DiskEjector" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hide SafeOut" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "隱藏磁碟推出助手" } }
       }
     },
@@ -921,7 +921,7 @@
     "menuQuitApp" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "退出磁盘推出助手" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Quit DiskEjector" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Quit SafeOut" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "結束磁碟推出助手" } }
       }
     },

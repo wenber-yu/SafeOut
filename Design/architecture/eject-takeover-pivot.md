@@ -81,7 +81,7 @@ Apple 官方文档（DiskArbitration Programming Guide）原文：
 |---|---|---|
 | 1 | `Sources/Services/EjectHookPolicy.swift` | 删 `.intercept` 决策、`.allow/.passThrough` 二分、`userDecisionTimeout`、`resolve()`；判定命中占用时返回新结论「提醒」（放行 + 携带占用信息） |
 | 2 | `Sources/Services/EjectHookService.swift` | `handle` 不再 `waitForUserChoice`（删信号量）；命中占用 → `return nil` + `Task @MainActor` 发提醒 |
-| 3 | 菜单栏（`DiskEjectorApp.swift` + `MenuPopoverView.swift`） | 新增持久「待处理占用」状态源，驱动图标状态 + 面板顶部卡片，复用 `DiskRow`「关闭并推出」 |
+| 3 | 菜单栏（`SafeOutApp.swift` + `MenuPopoverView.swift`） | 新增持久「待处理占用」状态源，驱动图标状态 + 面板顶部卡片，复用 `DiskRow`「关闭并推出」 |
 | 4 | `Sources/Localization/Localizable.xcstrings` | 开关名 + 说明三语改写 |
 | 5 | `Tests/.../EjectHookPolicyTests.swift` 等 | 删拦截/去重/resolve 旧测试，补「命中占用即放行并提醒」新测试 |
 | 6 | `Scripts/test/eject_hook_mutation.py` 等变异脚本 | 同步改写变异点 |

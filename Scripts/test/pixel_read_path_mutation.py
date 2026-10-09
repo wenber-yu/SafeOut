@@ -44,7 +44,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-TESTS = REPO / "Tests/DiskEjectorAppTests"
+TESTS = REPO / "Tests/SafeOutAppTests"
 EMPTY_STATE = TESTS / "EmptyStateTests.swift"
 VISUAL_STYLE = TESTS / "VisualStyleTests.swift"
 GUARD = TESTS / "PixelReadPathTests.swift"
@@ -52,7 +52,7 @@ GUARD = TESTS / "PixelReadPathTests.swift"
 FILTER = "PixelReadPathTests"
 
 # 追加式变异体的锚点：文件里唯一的一行，变异体接在它后面。
-ANCHOR = "@testable import DiskEjectorApp"
+ANCHOR = "@testable import SafeOutApp"
 
 MUTANT_READ = """
 
@@ -104,8 +104,8 @@ MUTATIONS = [
         "把 `OffscreenRenderParityTests` 的登记次数 8 改成 7（模拟「收敛掉一处却忘了改小」）"
         " ⇒ 必须报「次数与登记不符」",
         GUARD,
-        '"Tests/DiskEjectorAppTests/OffscreenRenderParityTests.swift": (\n            8,',
-        '"Tests/DiskEjectorAppTests/OffscreenRenderParityTests.swift": (\n            7,',
+        '"Tests/SafeOutAppTests/OffscreenRenderParityTests.swift": (\n            8,',
+        '"Tests/SafeOutAppTests/OffscreenRenderParityTests.swift": (\n            7,',
         "red",
     ),
     (

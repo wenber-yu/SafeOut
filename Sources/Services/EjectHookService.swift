@@ -25,7 +25,7 @@ import OSLog
 ///    **SIGTRAP 崩掉整个进程**（实测退出码 133）⇒ 占用结论一律读
 ///    ``OccupancySnapshotStore``（非隔离快照），提醒走 `Task { @MainActor in … }`。
 /// 3. **崩溃安全**：spike 实测 kill 掉持有回调的进程后，DA 把「没有 approval 者」视作批准
-///    ⇒ DiskEjector 崩了不会把用户的盘永久卡死。
+///    ⇒ SafeOut 崩了不会把用户的盘永久卡死。
 ///
 /// ## 开关语义边界
 ///
@@ -39,7 +39,7 @@ final class EjectHookService: @unchecked Sendable {
 
     private init() {}
 
-    private static let logger = Logger(subsystem: "com.diskejector.app", category: "EjectHook")
+    private static let logger = Logger(subsystem: "com.safeout.app", category: "EjectHook")
 
     /// 单例 session；同一进程只注册一次（重复注册会重复触发回调）。
     private var session: DASession?
@@ -71,7 +71,7 @@ final class EjectHookService: @unchecked Sendable {
     ///
     /// ``OccupancyStore`` 是**懒加载单例** —— 第一次有界面读它时才创建并启动轮询。
     /// 而全仓对它的触达点只有三处：`ContentView`（默认参数，**用户打开主窗口**时）、
-    /// `DiskEjectorApp`（用户从**菜单栏自己**发起推出时）、以及本类回调。
+    /// `SafeOutApp`（用户从**菜单栏自己**发起推出时）、以及本类回调。
     ///
     /// ⇒ 用户打开开关、然后**直接在访达里点推出**（正是本功能的目标场景！）时，
     /// `OccupancyStore` 可能**根本还没被创建** ⇒ 快照是空的 ⇒ 读到 `.unknown` ⇒

@@ -123,11 +123,11 @@ class EjectService: @unchecked Sendable {
     /// 开放给测试注入 mock 子类；生产环境一律使用 `shared`。
     init() {}
 
-    private static let logger = Logger(subsystem: "com.diskejector.app", category: "EjectService")
+    private static let logger = Logger(subsystem: "com.safeout.app", category: "EjectService")
 
-    // MARK: - 自排除标志（DiskEjector 自己的推出请求）
+    // MARK: - 自排除标志（SafeOut 自己的推出请求）
 
-    /// 当前调用栈是否由 DiskEjector 内部发起（防止 ``EjectHookService`` 的
+    /// 当前调用栈是否由 SafeOut 内部发起（防止 ``EjectHookService`` 的
     /// DiskArbitration approval callback 把自家请求当"别人的"拦截掉，导致
     /// `NSWorkspace.unmountAndEjectDevice` 永远拿不到放行 = 永久推不出）。
     ///
@@ -163,7 +163,7 @@ class EjectService: @unchecked Sendable {
         Self.logger.notice("请求推出卷: \(disk.mountPath, privacy: .public)")
 
         return await Task.detached(priority: .userInitiated) { [url] in
-            // 标记本次推出由 DiskEjector 自己发起 —— approval callback 见此标志即放行。
+            // 标记本次推出由 SafeOut 自己发起 —— approval callback 见此标志即放行。
             // defer 保证「**任何**路径返回都清掉标志」，不会把后续别人的请求错认成自家。
             Self.isHookSelfInitiated = true
             defer { Self.isHookSelfInitiated = false }

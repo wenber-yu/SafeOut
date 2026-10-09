@@ -170,7 +170,7 @@ final class UpdateController: NSObject, ObservableObject {
 
     static let shared = UpdateController()
 
-    private static let logger = Logger(subsystem: "com.diskejector.app", category: "Update")
+    private static let logger = Logger(subsystem: "com.safeout.app", category: "Update")
 
     /// 本次运行是不是调试构建（决定 `ensureUpdater()` 要不要整个跳过 Sparkle）。
     ///
@@ -364,7 +364,7 @@ final class UpdateController: NSObject, ObservableObject {
     /// `Bundle.main` 不是合规的 app bundle，Sparkle 会为此报错 ——
     /// 而那句报错跟「更新能不能用」无关，只会污染自检输出（真机自检有 6 个场景要读输出）。
     ///
-    /// **调试构建也不建**（2026-09-23）：开发路径 `./run.sh` → `swift run DiskEjectorApp`
+    /// **调试构建也不建**（2026-09-23）：开发路径 `./run.sh` → `swift run SafeOutApp`
     /// 跑的是**裸可执行文件、不是 `.app`**（`.build/out/Products/Debug/` 里没有 `Info.plist`、
     /// 也没内嵌 `__info_plist` 段）⇒ `Bundle.main.bundleIdentifier` 是 `nil`，
     /// Sparkle 在 `checkIfConfiguredProperlyAndRequireFeedURL:` 里**直接 `return NO`**

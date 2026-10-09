@@ -87,7 +87,7 @@ struct EjectHookRequest: Sendable, Equatable {
 enum EjectHookPassReason: String, Sendable, Equatable {
     /// 设置里的开关是关的。开关在**三关之前**读（关掉时本应用在链路上完全不存在）。
     case takeOverDisabled
-    /// 这次推出是 DiskEjector 自己发起的（``EjectService/isHookSelfInitiated``）。
+    /// 这次推出是 SafeOut 自己发起的（``EjectService/isHookSelfInitiated``）。
     case selfInitiated
     /// 取不到描述 / 没有挂载路径（含「整个盘」的 eject 回调）。
     case noVolumePath

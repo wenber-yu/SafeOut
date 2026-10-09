@@ -1,10 +1,10 @@
 #!/bin/bash
 # =============================================================
-# DiskEjector — 一键生成 .app 脚本
+# SafeOut — 一键生成 .app 脚本
 # 用法：
 #   ./build_app.sh                              # 版本与构建号从 git 自动派生（渠道固定为 direct 直发）
-#   NOTARIZE=1 ./build_app.sh                   # 构建后自动公证 + 打包 DiskEjector.dmg（需 Developer ID 签名）
-#   PACKAGE=1 ./build_app.sh                    # 不公证，直接出分发产物：DiskEjector.dmg + DiskEjector.zip
+#   NOTARIZE=1 ./build_app.sh                   # 构建后自动公证 + 打包 SafeOut.dmg（需 Developer ID 签名）
+#   PACKAGE=1 ./build_app.sh                    # 不公证，直接出分发产物：SafeOut.dmg + SafeOut.zip
 #                                               #   （本机无 Developer ID 证书时用它出 GitHub Release 资产）
 #   VERSION=2.1.0 ./build_app.sh                # 显式指定版本
 #   BUILD_NUMBER=42 ./build_app.sh              # 显式指定构建号
@@ -13,8 +13,8 @@
 #   DISABLE_SANDBOX=1 ./build_app.sh            # 让 swift build 跳过 SwiftPM 自带的 sandbox-exec
 #                                               #   （仅供本机执行环境已自带沙箱、导致
 #                                               #    "sandbox_apply: Operation not permitted" 时使用）
-# 产物：Dist/DiskEjector.app（可拖入 /Applications 或双击运行）
-#       Dist/DiskEjector.dmg + Dist/DiskEjector.zip（仅 PACKAGE=1 / NOTARIZE=1 时生成）
+# 产物：Dist/SafeOut.app（可拖入 /Applications 或双击运行）
+#       Dist/SafeOut.dmg + Dist/SafeOut.zip（仅 PACKAGE=1 / NOTARIZE=1 时生成）
 # 图标：复制预先生成的 Resources/AppIcon.icns（打包时不生成图标）；
 #       图标由独立脚本生成：把源图放进 Design/app-icon/ 后运行
 #         sh Scripts/build_icon.sh
@@ -40,7 +40,7 @@
 #   NOTARIZE=1 NOTARY_KEYCHAIN_PROFILE="<profile>" ./build_app.sh
 # 开发期没有 Developer ID 证书、公证走不通时，用 PACKAGE=1 出未公证的 dmg / zip：
 #   PACKAGE=1 ./build_app.sh
-# dmg 内为 DiskEjector.app + 指向 /Applications 的替身，用户挂载后拖入即可。
+# dmg 内为 SafeOut.app + 指向 /Applications 的替身，用户挂载后拖入即可。
 # =============================================================
 set -euo pipefail
 
@@ -53,13 +53,13 @@ PACKAGE_DIR="$SCRIPT_DIR"
 # 详见 Scripts/lib/macos_link_version_args.sh 头部说明。
 source "$SCRIPT_DIR/Scripts/lib/macos_link_version_args.sh" "$PACKAGE_DIR"
 
-APP_NAME="DiskEjector"
+APP_NAME="SafeOut"
 # 面向用户的中文显示名：Finder / Dock / 菜单栏 App 菜单 / 关于面板 / 系统设置里
 # 「完全磁盘访问」授权列表展示的都是它。与 APP_NAME 分开的原因——APP_NAME 同时是
 # .app 目录名、产物文件名（脚本路径、下载链接、CI 都依赖它），改中文会连带破坏这些。
 APP_DISPLAY_NAME="磁盘推出助手"
 APP_DISPLAY_NAME_HANT="磁碟推出助手"
-EXECUTABLE="DiskEjectorApp"                 # SPM 可执行 target 名
+EXECUTABLE="SafeOutApp"                 # SPM 可执行 target 名
 # ---------------------------------------------------------------
 # 版本号自动派生
 #
@@ -197,7 +197,7 @@ fi
 # 「被系统拦下」，而是**在 13 上启动、然后崩**（Gatekeeper 只看这个键）。
 # ⇒ 从 Package.swift 派生；**派不出来就硬报错** —— 不退回字面量、也不写空串
 #    （少一个键与值写空，在 Gatekeeper 眼里都不算拦得住）。
-# 守卫：Tests/DiskEjectorAppTests/DeploymentTargetTests.swift
+# 守卫：Tests/SafeOutAppTests/DeploymentTargetTests.swift
 # ---------------------------------------------------------------
 DEPLOY_TARGET_MAJOR="$(sed -nE 's/^[[:space:]]*platforms:[[:space:]]*\[\.macOS\(\.v([0-9]+)\)\].*$/\1/p' "$PACKAGE_DIR/Package.swift")"
 # 必须**恰好是一个数字**：空 = 一行都没匹配到；带换行 = 匹配到多行。
@@ -231,14 +231,14 @@ if [ -n "${BUILD_CHANNEL:-}" ] && [ "$BUILD_CHANNEL" != "direct" ]; then
     echo "   传了 mas 也不会产出上架包——之前的 mas 分支会强制 App Sandbox，直接废掉「列出占用进程」。" >&2
     exit 1
 fi
-ENTITLEMENTS="$PACKAGE_DIR/Resources/DiskEjector.direct.entitlements"
+ENTITLEMENTS="$PACKAGE_DIR/Resources/SafeOut.direct.entitlements"
 # 签名身份：
 #   显式设置 SIGN_IDENTITY 时直接使用；未设置则自动探测钥匙串里的
 #   「Developer ID Application」证书——有了就自动采用（便于日后直接 NOTARIZE=1），
 #   没有就回退 ad-hoc（"-"，仅供本机验证，无法公证/分发）。
 #
 # 无论身份来自哪里，都用 IDENTITY_KIND 记下它的**类型**，供后续文案与 NOTARIZE 前置检查使用。
-# 为什么必须区分：自签身份（如 "DiskEjector Dev Signing"）同样能签出有效签名、保住 TCC 授权，
+# 为什么必须区分：自签身份（如 "SafeOut Dev Signing"）同样能签出有效签名、保住 TCC 授权，
 # 但它**无法公证**。若一律显示成「Developer ID 证书」，使用者会误判自己
 # 已经具备分发条件——这正是本项目曾出现的文案缺陷。
 #   developer-id —— Apple 签发的 Developer ID Application：可公证、可正式分发
@@ -270,14 +270,14 @@ if [ -z "${SIGN_IDENTITY:-}" ]; then
         echo "   自动选用 Developer ID 证书: $SIGN_IDENTITY"
     else
         # 优先级 2：钥匙串里**任意**其他有效代码签名身份（例如本机自签的
-        # "DiskEjector Dev Signing"）。
+        # "SafeOut Dev Signing"）。
         #
         # **为什么必须有这一档**：TCC（完全磁盘访问）授权绑定的是代码签名身份。
         # ad-hoc（"-"）签名没有 Team ID，且 CDHash 随每次重建变化 → 系统视为另一个 app
         # → 用户刚在系统设置里授予的 FDA 立刻失效，横幅又冒出来。
         # 用带固定 Team ID（证书 OU 字段）的稳定身份签名后，TCC 按 TEAMID.bundle_id
         # 匹配，重建二进制也能保住授权。
-        # `-v` 输出格式：`  1) 4C8302... "DiskEjector Dev Signing"`，
+        # `-v` 输出格式：`  1) 4C8302... "SafeOut Dev Signing"`，
         # 身份行以「空格+序号+)」开头，汇总行（"1 valid identities found"）不匹配此模式。
         # certificate 名里有空格，取**最后一对引号**里的内容。
         # `|| true` 同样必须放在管道外层（见上方 bash 优先级说明）。
@@ -396,7 +396,7 @@ echo "   ✓ 已嵌入 Sparkle.framework（取自 $(basename "$(dirname "$(dirna
 # SUEnableAutomaticChecks —— 不设的话，Sparkle 会在**第二次启动**弹窗问用户
 #   「要不要自动检查更新」。本应用自己有「自动更新」开关，不能先让 Sparkle 抢着问一遍。
 # ---------------------------------------------------------------
-SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-https://raw.githubusercontent.com/wenber-yu/DiskEjector/master/appcast.xml}"
+SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-https://raw.githubusercontent.com/wenber-yu/SafeOut/master/appcast.xml}"
 
 # ⚠️ **公钥入库当默认值**（2026-09-20）。
 #
@@ -436,7 +436,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.diskejector.app</string>
+	<string>com.safeout.app</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -510,8 +510,8 @@ fi
 
 echo "▶ [3.5/4] 写入本地化应用名（Finder / 系统设置列表取本地化值）..."
 # macOS 对 .app 的**显示名**优先取本地化的 `InfoPlist.strings`：只把 CFBundleDisplayName 写进
-# Info.plist，Finder 与「系统设置 › 完全磁盘访问」列表里看到的仍可能是文件名 DiskEjector。
-# 这里按语言各写一份覆盖值 —— 中文环境显示中文名，英文环境保留 DiskEjector。
+# Info.plist，Finder 与「系统设置 › 完全磁盘访问」列表里看到的仍可能是文件名 SafeOut。
+# 这里按语言各写一份覆盖值 —— 中文环境显示中文名，英文环境保留 SafeOut。
 # .app 目录名与产物名仍是 ${APP_NAME}（下载链接与脚本路径依赖它，不能改中文）。
 write_infoplist_strings() {
     local lproj="$1" name="$2"

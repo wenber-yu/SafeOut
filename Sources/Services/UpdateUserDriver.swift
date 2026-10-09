@@ -44,7 +44,7 @@ import Sparkle
 @MainActor
 final class UpdateUserDriver: NSObject, SPUUserDriver {
 
-    private static let logger = Logger(subsystem: "com.diskejector.app", category: "Update")
+    private static let logger = Logger(subsystem: "com.safeout.app", category: "Update")
 
     private weak var controller: UpdateController?
 

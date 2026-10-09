@@ -74,8 +74,8 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-WAIT_OUTCOME = REPO / "Tests/DiskEjectorAppTests/WaitOutcome.swift"
-OCCUPANCY = REPO / "Tests/DiskEjectorAppTests/OccupancyStoreTests.swift"
+WAIT_OUTCOME = REPO / "Tests/SafeOutAppTests/WaitOutcome.swift"
+OCCUPANCY = REPO / "Tests/SafeOutAppTests/OccupancyStoreTests.swift"
 RESOLVER = REPO / "Sources/Services/ProcessAppResolver.swift"
 
 # 两个「等待 helper 自己的守卫」的过滤器（swift-testing 的 --filter 认名字正则）。

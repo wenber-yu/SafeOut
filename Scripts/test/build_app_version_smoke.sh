@@ -187,7 +187,7 @@ expect_not_has "错误：" "①"
 # ⚠️ 部署目标是**派生**的（从 `Package.swift` 的 `platforms`）⇒ 这里只断言
 #    「**派生这条路是通的**」：输出里有那一行，且没走「取不到部署目标」的硬报错分支。
 #    **不在这里写死具体版本号** —— 「值是多少」由
-#    `Tests/DiskEjectorAppTests/DeploymentTargetTests.swift` 钉；这里再写一份
+#    `Tests/SafeOutAppTests/DeploymentTargetTests.swift` 钉；这里再写一份
 #    就又多了一处会漂的声明（本脚本要守的正是「同一件事写两处」这个病）。
 expect_has "ⓘ 部署目标：" "①"
 expect_not_has "取不到部署目标" "①"
@@ -262,10 +262,10 @@ if [ "$FAILS" -gt "$BEFORE_FAILS" ]; then dump_out; fi
 # =============================================================
 echo ""
 echo "⑥ Dist/ 未被本次冒烟触碰"
-if [ -e "$REPO_ROOT/Dist/DiskEjector.app" ]; then
-    echo "   [产物] Dist/DiskEjector.app 仍在（本脚本只读不写）✓"
+if [ -e "$REPO_ROOT/Dist/SafeOut.app" ]; then
+    echo "   [产物] Dist/SafeOut.app 仍在（本脚本只读不写）✓"
 else
-    echo "   [产物] Dist/DiskEjector.app 不存在（本来就没构建过）—— 不算失败"
+    echo "   [产物] Dist/SafeOut.app 不存在（本来就没构建过）—— 不算失败"
 fi
 
 if [ "$FAILS" -gt 0 ]; then

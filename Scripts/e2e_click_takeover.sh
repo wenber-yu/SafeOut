@@ -57,10 +57,10 @@ set -u
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO" || exit 1
 
-APP="${APP:-$REPO/Dist/DiskEjector.app}"
+APP="${APP:-$REPO/Dist/SafeOut.app}"
 SPIKE="$REPO/.build/probe/da_approval_spike/spike.dmg"
 VOLUME="/Volumes/SpikeVol"
-BUNDLE_ID="com.diskejector.app"
+BUNDLE_ID="com.safeout.app"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG="$REPO/.workbuddy/verify/e2e-click-$STAMP.log"
 APP_OUT="$REPO/.workbuddy/verify/e2e-click-$STAMP.app.log"
@@ -114,7 +114,7 @@ cleanup() {
 trap cleanup EXIT
 
 # 别让上一轮的残留污染结果
-pkill -f "DiskEjector.app/Contents/MacOS" 2>/dev/null
+pkill -f "SafeOut.app/Contents/MacOS" 2>/dev/null
 pkill -f "tail -f $VOLUME" 2>/dev/null
 [ -d "$VOLUME" ] && hdiutil detach "$VOLUME" >/dev/null 2>&1
 sleep 1
@@ -150,7 +150,7 @@ echo "--- [4] 启动产品版 app ---"
 rm -f "$APP_OUT" "$APP_ERR"
 open -n "$APP" --stdout "$APP_OUT" --stderr "$APP_ERR"
 sleep 15
-pgrep -f "DiskEjector.app/Contents/MacOS" >/dev/null || { fail "app 没起来"; exit 1; }
+pgrep -f "SafeOut.app/Contents/MacOS" >/dev/null || { fail "app 没起来"; exit 1; }
 ok "app 已启动"
 
 # --- 5 -----------------------------------------------------------------------

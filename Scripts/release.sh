@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================
-# DiskEjector — 发版一条命令
+# SafeOut — 发版一条命令
 #
 # 用法（从仓库根跑）：
 #   ./run.sh release                          # 全流程
@@ -50,7 +50,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-APP_NAME="DiskEjector"
+APP_NAME="SafeOut"
 
 # ---------------------------------------------------------------
 # 纯函数区：self-test 直接调这一区，**不许碰 git / 网络 / 文件系统**
@@ -454,7 +454,7 @@ OUTPUT_DIR="$PACKAGE_DIR/Dist/release-$VERSION"
 UPDATES_DIR="$OUTPUT_DIR/updates"
 
 say "=================================================="
-say " DiskEjector 发版"
+say " SafeOut 发版"
 say "=================================================="
 say "  版本      ${VERSION}（${VERSION_SOURCE}）"
 say "  tag       $TAG"
@@ -691,7 +691,7 @@ if [ "$DRY_RUN" = "1" ]; then
     say "   [dry-run]   $UPDATES_DIR/$APP_NAME-$VERSION.dmg $UPDATES_DIR/$APP_NAME-$VERSION.zip"
 else
     # zip 也要按同一规则命名 —— gh 用的资产名就是本地文件名（跟上一版对齐：
-    # 历史 release 上是 DiskEjector-<版本>.dmg 与 DiskEjector-<版本>.zip 成对出现）
+    # 历史 release 上是 SafeOut-<版本>.dmg 与 SafeOut-<版本>.zip 成对出现）
     cp -f "$OUTPUT_DIR/$APP_NAME.zip" "$UPDATES_DIR/$APP_NAME-$VERSION.zip"
 
     if gh release view "$TAG" >/dev/null 2>&1; then
@@ -774,7 +774,7 @@ if [ "$DRY_RUN" = "1" ]; then
 else
     say " ✅ 发版完成：$VERSION"
     say "=================================================="
-    say "  Release   https://github.com/wenber-yu/DiskEjector/releases/tag/$TAG"
+    say "  Release   https://github.com/wenber-yu/SafeOut/releases/tag/$TAG"
     say "  产物      $OUTPUT_DIR"
     say ""
     say "  ⚠️ 自举提示：这一版**修好的东西**要用户手动装一次才生效 ——"

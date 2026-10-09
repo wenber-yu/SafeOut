@@ -16,7 +16,7 @@ import SwiftUI
 /// | `frame(800 × 520)` | 窗口尺寸（``DesignTokens/Size/mainWindow``）；详情区只负责「填满分到的那一块」 |
 ///
 /// ⇒ 它现在只做一件事：把**这一页**（FDA 横幅 + 磁盘列表）画出来。
-/// 侧栏与窗口装配分别在 `MainWindowNavigation.swift` 与 `DiskEjectorApp.swift`。
+/// 侧栏与窗口装配分别在 `MainWindowNavigation.swift` 与 `SafeOutApp.swift`。
 ///
 /// **保留的不变量**（这些一条都没变）：
 /// - 列表来自 ``DiskListStore``（与菜单栏同源）
@@ -248,7 +248,7 @@ struct ContentView: View {
             refreshFDAStatus()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            // **关键**：app 重新激活时（用户在系统设置授权完切回 DiskEjector）立即刷新 FDA，
+            // **关键**：app 重新激活时（用户在系统设置授权完切回 SafeOut）立即刷新 FDA，
             // 否则要等下一次 15s tick 才更新——用户看到横幅没消失会去系统设置重试，体验差。
             //
             // 顺带让占用结论也跟上：用户在系统设置里刚授完权，回到应用应当立刻看到

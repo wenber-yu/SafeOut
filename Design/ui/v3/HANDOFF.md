@@ -73,7 +73,7 @@
 
 | # | 事实 | 为什么必须处理 |
 |---|---|---|
-| **A** | `DesignTokens.Radius.window = 12`，被 **3 个文件 5 处**消费；其中两处在给 `window.contentView?.layer?.cornerRadius` 赋值（主窗口 `ContentView.swift:227`、设置窗口 `DiskEjectorApp.swift:2368`） | 12 与真实窗口圆角（31.5 / 17.5）**不是一个量级**。这层遮罩会把内容切出一个**比窗口更小的圆**，26 上四角可能露边。**必须重新判定**，见 §3.7.3 |
+| **A** | `DesignTokens.Radius.window = 12`，被 **3 个文件 5 处**消费；其中两处在给 `window.contentView?.layer?.cornerRadius` 赋值（主窗口 `ContentView.swift:227`、设置窗口 `SafeOutApp.swift:2368`） | 12 与真实窗口圆角（31.5 / 17.5）**不是一个量级**。这层遮罩会把内容切出一个**比窗口更小的圆**，26 上四角可能露边。**必须重新判定**，见 §3.7.3 |
 | **B** | 设计规范与旧文档里写的**最低系统是 macOS 14，不是 13** | 已全线订正（`Package.swift` 是唯一真相）。本单所有结论按 **14** 成立 |
 
 ### ④ 动工前的确认项 —— **已全部定案，可直接开工**
@@ -125,7 +125,7 @@
 
 | 现在（代码） | v3 目标 | 影响面 |
 |---|---|---|
-| 主窗口是 `NSHostingController(rootView: ContentView())` 直接挂到 window | 换成 `NSSplitViewController`：`sidebarWithViewController` + 详情 item | `AppDelegate.makeMainWindow()`（`DiskEjectorApp.swift:1912`）装配方式重写 |
+| 主窗口是 `NSHostingController(rootView: ContentView())` 直接挂到 window | 换成 `NSSplitViewController`：`sidebarWithViewController` + 详情 item | `AppDelegate.makeMainWindow()`（`SafeOutApp.swift:1912`）装配方式重写 |
 | 窗口用**自绘 52pt 标题栏** + `titlebarAppearsTransparent = true` + `titleVisibility = .hidden`；`enlargeTitleBar(in:)` 撑到 52、`alignTrafficLights(in:)` 挪红绿灯 | **整体退役**，改真 `NSToolbar`（§3.2） | 上述 4 个机关 + `--preview-main-window-keys` 自检 + `MainWindowTests` 相关断言 |
 | **窗口没有 `NSToolbar`**（全仓 `Sources/` 搜不到 `NSToolbar`） | 新增 `NSToolbar`（unified），里面**只放刷新一个 item** | 新增 |
 | 设置 = **独立窗口** `SettingsWindow`（720×440，右上「完成」） | 设置内容进主窗口详情区；独立窗口退役 | `SettingsWindow.swift`(79 行)、`AppDelegate.showSettings()`(2288)、`AppDelegate.makeSettingsWindow()`(2323)、`WindowSelfCheck` 里校验设置窗口尺寸的断言 |
@@ -135,7 +135,7 @@
 | `SettingsSwitch` 是**纯自绘**（`Capsule` + `Circle` + 阴影） | 交还 `Toggle` + `.toggleStyle(.switch)` | `SettingsView.swift:2272`；**「整行可点」要一起处理**（§3.4） |
 | `ActionButton` 是**纯自绘**（`.buttonStyle(.plain)` + 自绘底 + `strokeBorder`） | 交还系统按钮样式（§3.5） | `DesignSystemComponents.swift:494` |
 | 左栏规格：`settingsSidebarWidth=200` / `ItemHeight=28` / `ItemIcon=15` / `ItemGap=9` / `ItemSpacing=1` / `PaddingH=10` | 交还系统后**全部作废** | `DesignTokens.swift:296–306` |
-| `contentView.layer.cornerRadius = Radius.window`（=12）设了两处 | ❗**重新判定**，见 §3.7.3 | `ContentView.swift:227`、`DiskEjectorApp.swift:2367` |
+| `contentView.layer.cornerRadius = Radius.window`（=12）设了两处 | ❗**重新判定**，见 §3.7.3 | `ContentView.swift:227`、`SafeOutApp.swift:2367` |
 
 ⚠️ **`SettingsView.swift` 约 594 行有一条注释是错的**：
 写着「选中态 = 强调色实底 + 白字（macOS 侧栏惯例，**Finder 与系统设置都这样**）」。
@@ -466,7 +466,7 @@ macOS 26 = 全胶囊 + Liquid Glass；14–15 = 传统圆角矩形。**同一份
 | 位置 | 代码 | 处置 |
 |---|---|---|
 | `ContentView.swift:227–234`（主窗口，经 `WindowAccessor`） | `contentView.layer.cornerRadius = DesignTokens.Radius.window`（**= 12**）+ `masksToBounds = true` | ❗**待判定，见下** |
-| `DiskEjectorApp.swift:2367–2369`（设置窗口） | 同上 | **随设置窗口退役一起删** |
+| `SafeOutApp.swift:2367–2369`（设置窗口） | 同上 | **随设置窗口退役一起删** |
 
 **为什么必须重新判定**：`Radius.window = 12` 与真实窗口圆角（26 上 unified **31.5pt** / 仅标题栏 **17.5pt**）
 **不是一个量级**（代码注释里的理由是「不加的话窗口底角是直角」）。
@@ -671,15 +671,15 @@ v3 用**自己的一份**：
 | 文件 | 要动什么 |
 |---|---|
 | `Sources/Views/SettingsView.swift`（2302 行） | **拆**：左栏 `SettingsSidebarItem`(598) 退役、右栏拆五个详情页、`SettingsSwitch`(2272) 换 `Toggle` |
-| `Sources/DiskEjectorApp/DiskEjectorApp.swift`（2392 行） | `AppDelegate.makeMainWindow()`(1912) 换装配、`showSettings()`(2288) 改入口、`makeSettingsWindow()`(2323) 退役、头部四机关退役 |
+| `Sources/SafeOutApp/SafeOutApp.swift`（2392 行） | `AppDelegate.makeMainWindow()`(1912) 换装配、`showSettings()`(2288) 改入口、`makeSettingsWindow()`(2323) 退役、头部四机关退役 |
 | `Sources/Views/ContentView.swift`（751 行） | 拆三块；`openSettings()`(488) 改入口；**`:227` 圆角遮罩待判定** |
 | `Sources/Views/DesignSystemComponents.swift`（1028 行） | `ActionButton`(494) 改系统样式；`HoverBackground`(467) 视情况退役 |
 | `Sources/Views/DesignTokens.swift` | `Size` 重算；`settingsSidebar*`(296–306) 作废；`Radius.window`/`.settings` 待退役 |
-| `Sources/DiskEjectorApp/SettingsWindow.swift`（79 行） | 建议**整体退役** |
-| `Sources/DiskEjectorApp/WindowSelfCheck.swift`（652 行） | 同步（含设置窗口尺寸校验） |
+| `Sources/SafeOutApp/SettingsWindow.swift`（79 行） | 建议**整体退役** |
+| `Sources/SafeOutApp/WindowSelfCheck.swift`（652 行） | 同步（含设置窗口尺寸校验） |
 | `Sources/Views/GlassViews.swift` | ✅ **已合规，勿改** |
 | `Sources/Views/MenuPopoverView.swift` | 「设置…」入口改接 |
-| `Sources/DiskEjectorApp/MainMenu.swift` | **不用动**：折叠能力定为不给（§8.1）⇒ 不加 View 菜单的「隐藏侧栏」项 |
+| `Sources/SafeOutApp/MainMenu.swift` | **不用动**：折叠能力定为不给（§8.1）⇒ 不加 View 菜单的「隐藏侧栏」项 |
 
 ---
 

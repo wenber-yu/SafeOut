@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>菜单栏面板 · DiskEjector UI v2</title>
+<title>菜单栏面板 · SafeOut UI v2</title>
 <link rel="stylesheet" href="../assets/ds.css">
 <style>
   /* 菜单栏图标：模拟状态栏中的样子 */
@@ -56,7 +56,7 @@
           <span class="statusbar__item"><i data-i="wifi"></i></span>
           <span class="statusbar__item"><i data-i="battery"></i></span>
           <span class="statusbar__item"><i data-i="search"></i></span>
-          <span class="statusbar__app"><i data-i="eject"></i>DiskEjector</span>
+          <span class="statusbar__app"><i data-i="eject"></i>SafeOut</span>
           <span>12:02</span>
         </div>
 
@@ -102,7 +102,7 @@
             <button class="actionrow"><i data-i="window"></i>打开主窗口<span class="actionrow__key">⌘O</span></button>
             <button class="actionrow"><i data-i="refresh"></i>刷新磁盘列表<span class="actionrow__key">⌘R</span></button>
             <button class="actionrow"><i data-i="gear"></i>设置<span class="actionrow__key">⌘,</span></button>
-            <button class="actionrow actionrow--danger"><i data-i="power"></i>退出 DiskEjector<span class="actionrow__key">⌘Q</span></button>
+            <button class="actionrow actionrow--danger"><i data-i="power"></i>退出 SafeOut<span class="actionrow__key">⌘Q</span></button>
           </div>
         </div>
       </div>
@@ -138,7 +138,7 @@
           <button class="actionrow"><i data-i="window"></i>打开主窗口<span class="actionrow__key">⌘O</span></button>
           <button class="actionrow"><i data-i="refresh"></i>刷新磁盘列表<span class="actionrow__key">⌘R</span></button>
           <button class="actionrow"><i data-i="gear"></i>设置<span class="actionrow__key">⌘,</span></button>
-          <button class="actionrow actionrow--danger"><i data-i="power"></i>退出 DiskEjector<span class="actionrow__key">⌘Q</span></button>
+          <button class="actionrow actionrow--danger"><i data-i="power"></i>退出 SafeOut<span class="actionrow__key">⌘Q</span></button>
         </div>
       </div>
     </div>
@@ -179,7 +179,7 @@
       <h3 class="doc__h3" style="margin-top:0">无障碍 Accessibility</h3>
       <ul class="note-list">
         <li><b>行内图标按钮必须带磁盘名的可访问性标签</b>——「推出 WD Blue」而不是「推出」。多块盘时，一串同名的「推出」对 VoiceOver 用户毫无区分度。</li>
-        <li><b>状态栏图标</b>：<code>setAccessibilityLabel("DiskEjector")</code> + role <code>.button</code>，并暴露当前磁盘数量，让用户不必打开面板就知道有没有盘。</li>
+        <li><b>状态栏图标</b>：<code>setAccessibilityLabel("SafeOut")</code> + role <code>.button</code>，并暴露当前磁盘数量，让用户不必打开面板就知道有没有盘。</li>
         <li><b>三行文案不要合并成单一元素</b>——合并会把行内按钮一起吞进去，导致 VoiceOver「能读不能点」。</li>
       </ul>
     </div>

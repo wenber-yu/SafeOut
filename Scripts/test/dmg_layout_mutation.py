@@ -234,8 +234,8 @@ DS_STORE = ROOT / "Resources/dmg/DS_Store"
 PNG = ROOT / "Resources/dmg/background.png"
 BUILD = ROOT / "build_app.sh"
 
-HINT_OLD = 'HINT = "把 DiskEjector 拖进右侧的 Applications 文件夹即可安装"'
-HINT_NEW = 'HINT = "把 DiskEjector 拖进右侧的 Applications 文件夹即可安装。"'
+HINT_OLD = 'HINT = "把 SafeOut 拖进右侧的 Applications 文件夹即可安装"'
+HINT_NEW = 'HINT = "把 SafeOut 拖进右侧的 Applications 文件夹即可安装。"'
 
 # (名字, [(文件, old, new), ...], 期望判定, 后续动作)
 # 后续动作 = None 或 (命令的列表, 会被动作改动的文件列表)

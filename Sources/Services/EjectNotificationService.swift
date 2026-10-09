@@ -33,7 +33,7 @@ final class EjectNotificationService {
 
     static let shared = EjectNotificationService()
 
-    private let logger = Logger(subsystem: "com.diskejector.app", category: "Notification")
+    private let logger = Logger(subsystem: "com.safeout.app", category: "Notification")
 
     /// 已投递过通知的挂载路径。**投递与撤回都经过它**，是幂等判据的唯一出处。
     private var policy = EjectNotificationPolicy()
@@ -46,9 +46,9 @@ final class EjectNotificationService {
 
     private init() {}
 
-    /// 通知中心能不能用。**以裸可执行文件运行时（`dist/.../DiskEjectorApp`）没有
+    /// 通知中心能不能用。**以裸可执行文件运行时（`dist/.../SafeOutApp`）没有
     /// bundle id**，`UNUserNotificationCenter.current()` 取不到宿主 ⇒ 一律跳过。
-    /// 这也是本仓库「验证要用 `open dist/DiskEjector.app`」那条纪律在通知上的投影。
+    /// 这也是本仓库「验证要用 `open dist/SafeOut.app`」那条纪律在通知上的投影。
     static var isAvailable: Bool { Bundle.main.bundleIdentifier != nil }
 
     /// 装 delegate、按需申请授权。**启动时调一次**。
@@ -192,7 +192,7 @@ final class EjectNotificationService {
     /// 「main actor-isolated static property … can not be referenced from a Sendable closure」。
     /// `Logger` 是 `Sendable` 的值类型，所以脱离隔离是安全的。
     nonisolated private static let loggerForCallback = Logger(
-        subsystem: "com.diskejector.app", category: "Notification")
+        subsystem: "com.safeout.app", category: "Notification")
 }
 
 /// 「这条提醒该不该再投一条系统通知」的**纯判据**。

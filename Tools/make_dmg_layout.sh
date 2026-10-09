@@ -28,7 +28,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-APP_NAME="DiskEjector"
+APP_NAME="SafeOut"
 VOLNAME="$APP_NAME"
 APP_BUNDLE="$PACKAGE_DIR/Dist/$APP_NAME.app"
 BACKGROUND="$PACKAGE_DIR/Resources/dmg/background.png"
@@ -124,7 +124,7 @@ ln -s /Applications "$STAGING/Applications"
 mkdir -p "$STAGING/.background"
 cp "$BACKGROUND" "$STAGING/.background/background.png"
 
-# 上一次跑挂了留下的卷会把它挤成 "DiskEjector 1" ⇒ 后面的 `tell disk "DiskEjector"`
+# 上一次跑挂了留下的卷会把它挤成 "SafeOut 1" ⇒ 后面的 `tell disk "SafeOut"`
 # 就会 -1728。先清掉。
 if mount | grep -qF "on $MOUNT_POINT "; then
     echo "   （清掉上次残留的挂载卷）"

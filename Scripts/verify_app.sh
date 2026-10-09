@@ -11,13 +11,13 @@
 # 【判据】读**产物**的 Info.plist 与目录结构（不是读 build_app.sh 的源码）——
 #   拿源码跟自己比是「没牙」的守卫（§8.71）。
 #
-# 【用法】./Scripts/verify_app.sh [app路径]      # 默认 Dist/DiskEjector.app
+# 【用法】./Scripts/verify_app.sh [app路径]      # 默认 Dist/SafeOut.app
 # 【退出码】0 = 全部通过；1 = 有**必须修**的问题（缺 ED 公钥 / 缺框架 / 版本号空）
 # =============================================================
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP="${1:-$REPO_ROOT/Dist/DiskEjector.app}"
+APP="${1:-$REPO_ROOT/Dist/SafeOut.app}"
 
 fail=0
 note() { printf '   %s\n' "$1"; }

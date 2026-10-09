@@ -6,7 +6,7 @@ import OSLog
 ///
 /// **与 `os.Logger` 的分工**：本项目同时存在两套日志，职责不同，不要合并。
 /// - `os.Logger`：开发诊断，写入系统日志，用户可在 Console 中按 subsystem 过滤；不落盘。
-/// - ``LogService``：SPEC F7 要求的错误日志，写入 `~/Library/Logs/DiskEjector/error.log`，
+/// - ``LogService``：SPEC F7 要求的错误日志，写入 `~/Library/Logs/SafeOut/error.log`，
 ///   供用户排查或反馈问题时提供。
 ///
 /// 此前 ``LogService`` 已实现、``EjectFailure/logText`` 也已备好，但两边从未接上
@@ -34,14 +34,14 @@ final class LogService: @unchecked Sendable {
 
     private let logURL: URL
     private let lock = NSLock()
-    private let logger = Logger(subsystem: "com.diskejector.app", category: "LogService")
+    private let logger = Logger(subsystem: "com.safeout.app", category: "LogService")
 
     private init() {
         // 拿不到 Library 目录时退回临时目录，而不是强解包导致启动崩溃。
         let libraryURL =
             FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        let logDir = libraryURL.appendingPathComponent("Logs/DiskEjector", isDirectory: true)
+        let logDir = libraryURL.appendingPathComponent("Logs/SafeOut", isDirectory: true)
 
         do {
             try FileManager.default.createDirectory(at: logDir, withIntermediateDirectories: true)
@@ -58,7 +58,7 @@ final class LogService: @unchecked Sendable {
     /// 在访达中定位日志文件（设置面板「诊断」分组的入口）。
     ///
     /// **为什么要有这个入口**：用户报「推出失败」时，日志里已经记下了时间、磁盘与原因，
-    /// 但此前没有任何 UI 能让用户找到它 —— 只能靠口口相传「去 ~/Library/Logs/DiskEjector」。
+    /// 但此前没有任何 UI 能让用户找到它 —— 只能靠口口相传「去 ~/Library/Logs/SafeOut」。
     /// 日志文件可能还不存在（从未失败过），此时退回打开所在目录，避免访达报「找不到文件」。
     func revealLogInFinder() {
         let fileManager = FileManager.default

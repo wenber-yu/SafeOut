@@ -200,7 +200,7 @@ enum AppSettings {
 
     /// 是否接管访达（Finder）的「推出」（读写 UserDefaults）。
     ///
-    /// **为什么默认关（`false`）**：接管是**系统级**的改动 —— 它会让 DiskEjector
+    /// **为什么默认关（`false`）**：接管是**系统级**的改动 —— 它会让 SafeOut
     /// 拦截所有走 `NSWorkspace.unmountAndEjectDevice` 的推出请求（Finder 的推出按钮、
     /// `diskutil eject` 都算），并且为了「不让访达弹它自己那句没用的报错」，
     /// 回调必须**同步阻塞等用户决定**（见 ``EjectHookService`` 的说明）。
@@ -337,7 +337,7 @@ enum AppSettings {
     /// 打开「系统设置 › 隐私与安全性 › 完全磁盘访问」面板。
     ///
     /// 该 URL scheme 是 macOS 跳转到指定隐私子面板的官方方式；
-    /// 直发版需要用户在此处为 DiskEjector 开启开关，lsof 才能列出其他进程。
+    /// 直发版需要用户在此处为 SafeOut 开启开关，lsof 才能列出其他进程。
     nonisolated static func openFullDiskAccessSettings() {
         guard
             let url = URL(

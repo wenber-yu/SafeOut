@@ -7,7 +7,7 @@
 # 响的那一下直接把调用栈打出来。
 #
 # 用法：
-#     Scripts/catch-beep.sh                       # 默认盯 /Applications/DiskEjector.app
+#     Scripts/catch-beep.sh                       # 默认盯 /Applications/SafeOut.app
 #     Scripts/catch-beep.sh <可执行文件路径>        # 盯别的构建产物
 #     Scripts/catch-beep.sh <可执行文件路径> --preview-main-window --preview-settings
 #                                                 # 后面的参数原样传给应用
@@ -25,7 +25,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BIN="${1:-/Applications/DiskEjector.app/Contents/MacOS/DiskEjectorApp}"
+BIN="${1:-/Applications/SafeOut.app/Contents/MacOS/SafeOutApp}"
 shift || true
 APP_ARGS=("$@")
 LOG="${DE_BEEP_LOG:-/tmp/dragejector-beep.log}"
@@ -38,8 +38,8 @@ fi
 
 # 先退掉已经在跑的实例：否则会出现两个菜单栏图标，
 # 而且用户拖的那个未必是被断点盯着的那个进程（那就白测一轮）。
-osascript -e 'tell application "DiskEjector" to quit' >/dev/null 2>&1 || true
-pkill -x DiskEjectorApp >/dev/null 2>&1 || true
+osascript -e 'tell application "SafeOut" to quit' >/dev/null 2>&1 || true
+pkill -x SafeOutApp >/dev/null 2>&1 || true
 sleep 1
 
 LLDB_SRC="$(mktemp -t catch-beep)"

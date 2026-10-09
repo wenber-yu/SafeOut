@@ -72,7 +72,7 @@ enum LaunchAtLoginError: LocalizedError, Equatable {
 @MainActor
 enum LaunchAtLoginManager {
 
-    private static let logger = Logger(subsystem: "com.diskejector.app", category: "LaunchAtLogin")
+    private static let logger = Logger(subsystem: "com.safeout.app", category: "LaunchAtLogin")
 
     /// 持久化键，与 SettingsView 的 Toggle 共用。
     ///

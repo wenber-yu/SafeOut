@@ -93,4 +93,4 @@ jobs:
       #   · 缺 `SUFeedURL` ⇒ 「检查更新」永远成功、永远说「已是最新版本」（§8.94 那个病）。
       # ⇒ 判据读**产物**（Info.plist / 目录 / codesign），不读源码 —— 拿源码跟自己比是没牙的守卫。
       - name: 产物自检（读打出来的包，不是读源码）
-        run: ./Scripts/verify_app.sh Dist/DiskEjector.app
+        run: ./Scripts/verify_app.sh Dist/SafeOut.app

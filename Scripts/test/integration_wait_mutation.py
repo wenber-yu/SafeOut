@@ -105,7 +105,7 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-INTEGRATION = REPO / "Tests/DiskEjectorAppTests/IntegrationEjectTests.swift"
+INTEGRATION = REPO / "Tests/SafeOutAppTests/IntegrationEjectTests.swift"
 
 # 整个套件一起跑：swift-testing 的 --filter 认名字正则，用套件名最稳（不会匹配到 0 条）。
 #

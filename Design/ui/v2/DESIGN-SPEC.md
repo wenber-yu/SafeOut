@@ -1,4 +1,4 @@
-# DiskEjector 界面设计规范 v2
+# SafeOut 界面设计规范 v2
 
 > 应用中文名：磁盘推出助手 · macOS 14+ · SwiftUI · 2026-09
 > 设计稿：`Design/ui/v2/`（`index.html` 为总览入口）
@@ -10,8 +10,8 @@
 >
 > | 旧路径 | 现路径 |
 > |---|---|
-> | `DiskEjector-UI-Design/…` | `Design/ui/…` |
-> | `DiskEjector-Icons/…` | `Design/icon-candidates/…` |
+> | `SafeOut-UI-Design/…` | `Design/ui/…` |
+> | `SafeOut-Icons/…` | `Design/icon-candidates/…` |
 > | `assets/icons/…` | `Design/app-icon/…` |
 > | `assets/screenshots/…` | `Design/screenshots/…` |
 > | `scripts/…` | `Scripts/…` |
@@ -383,8 +383,8 @@
 
 ### 打包（同日追加）
 
-设计落地后重出了 `dist/DiskEjector.app`（2026-09-15 17:18，含上述全部 UI 改动；
-签名档位 = 本机自签 `DiskEjector Dev Signing`，Hardened Runtime 已开、未启用 App Sandbox）。
+设计落地后重出了 `dist/SafeOut.app`（2026-09-15 17:18，含上述全部 UI 改动；
+签名档位 = 本机自签 `SafeOut Dev Signing`，Hardened Runtime 已开、未启用 App Sandbox）。
 打包过程中撞到四个**与设计无关、但会挡住交付**的问题，一并记在这里
 （**2026-09-17 的后续打包坑与「产物能跑」验证见 §8.32；
 同日「关掉最后一条未覆盖 + 清理遗留」见 §8.33**）：
@@ -442,7 +442,7 @@
     修好测量手法后，原有的「头部 + 内容 + 底留白 ≤ 面板高」自动变得有意义
     （修复前 52 + 910 + 16 = 978 > 566 会红）。
 
-> **顺带加了个出图工具**：`Tests/DiskEjectorAppTests/SnapshotRenderTests.swift`
+> **顺带加了个出图工具**：`Tests/SafeOutAppTests/SnapshotRenderTests.swift`
 > 把各屏幕离屏渲染成 PNG（`DE_SNAPSHOTS=1 swift test --filter 导出设计快照`，
 > 图落 `/tmp/de-snapshots/`）。**默认跳过**，因为它是唯一会写文件的测试，不该有副作用。
 > 第 10 条这个缺陷就是它抓到的 —— 布局契约测试断得了数字，断不了「看起来对不对」。
@@ -505,7 +505,7 @@
    各给两条；`.notFound` / `.other` 返回空数组，UI 只显示原因句与日志提示 ——
    这两档的原因句本身已经把话说完了，再列清单只是换个说法重复。设计稿原则是
    「给出可执行的下一步」，没话可说时不该硬凑。
-2. **警示里的品牌名走 `appName` 本地化键**，不硬编码设计稿里的 `DiskEjector`：
+2. **警示里的品牌名走 `appName` 本地化键**，不硬编码设计稿里的 `SafeOut`：
    中文界面里应用叫「磁盘推出助手」，正文突然出现英文品牌名是断裂的。
 3. **原因清单必须放进 `accessoryView`，不能留在 `informativeText`。**
    `NSAlert` 的布局顺序**固定**为「messageText → informativeText → accessoryView → 按钮」，
@@ -552,9 +552,9 @@
 **验收方式分两层**（缺一层就有盲区）：
 
 - **离屏出图**（`DE_SNAPSHOTS=1`）：5 张弹窗图（明暗 × 两变体 + 无进程态），管「版式对不对」。
-- **真机预览**（`DiskEjectorApp --preview-alerts`）：打印
+- **真机预览**（`SafeOutApp --preview-alerts`）：打印
   `key / 上屏 / 层级 / 可成为key / 尺寸 / 圆角 / 应用前台`，管「窗口能不能用」。
-- **按键路径自检**（`DiskEjectorApp --preview-alerts-keys`）：进程自己投递合成回车/Esc
+- **按键路径自检**（`SafeOutApp --preview-alerts-keys`）：进程自己投递合成回车/Esc
   走完整分发链，退出码即结论。见 §8.3。
 
 **修完的验收**：139 条测试全绿、三道门槛全绿（覆盖率 72.33%）、
@@ -632,7 +632,7 @@ SF Symbol 在 14pt 字号下的包围盒是 **17pt 宽**（`exclamationmark.tria
 原先是 `弹窗高度与设计稿实测值一致`（±12pt）。它看着很稳，实际同时被上面两件事绕过：
 基准值取自错误的量测时刻、容差刚好兜住 11pt。
 
-现在 `Tests/DiskEjectorAppTests/AlertLayoutTests.swift` 逐块钉住（±2pt）：
+现在 `Tests/SafeOutAppTests/AlertLayoutTests.swift` 逐块钉住（±2pt）：
 宽度 400 / 头部 58.5 / 区块 81.63（A）、83.72（B）/ 提示块 72（A）、54（B）/
 操作区 54 / 总高 330.13（A）、314.22（B）/ 警示块图标列 14 / 自然行高表。
 
@@ -649,7 +649,7 @@ SF Symbol 在 14pt 字号下的包围盒是 **17pt 宽**（`exclamationmark.tria
 **应用自己的事件队列**，之后的分发路径（`NSApplication.sendEvent` → 主菜单 key equivalent
 → key window 的 key equivalent → 第一响应者 → 响应链）与真实敲键**完全一致**。
 
-`DiskEjectorApp --preview-alerts-keys` 就是这么做的，退出码即结论：
+`SafeOutApp --preview-alerts-keys` 就是这么做的，退出码即结论：
 
 ```
 A · 占用弹窗 → closeAndEject      （回车 → 默认按钮）
@@ -1076,8 +1076,8 @@ SwiftUI 会拿这个 1.79e308 去建 AppKit 约束，AppKit 抛
 「材质有没有被归一化」在离屏测试里永远是绿的。所以按既有范式补了一条自检路径：
 
 ```bash
-DiskEjectorApp --preview-popover        # 人工核对：面板留在屏幕上
-DiskEjectorApp --preview-popover-keys   # 自动验证：跑完即退出，退出码 0 = 全通过
+SafeOutApp --preview-popover        # 人工核对：面板留在屏幕上
+SafeOutApp --preview-popover-keys   # 自动验证：跑完即退出，退出码 0 = 全通过
 ```
 
 四条断言：面板真的上屏、`contentSize.width` = 360、`contentSize.height` = 视图量高
@@ -1111,7 +1111,7 @@ A · 菜单面板：上屏=true 窗口=386.0×306.0 contentSize=360.0×280.0 视
 #### 8.7.9 两条口径提醒
 
 1. **覆盖率门槛不含 `Views/`**。`scripts/coverage.sh` 的
-   `-ignore-filename-regex='\.build|/Tests/|Views/|Sources/DiskEjectorApp/'`
+   `-ignore-filename-regex='\.build|/Tests/|Views/|Sources/SafeOutApp/'`
    把整个视图层与 App 入口都排除了，只统计核心逻辑（74.42%）。
    所以**视图层的唯一守卫是布局契约测试** —— 改视觉时别指望覆盖率会掉。
    （本轮三次跑出同一个 74.42% 曾让人怀疑是缓存，查过：profdata 时间戳是新的，是口径如此。）
@@ -1380,7 +1380,7 @@ if lights.maxX > SettingsMetrics.headerTitleMinX - 4 { /* 红 */ }
 - 三道 CI 门槛全绿：零警告构建 ✓、`swift-format lint --strict` 零违规 ✓、
   覆盖率 **77.63% / 77.31%**（门槛 40%）✓
   - 与第六轮**数值完全相同**：覆盖率口径用 `-ignore-filename-regex` 排除了
-    `Views/` 与 `Sources/DiskEjectorApp/`（见 §8.7.9），而本轮新增的测试
+    `Views/` 与 `Sources/SafeOutApp/`（见 §8.7.9），而本轮新增的测试
     恰好只覆盖这两个目录
 - 出图 25 张、对照图 6 组，**与第六轮完全一致，无新增偏差**（设置面板 440×566 ✓）
 - 真机自检**五条**全通过（打包后的 `.app`，退出码均为 0）：
@@ -1555,7 +1555,7 @@ static let titleBarBandBottomPadding: CGFloat = 20  // 52 − 32
 #5  [AppKit]         -[NSApplication(NSEventRouting) sendEvent:]
 #6  [AppKit]         -[NSApplication _handleEvent:]
 #7  [AppKit]         -[NSApplication run]
-#8  [DiskEjectorApp] static DiskEjectorApp.AppDelegate.main() -> ()
+#8  [SafeOutApp] static SafeOutApp.AppDelegate.main() -> ()
 ```
 
 即：**按键沿响应链一路没人接 → 落到窗口兜底 `noResponderFor(_:)` → 敲钟**。
@@ -1616,14 +1616,14 @@ AppKit 的兜底行为偏偏是敲钟。
    **唯一可靠的办法是投一次真实点击**，触发系统自己的 click-to-activate。
 2. **键盘事件只送给「活跃应用」**，鼠标事件才按坐标送给最上层窗口 —— 这是两者最大的区别。
    所以「窗口在最上面」**不等于**「应用是活跃的」：实测 `CGWindowListCopyWindowInfo` 里
-   DiskEjector 的两个窗口排在最前，而 `NSWorkspace.frontmostApplication` 是别的应用。
+   SafeOut 的两个窗口排在最前，而 `NSWorkspace.frontmostApplication` 是别的应用。
    驱动器必须**逐次回读 `isActive` 确认**，确认不了就如实报告「实验作废」，绝不在无效前提下继续。
 
 （附带发现：本机 WorkBuddy 会在 agent 执行命令时抢走前台，所以实验必须「应用自激活后立刻做」。）
 
 #### 8.15.8 修法
 
-新增 ``KeySilentWindow``（`Sources/DiskEjectorApp/KeySilentWindow.swift`），
+新增 ``KeySilentWindow``（`Sources/SafeOutApp/KeySilentWindow.swift`），
 覆盖兜底方法，**只吞 `keyDown:`，其余照旧交给 `super`**：
 
 ```swift
@@ -1753,10 +1753,10 @@ this method does nothing"* —— 照字面读，藏了按钮 ⌘W 就哑了。
 
 | 文件 | 改动 |
 |---|---|
-| `Sources/DiskEjectorApp/SettingsWindow.swift` | **新增**。继承 `KeySilentWindow`，在 `init` 里把三个标准按钮 `isHidden = true`；带 `standardButtonsAreHidden(in:)` 供自检与单测共用 |
-| `Sources/DiskEjectorApp/KeySilentWindow.swift` | 去掉 `final` —— Swift 单继承，`SettingsWindow` 要继承它（否则得把 `noResponderFor(_:)` 再抄一遍） |
+| `Sources/SafeOutApp/SettingsWindow.swift` | **新增**。继承 `KeySilentWindow`，在 `init` 里把三个标准按钮 `isHidden = true`；带 `standardButtonsAreHidden(in:)` 供自检与单测共用 |
+| `Sources/SafeOutApp/KeySilentWindow.swift` | 去掉 `final` —— Swift 单继承，`SettingsWindow` 要继承它（否则得把 `noResponderFor(_:)` 再抄一遍） |
 | `Sources/Views/SettingsView.swift` | 删掉 `Color.clear.frame(width: 52)` 让位块、`trafficLightInset`、`headerTitleMinX`；`headerPaddingLeading` 由 20 **回到设计稿的 16** |
-| `Sources/DiskEjectorApp/DiskEjectorApp.swift` | `makeSettingsWindow()` 改用 `SettingsWindow`；真机自检的第 4、5 条（交通灯基线 / 不压标题）换成第 4 条「三个系统按钮都必须藏着」 |
+| `Sources/SafeOutApp/SafeOutApp.swift` | `makeSettingsWindow()` 改用 `SettingsWindow`；真机自检的第 4、5 条（交通灯基线 / 不压标题）换成第 4 条「三个系统按钮都必须藏着」 |
 | `Tests/…/SettingsWindowTests.swift` | 新增两条断言（见 8.17.7）；补 `.closable` 的配置断言 |
 | `Tests/…/SettingsLayoutTests.swift` | 墨迹起点那条的期望值由「让位 + 前导」改成**前导内边距本身**，并打印实测值 |
 
@@ -2271,7 +2271,7 @@ svg 定尺寸的规则** → 计算尺寸是 **`0px × 0px`**。HTML 里明明�
 
 | 项 | 设计稿 | 实现 | 依据 |
 |---|---|---|---|
-| popover 退出项**文案** | `退出 DiskEjector` | `退出磁盘推出助手`（⌘Q） | 与主菜单 ⌘Q 项**逐字一致**。同一个动作两个名字，用户会以为是两件事（`MenuPopoverView.swift` 注释 + `MainMenuTests.面板的退出项与主菜单退出项同名`） |
+| popover 退出项**文案** | `退出 SafeOut` | `退出磁盘推出助手`（⌘Q） | 与主菜单 ⌘Q 项**逐字一致**。同一个动作两个名字，用户会以为是两件事（`MenuPopoverView.swift` 注释 + `MainMenuTests.面板的退出项与主菜单退出项同名`） |
 | 设置窗版本行**渠道名** | `Developer ID 直发版` | `官网直发版` | 代码注释：一律写成 Developer ID 会让使用者误判自己已具备分发条件。构建号来自提交数，是**运行时活数字**（设计稿的 `1.0.0 · 构建 42` 只是样本值） |
 
 #### 8.22.5 第三处：`IconBadge.Style` 里两个**死 case**，而且规格是错的
@@ -2321,7 +2321,7 @@ svg 定尺寸的规则** → 计算尺寸是 **`0px × 0px`**。HTML 里明明�
 `Bundle.main.infoDictionary?["CFBundleShortVersionString"]` / `["CFBundleVersion"]`，
 兜底值是 `"1.0.0"` / `"1"`。走查快照由**测试进程**渲染，它的 `Bundle.main` 是 xctest runner，
 **没有这两个键** → 于是落到兜底值。**真机 app 的值是 `2026.09.13.1` / `44`**
-（`dist/DiskEjector.app/Contents/Info.plist`，由 `build_app.sh` 按提交数写入）。
+（`dist/SafeOut.app/Contents/Info.plist`，由 `build_app.sh` 按提交数写入）。
 
 > ⚠️ 所以**绝不能**为了让对照图「对上」去把兜底值改成 `42` ——
 > 那会让真机上万一读不到 plist 时显示一个**假版本号**。设计稿里的 `1.0.0 · 构建 42`
@@ -2511,7 +2511,7 @@ guard let output else { task.terminate(); return nil }         // ← 永远到�
 | 交通灯中心 | 真机实测 **26.0pt**（内容带 52 的中心） |
 | 打包安装 | `/Applications` 已同步，版本 `2026.09.13.1 / 44`，`get-task-allow` 0 次 |
 
-改动文件：`DesignTokens.swift`、`DiskEjectorApp.swift`、`GlassViews.swift`、
+改动文件：`DesignTokens.swift`、`SafeOutApp.swift`、`GlassViews.swift`、
 `ContentView.swift`、`SettingsView.swift`、`OccupancyDetector.swift`；
 新增测试 `SubprocessOutputTests.swift`、`VisualStyleTests.swift`。
 
@@ -2634,7 +2634,7 @@ static func trafficLightNudge(currentCenter: CGPoint, windowHeight: CGFloat) -> 
 
 改动文件：`DesignTokens.swift`（新增 `titleBarInsetCenter` /
 `systemTrafficLightCenterFromLeft` / `Spacing.titleBarTrailing`，删除两个 `trafficLightNudge*`）、
-`DiskEjectorApp.swift`（幂等对齐 + 上屏后补一次 + 像素断言）、
+`SafeOutApp.swift`（幂等对齐 + 上屏后补一次 + 像素断言）、
 `ContentView.swift`（trailing 用语义令牌）；新增测试 `TrafficLightAlignmentTests.swift`。
 
 ⚠️ **遗留风险（已写进代码注释）**：窗口 `resize` 会把交通灯**整个拨回**系统默认位置
@@ -2717,7 +2717,7 @@ static func showsSkeleton(gatePassed: Bool, hasFinishedInitialLoad: Bool) -> Boo
 | 打包安装 | `/Applications` 版本 `2026.09.13.1 / 44`，签名 valid |
 
 改动文件：`ContentView.swift`（骨架判据改为派生 + 纯函数）、
-`DiskEjectorApp.swift`（新增真机自检）；新增测试 `EmptyStateTests.swift`。
+`SafeOutApp.swift`（新增真机自检）；新增测试 `EmptyStateTests.swift`。
 
 ---
 
@@ -2806,7 +2806,7 @@ static func showsSkeleton(gatePassed: Bool, hasFinishedInitialLoad: Bool) -> Boo
 
 ### §8.26.5 一条「红得对」的断言
 
-新加的 `AppVersionInfoTests.打包产物里确实写入了版本号与构建号` 读 `dist/DiskEjector.app`
+新加的 `AppVersionInfoTests.打包产物里确实写入了版本号与构建号` 读 `dist/SafeOut.app`
 的真实 `Info.plist`。改完 `build_app.sh` 后它**立刻变红**：
 
 ```
@@ -2826,7 +2826,7 @@ static func showsSkeleton(gatePassed: Bool, hasFinishedInitialLoad: Bool) -> Boo
 
 ### §8.26.6 自检只打印、不当断言（以及为什么必须打印）
 
-自检的常规跑法是**裸可执行**（`.build/debug/DiskEjectorApp`），
+自检的常规跑法是**裸可执行**（`.build/debug/SafeOutApp`），
 此时 `Bundle.main.bundleIdentifier == nil`、`infoDictionary` 里 **0 个键** →
 界面落到兜底 `1.0.0 / 1`。断言会每次假红，所以只打印。
 
@@ -2848,7 +2848,7 @@ static func showsSkeleton(gatePassed: Bool, hasFinishedInitialLoad: Bool) -> Boo
 | 打包安装 | `/Applications` 版本行 `2026.09.13.1 · 44`（从 `.app` 读取）；脏构建提示行正常显示 |
 
 改动文件：`build_app.sh`、新增 `Sources/Settings/AppVersionInfo.swift`、
-`SettingsView.swift`、`DiskEjectorApp.swift`、`Localizable.xcstrings`（新增
+`SettingsView.swift`、`SafeOutApp.swift`、`Localizable.xcstrings`（新增
 `versionDirtyNoticeFormat`，zh-Hans / zh-Hant / en 三语）；
 新增测试 `AppVersionInfoTests.swift`。
 
@@ -2964,7 +2964,7 @@ dumpMainWindowState(...)              // ← 抓一次就断言
 | 变异验证 | 水平补偿归零 → 两条断言**双双变红**，且未触发重试 |
 | 空状态守卫 | 首次真机执行并通过（列表区墨迹 **11151**，阈值 2000） |
 
-改动：`DiskEjectorApp.swift`（新增 `waitUntilMainWindowIsKey()`；
+改动：`SafeOutApp.swift`（新增 `waitUntilMainWindowIsKey()`；
 `measureRedLightInkCenter` 改为轮询重试 + 失败信息带激活状态）。
 
 ---
@@ -2986,7 +2986,7 @@ dumpMainWindowState(...)              // ← 抓一次就断言
 
 | 假设 | 实验 | 结果 |
 |---|---|---|
-| 是我这轮改的 `DiskEjectorApp.swift` | `git stash` 掉改动后重跑 | ❌ 排除：TOTAL **逐字段一致**（1342 行 / 369 未覆盖） |
+| 是我这轮改的 `SafeOutApp.swift` | `git stash` 掉改动后重跑 | ❌ 排除：TOTAL **逐字段一致**（1342 行 / 369 未覆盖） |
 | 增量构建导致插桩不全 | 独立干净构建：`swift test --enable-code-coverage --scratch-path .build/cov-clean` | ❌ 排除：**逐文件完全一致** |
 | 覆盖率脚本取错了产物 | `find .build -name default.profdata` | ❌ 排除：只有一个候选 |
 | 集成测试早退（`guard canAttachDiskImage()`） | 看套件耗时 | ❌ 排除：**2.022s**，且早退路径会 `Issue.record` 变红 |
@@ -3027,7 +3027,7 @@ dumpMainWindowState(...)              // ← 抓一次就断言
 | 变异验证 | 水平补偿归零 → 对称断言与像素断言**双双变红**，且未触发重试 |
 | 空状态守卫 | 首次真机执行并通过（列表区墨迹 **11151**，阈值 2000） |
 
-改动：`DiskEjectorApp.swift`（新增 `waitUntilMainWindowIsKey()`；
+改动：`SafeOutApp.swift`（新增 `waitUntilMainWindowIsKey()`；
 `measureRedLightInkCenter` 改为轮询重试 + 失败信息带激活状态）。
 
 ### §8.28.6 坐实（2026-09-17 19:10，外置盘插回后重跑）
@@ -3035,8 +3035,8 @@ dumpMainWindowState(...)              // ← 抓一次就断言
 `coverage.sh` → **75.56%**（`TOTAL … 1342 328 75.56%`）。75.56 − 72.50 = **3.06pp**。
 
 **为什么这次是干净的 A/B**：`coverage.sh` 的 `-ignore-filename-regex` 排除了 `Views/`、
-`Sources/DiskEjectorApp/`、`/Tests/`，而本轮改的恰好就是 `ContentView.swift` /
-`DiskEjectorApp.swift` / `EmptyStateTests.swift` —— **一个都不在统计口径内**。
+`Sources/SafeOutApp/`、`/Tests/`，而本轮改的恰好就是 `ContentView.swift` /
+`SafeOutApp.swift` / `EmptyStateTests.swift` —— **一个都不在统计口径内**。
 所以两份报告的分母**逐位相同（1342 行）**，差异只可能来自「哪几行被执行」。
 
 **逐文件 diff**（`.build/coverage-ab.txt` 18:04 拔盘 vs `.build/cov-runs/plugged.log` 19:10 插盘）：
@@ -3337,7 +3337,7 @@ wenbo-data  4 TB
 | 变异验证 B | 不记 store → **身份自证红**（退出码 1） |
 
 改动：`ContentView.swift`（store 可注入 + `refreshDisks` 刷注入的 store）、
-`DiskEjectorApp.swift`（`makeMainWindow` / `setupMainWindow` 带参、`mainWindowStore`、
+`SafeOutApp.swift`（`makeMainWindow` / `setupMainWindow` 带参、`mainWindowStore`、
 `--preview-main-window-empty[-keys]`、先让位 + 身份自证 + 门槛模式强制浅色）、
 `EmptyStateTests.swift`（新增离屏守卫 + 更新文件头分工说明）、
 `MainMenuTests.swift`（修掉一条既有警告：非 Optional 上用了 `?? ""`）。
@@ -3359,7 +3359,7 @@ init(skipsInitialRefresh: Bool = false, store: DiskListStore? = nil,
      occupancyStore: OccupancyStore? = nil)
 ```
 
-新增 `Tests/DiskEjectorAppTests/ViewFixtures.swift`：**任何渲染 `ContentView` 的测试都走它**，
+新增 `Tests/SafeOutAppTests/ViewFixtures.swift`：**任何渲染 `ContentView` 的测试都走它**，
 不要写 `ContentView()`。它提供 `stores()`（**配对**的列表 + 占用）、`mainWindow()`、
 以及 `mainWindowHandle()`（走生产装配路径、只换数据来源）。
 
@@ -3445,7 +3445,7 @@ init(skipsInitialRefresh: Bool = false, store: DiskListStore? = nil,
 | 覆盖率变化 | 76.08% → **70.57%**：其中 **−3.06pp 是假覆盖被戳破**、约 −2.4pp 是 `DiskListStore`/`OccupancyStore` 的暗道一并归零、**+3.06pp** 由新增测试补回 |
 | 硬件解耦 | `DiskService.fetchExternalDisks()` 在测试里调用 **0 次**；`DiskListStore.shared` 初始化 **0 次** |
 
-改动：`ContentView.swift`（`occupancyStore` 可注入）、`DiskEjectorApp.swift`
+改动：`ContentView.swift`（`occupancyStore` 可注入）、`SafeOutApp.swift`
 （`makeMainWindow` / `setupMainWindow` 带 `occupancyStore:`、预览侧成对注入）、
 `DiskService.swift`（`makeDiskInfo` 改 `internal` 并写清两处静默退化）、
 `ViewFixtures.swift`（新增）、`DiskServiceTests.swift`（新增）、
@@ -3523,7 +3523,7 @@ error: cannot assign to property: 'volumeTotalCapacity' is a get-only property
 **② 注入点要有默认值，但「生产默认实现」必须另有一条测试。**
 
 `fetchExternalDisks(mountedVolumeURLs: @Sendable () -> [URL] = DiskService.liveMountedVolumeURLs)` ——
-默认值让生产调用方一行都不用改（`DiskListStore` / `DiskEjectorApp` 全是无参调用）。
+默认值让生产调用方一行都不用改（`DiskListStore` / `SafeOutApp` 全是无参调用）。
 
 代价是 `liveMountedVolumeURLs()` 在单测里**一次都不执行**，被死行判定点了出来。
 补一条：
@@ -3622,7 +3622,7 @@ guard let session = DASessionCreate(kCFAllocatorDefault) else {
 | 硬件解耦 | 13 条 `DiskServiceTests` 全部不依赖本机插了什么盘（`/` 与临时目录是唯一夹具） |
 
 改动：`Sources/Services/DiskService.swift`（拆三层 + `mountedVolumeURLs` 注入点 +
-`makeDiskInfo` 纯组装版）、`Tests/DiskEjectorAppTests/DiskServiceTests.swift`（3 → 13 条）。
+`makeDiskInfo` 纯组装版）、`Tests/SafeOutAppTests/DiskServiceTests.swift`（3 → 13 条）。
 
 **顺带修好的技能**（`swift-coverage-forensics`）：死行判定从「该行存在一个 count==0 的
 segment」改成「**该行所有 segment 的 count 都为 0**」—— 实测 `Logger.debug("… \(x, privacy: .public)")`
@@ -3633,7 +3633,7 @@ segment」改成「**该行所有 segment 的 count 都为 0**」—— 实测 `
 
 ## §8.32 分发产物追平，以及补上「产物能跑」这一关（2026-09-17）
 
-§8.31 结束后 `dist/DiskEjector.dmg` / `.zip` 仍停在 **`2026.09.13.1`**（文件时间 9-15 18:12），
+§8.31 结束后 `dist/SafeOut.dmg` / `.zip` 仍停在 **`2026.09.13.1`**（文件时间 9-15 18:12），
 落后当前 tag **三个版本**。根因不是打包脚本坏了，而是**那几轮的 `build_app.sh` 都没带 `PACKAGE=1`** ——
 打包段（`create_dmg` / `create_zip`）只在 `PACKAGE=1` 或 `NOTARIZE=1` 时才执行。
 
@@ -3646,12 +3646,12 @@ segment」改成「**该行所有 segment 的 count 都为 0**」—— 实测 `
 ```
 hdiutil: create failed - 操作不被允许
 [sandbox] 命令被沙箱拦截，以下操作被拒绝：
-  - /Volumes/DiskEjector/.BC.D_xxxxxx (file-write-unlink)
+  - /Volumes/SafeOut/.BC.D_xxxxxx (file-write-unlink)
 ```
 
 两点值得注意：
 
-1. **它已经成功挂上了 `/Volumes/DiskEjector`** —— 被拒的是往**挂载点写临时文件**。
+1. **它已经成功挂上了 `/Volumes/SafeOut`** —— 被拒的是往**挂载点写临时文件**。
    所以「挂载被禁」这个直觉是错的，报错点在「写」不在「挂载」。
 2. **两次都带着提权开关，两次都失败**。差别在于：我把它们放进了**后台**。
 
@@ -3666,7 +3666,7 @@ hdiutil: create failed - 操作不被允许
 > ⚠️ **2026-09-18 18:00 复测：上面这条前置条件已经不成立。** 同一台机器上，整条打包链
 > **不加任何沙箱豁免、且放在后台跑**，43 秒成功出 dmg + zip，输出里没有 `[sandbox]` 拦截；
 > 探针也复测过 —— `hdiutil create -volname DmgProbe …` 在沙箱内**退出码 0**，
-> 而真实打包用的就是 `-volname DiskEjector`（同样要写 `/Volumes/DiskEjector`）。
+> 而真实打包用的就是 `-volname SafeOut`（同样要写 `/Volumes/SafeOut`）。
 >
 > 所以「前台 + 提权」应降级为**条件触发**，而不是无条件前置：
 > **先不加豁免跑一遍**（成本 43 秒，失败也是干净的）→ 只有真看到 `[sandbox] 命令被沙箱拦截`
@@ -3689,7 +3689,7 @@ hdiutil: create failed - 操作不被允许
 脚本每次重建都先 `rm -rf "$APP_BUNDLE"`，而 bundle 有 **56 个文件** > 单轮删除配额（**50**）。
 一旦触发，**后续 `rm` 全被拦** → `create_zip` 里的 `rm -f` 也跟着失败。
 
-做法：**每次重跑前先 `mv dist/DiskEjector.app .build/appbak/…`**。
+做法：**每次重跑前先 `mv dist/SafeOut.app .build/appbak/…`**。
 `mv` 是重命名、**不计删除**；且 `rm -rf` 对**不存在**的路径也不计数。
 
 副作用：`appbak/` 累积到 **45 个历史 bundle（159 MB）**，见 §8.32.8。
@@ -3709,9 +3709,9 @@ hdiutil: create failed - 操作不被允许
 
 | 产物 | 验法 | 结果 |
 |---|---|---|
-| `DiskEjector.app` | `PlistBuddy` 读版本 + `codesign --verify --deep --strict` | `2026.09.17.4 / 50`；`valid on disk` + `satisfies its Designated Requirement` |
-| `DiskEjector.zip` | `unzip -p … Info.plist` 读**归档内**的版本 | `2026.09.17.4 / 50` |
-| `DiskEjector.dmg` | `hdiutil attach -readonly -nobrowse` → 读版本 + 看替身 → `detach` | CRC32 通过；`2026.09.17.4 / 50`；`Applications -> /Applications`；`disk7 ejected` |
+| `SafeOut.app` | `PlistBuddy` 读版本 + `codesign --verify --deep --strict` | `2026.09.17.4 / 50`；`valid on disk` + `satisfies its Designated Requirement` |
+| `SafeOut.zip` | `unzip -p … Info.plist` 读**归档内**的版本 | `2026.09.17.4 / 50` |
+| `SafeOut.dmg` | `hdiutil attach -readonly -nobrowse` → 读版本 + 看替身 → `detach` | CRC32 通过；`2026.09.17.4 / 50`；`Applications -> /Applications`；`disk7 ejected` |
 
 > **判据：归档类产物要读「归档里面」的版本，不要读旁边那个 `.app` 的。**
 > 上一轮正是靠「解出 zip 里的版本」才发现它落后三个 tag —— **只看文件时间戳会以为是好的**。
@@ -3722,13 +3722,13 @@ hdiutil: create failed - 操作不被允许
 **直接执行挂载卷里那个可执行文件**，跑两条 `-keys` 自检：
 
 ```bash
-hdiutil attach -readonly -nobrowse dist/DiskEjector.dmg
-/Volumes/DiskEjector/DiskEjector.app/Contents/MacOS/DiskEjectorApp --preview-settings-keys
+hdiutil attach -readonly -nobrowse dist/SafeOut.dmg
+/Volumes/SafeOut/SafeOut.app/Contents/MacOS/SafeOutApp --preview-settings-keys
 ```
 
 | 自检 | 结果 |
 |---|---|
-| `--preview-settings-keys` | **EXIT 0**；版本行 `2026.09.17.4 · 50 · bundle=/Volumes/DiskEjector/DiskEjector.app`；dirty=0；窗口 440×566、玻璃铺满整窗、无红绿灯 |
+| `--preview-settings-keys` | **EXIT 0**；版本行 `2026.09.17.4 · 50 · bundle=/Volumes/SafeOut/SafeOut.app`；dirty=0；窗口 440×566、玻璃铺满整窗、无红绿灯 |
 | `--preview-main-window-keys` | **EXIT 0**；窗口 800×520；交通灯**两方向中心都是 26.0pt**（差 0.0）；真机像素量 25.75pt / 592 像素；列表 **2 块真实磁盘** |
 
 **为什么这一步信息量更大**：版本行里的 `bundle=` 指向的是**挂载卷里那个路径**，
@@ -3767,7 +3767,7 @@ hdiutil attach -readonly -nobrowse dist/DiskEjector.dmg
 
 | 项 | 结果 |
 |---|---|
-| `dist/DiskEjector.dmg` / `.zip` | **`2026.09.17.4 / 50`**（原先停在 `2026.09.13.1`） |
+| `dist/SafeOut.dmg` / `.zip` | **`2026.09.17.4 / 50`**（原先停在 `2026.09.13.1`） |
 | dmg CRC32 | 通过；`Applications -> /Applications` 替身齐备；已干净卸载 |
 | 从挂载卷跑自检 | 两条 `-keys` 均 **EXIT 0** |
 | `/Volumes` 残留 | 无（只剩 `Macintosh HD` / TimeMachine 快照 / `wenbo-data`） |
@@ -3825,7 +3825,7 @@ main-window-light.png / main-window-dark.png   ← 一直是 DiskListStore.share
 `SnapshotRenderTests` 只在 `DE_SNAPSHOTS=1` 下跑（它是唯一会写文件的测试）——
 **于是「多盘 / 忙态 / 紧凑行」在 CI 里一条断言都没有**。光出图是「有画面、没守卫」。
 
-新增 `Tests/DiskEjectorAppTests/MainWindowDiskListTests.swift`（5 条，机器无关）。
+新增 `Tests/SafeOutAppTests/MainWindowDiskListTests.swift`（5 条，机器无关）。
 
 **判据选「琥珀条」，不选「深色墨迹」**：墨迹只能回答「这一片画了东西」，
 回答不了「画了**几行**」「哪几行是忙的」—— 文字、容量条、按钮全都会贡献墨迹，混在一起分不开。
@@ -3883,9 +3883,9 @@ main-window-light.png / main-window-dark.png   ← 一直是 DiskListStore.share
 **之后同轮所有 `rm` 都会被拦**（§8.32.3 踩过）。出路是 `mv`（**重命名不计删除**）：
 
 ```bash
-mv .build/appbak ~/.Trash/DiskEjector-appbak-20260917
+mv .build/appbak ~/.Trash/SafeOut-appbak-20260917
 mkdir -p .build/probe-keep && mv .build/probe/*.swift .build/probe/*.py .build/probe-keep/
-mv .build/probe ~/.Trash/DiskEjector-probe-20260917
+mv .build/probe ~/.Trash/SafeOut-probe-20260917
 mv .build/probe-keep .build/probe
 ```
 
@@ -3916,10 +3916,10 @@ mv .build/probe-keep .build/probe
 对它的贡献是恒定的。
 
 改动：`Sources/Views/ContentView.swift`（注释）、
-`Tests/DiskEjectorAppTests/MainWindowDiskListTests.swift`（新增）、
-`Tests/DiskEjectorAppTests/ViewFixtures.swift`（新增 `stores(disks:occupancy:)` /
+`Tests/SafeOutAppTests/MainWindowDiskListTests.swift`（新增）、
+`Tests/SafeOutAppTests/ViewFixtures.swift`（新增 `stores(disks:occupancy:)` /
 `mainWindow(disks:occupancy:)`，并修掉「例外只有出图」那句过期话）、
-`Tests/DiskEjectorAppTests/SnapshotRenderTests.swift`（+3 张图、`fixtureDisk` 夹具、修掉文件头缺口说明）、
+`Tests/SafeOutAppTests/SnapshotRenderTests.swift`（+3 张图、`fixtureDisk` 夹具、修掉文件头缺口说明）、
 本文件。
 
 ---
@@ -4052,8 +4052,8 @@ CLI 那一档**单独出一张图**（`row-busy-cli-light`，`tail` + `executabl
 | 变异验证 | 1 条，抓到预期断言（544 → 0） |
 | 产品代码改动 | **只有注释**（`ProcessChip.iconView` 补了回落分支的说明）→ 无行为变更 |
 
-改动：`Tests/DiskEjectorAppTests/SnapshotRenderTests.swift`（`SampleApp` + 样本与设计稿同源 +
-`row-busy-cli-light`）、`Tests/DiskEjectorAppTests/ProcessChipLayoutTests.swift`（+1 条）、
+改动：`Tests/SafeOutAppTests/SnapshotRenderTests.swift`（`SampleApp` + 样本与设计稿同源 +
+`row-busy-cli-light`）、`Tests/SafeOutAppTests/ProcessChipLayoutTests.swift`（+1 条）、
 `Sources/Views/DesignSystemComponents.swift`（注释）、本文件。
 
 ---
@@ -4068,7 +4068,7 @@ CLI 那一档**单独出一张图**（`row-busy-cli-light`，`tail` + `executabl
 | 提交 | `0d02ef2`、`c6578c8`、`06ed19e` 三个（此前已提交、未推送） |
 | 推送 | `a2c6d50..06ed19e  master -> master` |
 | tag | **`v2026.09.17.5`**（附注，指向 `06ed19e`）＋ 补推漏掉的 `v2026.09.17.1` |
-| 产物 | `dist/DiskEjector.dmg`（2 126 490 B）＋ `dist/DiskEjector.zip`（1 431 125 B） |
+| 产物 | `dist/SafeOut.dmg`（2 126 490 B）＋ `dist/SafeOut.zip`（1 431 125 B） |
 | 版本四元组 | `2026.09.17.5` / 构建 `53` / 提交 `06ed19e` / 脏计数 `0` |
 
 > 远端 Release 列表为空 —— 本项目的「发版」= 附注 tag + 推送 tag，
@@ -4105,7 +4105,7 @@ CLI 那一档**单独出一张图**（`row-busy-cli-light`，`tail` + `executabl
 打包前复查 `git status`，多出 1 项未跟踪：
 
 ```
-?? DiskEjector-UI-Design/v2/screens/_probe.html.done     # 16 805 B
+?? SafeOut-UI-Design/v2/screens/_probe.html.done     # 16 805 B
 ```
 
 它**不是** `tools/design-compare.py` 的产物（那个脚本把 `_probe.html` 移到
@@ -4117,9 +4117,9 @@ CLI 那一档**单独出一张图**（`row-busy-cli-light`，`tail` + `executabl
 **这个判断是错的，而且是它自己推翻的。** 提交之后再查 `git status`：
 
 ```
- M DiskEjector-UI-Design/v2/screens/05-settings.html    # 23:26:47  +46/-7
-?? DiskEjector-UI-Design/v2/screens/08-update.html       # 23:29:58  525 行「版本更新」屏
-?? DiskEjector-UI-Design/v2/screens/_probe.html.done     # 23:30:14  29 142 B（**md5 与移走那份不同**）
+ M SafeOut-UI-Design/v2/screens/05-settings.html    # 23:26:47  +46/-7
+?? SafeOut-UI-Design/v2/screens/08-update.html       # 23:29:58  525 行「版本更新」屏
+?? SafeOut-UI-Design/v2/screens/_probe.html.done     # 23:30:14  29 142 B（**md5 与移走那份不同**）
 ```
 
 `_probe.html.done` **回来了，而且内容变了** —— 它现在是新写的 `08-update.html`（26 094 B）
@@ -4152,7 +4152,7 @@ CLI 那一档**单独出一张图**（`row-busy-cli-light`，`tail` + `executabl
 ❌ --preview-main-window-empty-* 只在 DEBUG 构建可用（需要注入 store）
 ```
 
-查源码（`DiskEjectorApp.swift:884`）：该场景的注入点是 `#if DEBUG` 的
+查源码（`SafeOutApp.swift:884`）：该场景的注入点是 `#if DEBUG` 的
 `DiskListStore(monitoring:)`，发布构建拿不到，于是**故意报错退出**，
 而不是静默退化成「正常预览」。这是**设计如此**，不是回归 —— 这条 `exit(2)` 正是
 §8.29 那轮「守卫别依赖环境」的产物。
@@ -4166,11 +4166,11 @@ CLI 那一档**单独出一张图**（`row-busy-cli-light`，`tail` + `executabl
 
 | 产物 | 验法 | 结果 |
 |---|---|---|
-| `dist/DiskEjector.app` | 读 `Info.plist` 四元组 | `2026.09.17.5` / `53` / `06ed19e` / `0` |
-| `DiskEjector.dmg` | `hdiutil attach` → 读**挂载卷里那个 bundle** 的四元组；再验签名 | 四元组与上面逐字一致（证明 `Bundle.main` 解析得到 Info.plist）；`codesign --verify --deep --strict` = `valid on disk` ＋ `satisfies its Designated Requirement`；`flags=0x10000(runtime)`；`app-sandbox` 计数 **0**（direct 渠道正确） |
-| `DiskEjector.zip` | `unzip -t` → `ditto -x -k` 解出后**直接跑** | `No errors detected`；解出的 app 自检通过，且它**自己报出**「版本行：**2026.09.17.5 · 53**（从 .app 的 Info.plist 读取）」「脏构建提示行：不显示（dirty=0）」 |
+| `dist/SafeOut.app` | 读 `Info.plist` 四元组 | `2026.09.17.5` / `53` / `06ed19e` / `0` |
+| `SafeOut.dmg` | `hdiutil attach` → 读**挂载卷里那个 bundle** 的四元组；再验签名 | 四元组与上面逐字一致（证明 `Bundle.main` 解析得到 Info.plist）；`codesign --verify --deep --strict` = `valid on disk` ＋ `satisfies its Designated Requirement`；`flags=0x10000(runtime)`；`app-sandbox` 计数 **0**（direct 渠道正确） |
+| `SafeOut.zip` | `unzip -t` → `ditto -x -k` 解出后**直接跑** | `No errors detected`；解出的 app 自检通过，且它**自己报出**「版本行：**2026.09.17.5 · 53**（从 .app 的 Info.plist 读取）」「脏构建提示行：不显示（dirty=0）」 |
 
-签名身份：自签（`DiskEjector Dev Signing` ← `DiskEjector Dev CA`，`TeamIdentifier=not set`）
+签名身份：自签（`SafeOut Dev Signing` ← `SafeOut Dev CA`，`TeamIdentifier=not set`）
 → 保 TCC 授权稳定，但**无法公证**。产物未公证，用户首次打开需右键「打开」放行。
 
 ---
@@ -4331,7 +4331,7 @@ CLI 那一档**单独出一张图**（`row-busy-cli-light`，`tail` + `executabl
 
 **两个源**：
 1. `Sources/Localization/Localizable.xcstrings` —— **产品已有文案**（设计稿的英文必须与这里**逐字一致**）。
-2. `DiskEjector-UI-Design/v2/assets/i18n-extra.json` —— **设计稿专有**：
+2. `SafeOut-UI-Design/v2/assets/i18n-extra.json` —— **设计稿专有**：
    新增界面（更新组、本次更新弹窗）、样本数据（磁盘名/容量数字/版本号）、设计稿自己的 chrome。
 
 `tools/build_i18n.py` 读这两份、合并、生成 `assets/i18n.js`（**生成物，不要手改**）。
@@ -4397,17 +4397,17 @@ CLI 那一档**单独出一张图**（`row-busy-cli-light`，`tail` + `executabl
 
 **③ xcstrings 英文里直接用了 markdown `**bold**`。**
 直接回填会显示成裸星号。生成器里加了 `md_bold()`，把成对的 `**X**` 转成 `<b>X</b>`。
-*只动成对的*，避免误伤产品名 `DiskEjector*`（理论上存在）之类的孤立星号。
+*只动成对的*，避免误伤产品名 `SafeOut*`（理论上存在）之类的孤立星号。
 
 ### §8.36.4 引导步骤：`text + <small>` 混排的拆法
 
-`<div class="step__text">在列表中找到 <b>DiskEjector</b>，打开右侧开关<small>若不在列表中...</small></div>`
+`<div class="step__text">在列表中找到 <b>SafeOut</b>，打开右侧开关<small>若不在列表中...</small></div>`
 整段文本是两个独立文案拼出来的，但都装在一个 div 里 —— 一标就把两段都冲掉了。
 **拆法**：把主文本包到 `<span>`，让它和 `<small>` 分别成叶子、可独立标注。
 
 ```
 <div class="step__text">
-  <span>在列表中找到 <b>DiskEjector</b>，打开右侧开关</span>      ← data-i18n="fdaOnboardingStep2Text"
+  <span>在列表中找到 <b>SafeOut</b>，打开右侧开关</span>      ← data-i18n="fdaOnboardingStep2Text"
   <small>若不在列表中...</small>                                ← data-i18n="ds.onboarding.notListed"
 </div>
 ```
@@ -4615,8 +4615,8 @@ MAS 渠道已经不存在了，所谓防御就是一段永远为假的判定加�
 |---|---|---|
 | `06-states.html` 未知态触发条件 | 未授权 FDA（直发版）或沙盒环境（MAS 版） | 未授权 FDA，或运行环境被沙盒限制（本应用不上架 MAS，沙盒仅作防御分支） |
 | §5.2 状态编码（本文镜像表） | 同上 | 同上 |
-| `DiskEjectorApp` 诊断输出 | 沙盒状态：已启用（App Store 版本） | 沙盒状态：已启用（**不再解释成渠道**） |
-| `ContentView` / `DiskEjectorApp` 注释 | 沙盒版（MAS 分发） | 沙盒构建（防御分支） |
+| `SafeOutApp` 诊断输出 | 沙盒状态：已启用（App Store 版本） | 沙盒状态：已启用（**不再解释成渠道**） |
+| `ContentView` / `SafeOutApp` 注释 | 沙盒版（MAS 分发） | 沙盒构建（防御分支） |
 | `LaunchAtLoginManager` 选型注释 | **唯一**符合 MAS 要求的方案 | 唯一不依赖废弃 API / 不需要 helper 的方案（MAS 那条理由作废，选型不变） |
 | `SPEC.md` §4.2 / F3 / 技术栈 / 验收 | MAS 作为「可选精简渠道」 | 明确不发布沙盒形态；实测矩阵保留，用于解释**为什么不开沙盒** |
 
@@ -4637,7 +4637,7 @@ MAS 渠道已经不存在了，所谓防御就是一段永远为假的判定加�
 
 `build_app.sh` 的 `BUILD_CHANNEL=mas` 分支**已删除**，包括：强制 App Sandbox 的
 entitlements 选择、跳过公证的分支、按渠道二分的签名回读校验与结尾摘要。
-`Resources/DiskEjector.entitlements`（沙盒版）一并移走 —— 渠道没了，配置文件也不需要两份。
+`Resources/SafeOut.entitlements`（沙盒版）一并移走 —— 渠道没了，配置文件也不需要两份。
 
 **关键设计：再传 `BUILD_CHANNEL` 不是静默忽略，而是报错退出。**
 
@@ -4718,13 +4718,13 @@ in process: mapping process and mapped file (non-platform) have different Team I
 那个地址给的是 HTML 页面 / atom 源，Sparkle 要的是带 `sparkle:` 命名空间的 RSS。
 GitHub Releases 是**文件托管处**，不是 feed；下载地址写在 appcast 每个 item 的
 enclosure 里，由 `scripts/make_appcast.sh`（内部调 `generate_appcast`）生成，
-指向 `…/releases/download/v<TAG>/DiskEjector-<VERSION>.dmg`。
+指向 `…/releases/download/v<TAG>/SafeOut-<VERSION>.dmg`。
 
 feed 地址本身用 `raw.githubusercontent.com/…/appcast.xml`（提交进仓库即生效，无额外托管）。
 
 **实测的第二个坑**：`generate_appcast --download-url-prefix` **必须以斜杠结尾**。
 不带斜杠时它会把前缀最后一段当文件名替换掉，产出
-`…/download/DiskEjector-1.2.3.dmg` —— **tag 那一段没了，而且不报错**，
+`…/download/SafeOut-1.2.3.dmg` —— **tag 那一段没了，而且不报错**，
 直到用户点「安装更新」才 404。脚本里已加回读（enclosure 必须含
 `releases/download/v<VERSION>/`），并有单测钉住前缀那一行。
 
@@ -5317,7 +5317,7 @@ Sparkle 会不会装上这次更新 —— 依据是 `showUpdateFound` 的文档
 | 3 | ~~「退出应用时 Sparkle 会不会自己装上」这条**未核实的假设**~~ | 已关闭 | §8.41.4 / **§8.79** | ✅ **已还账（第 31 轮）** —— 实测**会装**，两条路各测一次都从 `.18.4/81` 变成 `.19.1/119`：① **自动那条**（`SUAutomaticallyUpdate=true`，不弹窗）：退出前 10s `Autoupdate` 就已就位，退出 **0.25s**；② **弹窗那条**（默认配置）：弹窗机器确认上屏（`layer=8` `400×315`）→ 真实 HID 回车点「后台更新并重启」→ **新** `Autoupdate` 就位（= `.ready`，应用**全程攥着 reply 从不回答**）→ 发 quit（**真实 Apple Event**，没用 SIGTERM）→ 版本变了。机制是**安装器工具自己**盯目标进程退出（`AppInstaller.m:392-412`），与应用回不回答 `showReady` 无关。⚠️ 拆假读数花了比实验更多的时间（4 个静默：`isTerminated` 不翻真 / 沙箱里 Apple Event 发不出而 `terminate()` 仍返回 true / `pgrep` 抓到上一轮残留 / `sed` 解析失败被报成「弹窗没上屏」），见 §8.79.4 |
 | 4 | ~~设置行七态的走查图~~（下载中 / 已就绪 / 失败…） | 已关闭 | §8.44 / §8.45 | ✅ 七态 + 三态共 11 张图，各配一条机器无关守卫 |
 | 5 | ~~48 项改动未提交~~（见 §8.42.3） | 已关闭 | §8.42.3 | ✅ 分三个提交推上去，tag `v2026.09.18.1/.2/.3` |
-| 6 | ~~`v2026.09.18.4` 的 GitHub Release~~（→ enclosure 404） | 已关闭 | §8.46.3 / §8.49 | ✅ **由我建的**（`gh` 本机可用，见 §8.49.1）—— tag `v2026.09.18.4`、资产 `DiskEjector-2026.09.18.4.dmg`（2,701,324 B，**名字没改**）+ `.zip`；enclosure 实测 **200**、`content-length` 一致 |
+| 6 | ~~`v2026.09.18.4` 的 GitHub Release~~（→ enclosure 404） | 已关闭 | §8.46.3 / §8.49 | ✅ **由我建的**（`gh` 本机可用，见 §8.49.1）—— tag `v2026.09.18.4`、资产 `SafeOut-2026.09.18.4.dmg`（2,701,324 B，**名字没改**）+ `.zip`；enclosure 实测 **200**、`content-length` 一致 |
 | 7 | ~~appcast 里没有 `<description>`~~（→ 新版本弹窗的「本次更新」是空的） | 已关闭 | §8.46.4 | ✅ 传了 `RELEASE_NOTES_FILE`，实测解析出 **4 条**；并补 3 条守卫 |
 | 8 | ~~已打包的 `v2026.09.18.3` 里没有 §8.47 那个修复~~ | 已关闭 | §8.47.5 | ✅ 拍板改发 **`v2026.09.18.4`**；后又重打成 build **78**（§8.47.7） |
 | 9 | ~~「下载失败」这一态**没有生产者**（`driverDidFailDownload` 零引用）~~ | 已关闭 | §8.47.6 | ✅ 实扫查出并修好（接 delegate + 分流），补 3 条守卫、逐条变异验证；同批删掉真死代码 `contentHeightBudget`（提交 `dfbafeb`） |
@@ -5348,7 +5348,7 @@ Sparkle 会不会装上这次更新 —— 依据是 `showUpdateFound` 的文档
 | 34 | ~~**「正在后台下载」那一态在下载挂住时没有出口** —— `.downloading(_, fraction: nil)` 那支**按设计**不给进度条也不给「取消」（§8.81 / §8.82），于是下载卡住时那一行会**一直**停在那儿：没进度、没错误、没出口（只能退出应用）。本轮真机就是这么撞上的 —— 根因是这台机器 `github.com` 的 release 资产下不来（`HTTP2 framing` 错），但**症状是产品侧的**。要不要给**超时兜底**（超 N 分钟转「下载失败」+「重试」）是**设计决策**~~ | 已关闭 | §8.85.5 / **§8.90** / **§8.101.2** | ✅ **已还账（2026-09-20 15:15）—— 用户拍板：N 取默认 120s**（不再等）。实现早已就绪（§8.90）：`UpdateController` 加了停摆看门狗 —— 进入 `.downloading(_, nil)` 起算，超过 `downloadStallTimeout`（**默认 120s，具名常量**）既无进度也无回执 ⇒ 转 `.failed`，而那一态**本来就有「重试」按钮** ⇒ 出口天然存在。<br>⚠️ **「真机复验」这一半仍做不了，但理由已订正**（§8.101.2）：不是「任何下载都走不完」，而是**本机默认 HTTP/2 下大概率卡住**（实测 14/40），且真机 app 走**系统代理**（`127.0.0.1:7890`）而 `NSURLSession` 默认 HTTP/2、不自动降级 ⇒ **端到端仍不稳**。这个兜底**只在下载真的挂住时才触发** ⇒ 仍是「本地很难复现、线上才会遇到」的那一类。<br>⚠️ 当初列的可选替代（①超时后只显示「取消」/ ②调 N / ③不兜底维持现状）—— **用户已选「N 取默认 120s」**，即**实现原样落地**，①②③均不采用。 |
 | 35 | **门槛偶发红了一次，没拿到它的名字** —— 415 个测试里 `1 issue`，随后**连跑三轮全绿**没复现。病根在装置：我把门槛输出 `\| tail -10` 了 ⇒ **失败测试的名字被裁掉**（`PREFLIGHT_FAIL_TAIL=0` 管不了外面这层 `tail`）。也不能排除「被同轮的真机探针污染」（两者证据相同） | 我（下一轮） | §8.86.7 | 🟢 **已关闭（2026-09-21，§8.113.9）**：CI 自己红了一次，**两个失败项都拿到了名字**。⚠️ 同样：正文 2026-09-21 已写「拿到名字」，状态列没跟上；而本行那条「门槛输出别接 `tail`」的建议，**2026-09-21 又被我自己违反了一次**（§8.113.12 ③）⇒ 光写建议没用，要有守卫。下次：**门槛输出一律落盘再 grep，别在管道末尾 `tail`**；且门槛要在没有别的东西动这台机器时跑。 ⚠️ **§8.89 追加**：2026-09-20 连跑四轮，**第一轮就复现了一次红**，但根因查明是**我自己造成的** —— 我在门槛构建期间编辑了源文件 ⇒ 编译器报 `input file ... was modified during the build`，**与代码无关**。随后在「不改任何文件」的前提下连跑四轮全绿 ⇒ **这一条至今没有拿到任何一次真正的 flaky 证据**。 ⚠️ **§8.92 追加**：已做**定向排查**（不再靠多跑碰运气）—— 静态扫共享可变状态，找到并修掉 1 处真实隐患，但**没有拿到确证根因**，本行**仍开着**。 ⚠️ **§8.96 追加**：剩余两个方向**扫完一个** —— 「并行 suite 里的非 main-actor 代码」**0 候选**（418 个 test 里 161 个非 main-actor；函数体内碰共享状态的 4 条**全是源码文本断言的字符串字面量**，如 `contains("UpdateController.shared…")`）。⚠️ 这个「0」来之不易：扫描器**连错四次**（三次误报 + 一次漏报，含「注释里提到的 `@MainActor` 被当成真标注」），靠**双向阳性对照**（该报的报、不该报的不报）才敢信。剩「**渲染时序**」一条 —— 静态扫描解决不了。本行**仍开着**。 ⚠️ **§8.97 追加**：扫「渲染时序」时发现 —— **本行其实一直有实证，只是没登记到这张表里**。`OccupancyStoreTests.swift:38-50` 的 `waitUntil` 注释写着：超时从 3s 放宽到 10s（「3s 会**偶发假红（实测过一次）**」）、再放宽到 30s（「2026-09-17 CI 上 10s **仍然没等到**」），并自认「**放宽超时是在买时间，不是在修根因**」。失败形态（`arrived` 为 false 的那条 `#expect`）**正好就是「1 issue」**。⚠️ 但**不能断言它就是第 35 行那次红的原因**（那次没拿到名字）；只能说这是**目前唯一有书面实证的 flaky 候选**。⇒ 教训：**「没有证据」常常是「证据没进表」** —— 证据散在代码注释里，表上就永远是空的。 ⚠️ **§8.99 追加（2026-09-20）**：**修法 A 已落地**。先实扫 —— 全仓库 `Tests/` **52** 个文件里同步阻塞**只有 5 处 / 2 个文件**（其余 `Task.sleep` 全是 `await` 的）。逐处确认隔离后，**两个文件用了不同修法**：`IntegrationEjectTests` 整块摘掉 `@MainActor`（它同步只用 `DiskService`，非隔离；`EjectFlowController` 两处都是 `await`）；`ProcessAppResolverTests` **摘不掉**（`enrich` / `icon` 走 `NSWorkspace` / `NSRunningApplication`，**必须主 actor**）⇒ 只把**阻塞段**挪进 `nonisolated` **且 `async`** 的函数（两段 `usleep` 轮询 → `Task.sleep`（让路）；`adhocSign` → `async`，`Fixture.init` 随之 `async throws`）。新增守卫 `MainActorBlockingTests`（口径三条 + **双向阳性对照** + 装置自证「扫到 52 个文件 / 认出 31 个主 actor 文件」）；**变异 M1/M2 全红**（⚠️ 第一次变异用 `Thread.sleep` **红在编译器**、证明不了有牙 ⇒ 换 `usleep`）。门槛 4 道全绿（覆盖率 **62.84%**，与上轮同）。⚠️ **仍不能断言**它就是本行那次红的原因 —— 只是**把唯一有书面实证的候选消掉了**；若日后还红，第一件事仍是「**拿到它的名字**」（详见 §8.99）。 ✅ **已关闭（2026-09-20 15:59 核对）** —— **拿到名字了**，而且它根本不是 flaky：是**稳定红**的环境依赖。详见 **§8.102**。 ⚠️ **§8.104.3 订正（2026-09-20 17:03）：上面那个 ✅ 的依据是另一条观察，撤销。** 拿到名字的是 **CI 那条**（76 次必红）；本行登记的是**本地**红一次。而那条 locale 测试在**中文机 + `design = "zh-Hans"`** 下两侧**必然相等 ⇒ 必绿** ⇒ **本地那次红不可能是它**（除非门槛跑在**非正式语言状态**下 —— 而那**没有任何记录**）。本轮又翻了那一轮的现场残留（`round36/preflight-run1..6.log`）：**红那次的输出确实没留下**（run1–4 是三门槛全绿的日志、run5/6 是后来变异期的编译失败）⇒ **名字不可追**。⇒ 按本仓库自己的规则（**不能断言就不划掉**）**本行仍开着**。 ⚠️ **§8.109 追加（2026-09-20 21:42）：「拿不到名字」这个**装置缺陷**已修** —— 门槛失败时**先摘出失败项名字**、并把全量日志留到 `.build/preflight/门槛N.log`；`run_gate` 抽进 `scripts/lib/gate_report.sh` 以便有**行为测试**（`scripts/test/gate_report_smoke.sh`，11 条，进门槛 5），变异 A/B 各红在对的那条。⇒ **下次再红，一定能拿到名字**。但**历史上那次的名字仍不可追**（现场残留里没有）⇒ **本行仍开着**。 ⚠️ **§8.127 追加（2026-09-22 19:25）：真凶拿到并修掉，本行关闭。** 那条 flaky 就是 `磁盘列表一变就重测占用`：根因**不是**「条件不成立」，而是「**循环根本没被调度**」（`polls: 2` / `elapsed: 41.73`），而 `deadline` 是**墙钟** ⇒ 排一次队就把窗口吃掉。本地复现：它单跑 0.403s、全量里**完成于 20.904s**（超时 30s）；CI 慢一倍 ⇒ 41.8s，与 41.73 吻合。**占用者是 `NSImage.tiffRepresentation` 的同步光栅化（冷启动实测 3.93s，且在主 actor 上）** —— 判别实验：`--skip` 掉那条取图标的测试后，其余 **27** 条从 ~4.8s **全部掉到 ≤0.71s**（另两条假设「LaunchServices 登记」「真机集成测试」**都被证否**）。三处修法：① 等待从「轮询条件」换成「**等事件**」（新类型 `EventWait`，与 `WaitOutcome` **故意不合并**；墙钟只报告、不当判据）⇒ 单跑 **0.001s**；② 夹具 **4 份 → 1 份**（`static let sharedTask`）；③ 光栅化搬到**独立执行体**（`DispatchQueue.global`，**不是**协作池 —— 池大小 ≈ 核数）⇒ 修后连跑 3 轮只剩那一条付自己的 4.7s、其余 **≤0.531s**。顺带清掉三处 `waitUntilExit()`（§8.114 第 6 节留下的那半）。守卫加第三类「**同步等外部服务**」（`\.tiffRepresentation`，写明是**已知实例清单、非完备**），有牙证据 = 拿掉 `nonisolated` 即变红、报出文件名与命中项。门槛 **11 道全过**（覆盖率 **65.90%**）、变异 **6/6 被抓住**。⚠️ 限定：旧代码那段 ~20.9s 窗口的**逐项构成本轮没量**（要 checkout 旧代码）；那 4.7s 仍是**真成本**，只是不再转嫁给别人；产品侧「首次显示图标是否也卡 ~4s」**没量过**。 |
 | 36 | ~~**注释里的承诺句没有扫描器**~~ | ~~我们（写扫描器 + 豁免表）~~ | §8.88 / **§8.89** | ✅ **已还账（第 36 轮）** —— `scripts/scan_stale_comments.sh` 进 preflight **门槛 3**。<br>⚠️ **做法与当初的设想不同，而且必须不同**：原设想「关键词扫描 + 豁免表」，实测<br>**用 `尚未\|还没` 泛词扫 Sources 得 33 处命中、只有 ~3 处是真问题（precision ≈ 9%）** ——<br>那种扫描器一上来就误报满天飞，结局一定是被关掉。改成**「标了承诺就必须写日期」**<br>（触发词收紧为 `未核实\|待拍板\|TODO\|FIXME\|已知限制\|尚未支持…`；命中后查前后 2 行内有无<br>`YYYY-MM-DD`）⇒ precision **100%**，首跑即抓出真过期的一条。带**豁免表**（按 `路径:行号`）。<br>到期（>30 天）**只警告不失败** —— 没有代码改动也会变红的门槛会被关掉。<br>变异背书：插一行无日期 `TODO` ⇒ **红**；还原 `cmp -s` 校验通过 |
-| 37 | **`DiskEjectorApp.swift` 2351 行**：其中**实测 1085 行**（598–1689，占全文 **46%**）是「真机自检的量测 / 比对 / 打印」，与应用装配混在一起 —— **但纯外移做不成**（§8.91 原文写「约 660 行」，**实测是 1085**，订正于 §8.101.4） | 你（**取舍**）→ ✅ **已拍板并实施**（提交 `496d553`） | §8.91 / **§8.101.4** / **§8.101.5** | ✅ **已关闭（2026-09-20 15:45 核对）** —— 用户批准「只外移那 7 个纯函数」，已实施、4 道门槛全绿、已推送。**单独一个提交**（`496d553`），一条 `git revert` 可整体退回。实施记录与验收装置见 **§8.101.5**（含实施时踩到的**第三次边界口径错**）。以下为原始分析，保留：实测挡路的三条：① `private` 是**文件级**作用域（`fileprivate` 一样）⇒ 跨文件访问必须放宽；② 自检块读 `mainWindow` / `onboardingHosting` / `statusPopover` / `statusItem` 四个私有属性，而且是**裸名**访问（不带 `self.`）⇒ 「块内没有 `self.`」这个判据**看不出**它们；③ 这些自检代码在 `Sources/DiskEjectorApp/` ⇒ **不在覆盖率分母里、也没有单测** ⇒ 外移只能靠「编译通过」验，**改坏了没有测试会红**。 ⚠️ **§8.101.4 追加（2026-09-20 15:15；**同节当天自我订正两次**）**：① §8.91 的「约 660 行」实测是 **1085 行**（占全文 46%）；② 我第一版给的「494 行可外移」**是错的** —— 口径只盯那 4 个属性名，**看不出隐式 `self`**（`runOnboardingPreview` 其实写了 `self.onboardingExitHandler`、`runSettingsPreview` 调 `dumpSettingsWindowState`/`showSettings`、`waitUntilOnboardingIsKey` 读 `onboardingWindow`）。改成「扫**全部成员**」、并修掉脚本自身两次口径错（`^[ \t]+` 与 `^ {4}` 都把**局部变量**当成成员 ⇒ 报出荒谬的「可外移 0 行」）之后，量对的结果是：**可外移 7 个 / 454 行**（⚠️ 此处的「454」是 **§8.101.5 重量过的**单元口径 = 文档注释 + 属性行 + 声明 + 体；本节原先写的「461 行」是**错的** —— 口径把「下一个函数的文档注释」也算进了上一个）（`waitUntilAppIsActive` / `trafficLightUnion` / `checkTrafficLightBaseline` / `checkTitleBarHorizontalSymmetry` / `measureRedLightInkCenter` / `checkEmptyStateInsteadOfSkeleton` / `dumpSettingsWindowState`），文件 2351 → **1895** 行（实测）。⚠️ **第一版那句「一条挡路理由都不碰」也是错的**：外移任何代码，**函数自己的 `private` 同样必须放宽**（`private` 是文件级作用域）⇒ 诚实说法是「**不放宽那 4 个状态属性**，但要放宽这 7 个纯函数（`private` → `internal`），并改 **7 处调用点**」。⚠️ **调用点数也是我原先写错的**：`trafficLightUnion` 与 `measureRedLightInkCenter` **没有外部调用点**（只被同族函数调用、一起搬走）⇒ 7 个函数里只有 **5 个**有调用点，合计 **7 处**（`waitUntilAppIsActive` ×3、其余四个各 ×1），不是 9 处。**建议仍是「只外移这一半」**（好处：「不碰应用状态」从「扫出来的」变成「**编译器强制的**」），但收益比第一版说的小。**不建议全量外移**（那 624 行要放宽 4 个状态属性）。⚠️ 外移**只换文件、不换 target** ⇒ 仍不进覆盖率分母；日后要做全量，**必须先建机械等价校验**（移动前后各跑一遍全部 `--preview-*` 自检、带 `-keys` 退出、逐字比对）。 |
+| 37 | **`SafeOutApp.swift` 2351 行**：其中**实测 1085 行**（598–1689，占全文 **46%**）是「真机自检的量测 / 比对 / 打印」，与应用装配混在一起 —— **但纯外移做不成**（§8.91 原文写「约 660 行」，**实测是 1085**，订正于 §8.101.4） | 你（**取舍**）→ ✅ **已拍板并实施**（提交 `496d553`） | §8.91 / **§8.101.4** / **§8.101.5** | ✅ **已关闭（2026-09-20 15:45 核对）** —— 用户批准「只外移那 7 个纯函数」，已实施、4 道门槛全绿、已推送。**单独一个提交**（`496d553`），一条 `git revert` 可整体退回。实施记录与验收装置见 **§8.101.5**（含实施时踩到的**第三次边界口径错**）。以下为原始分析，保留：实测挡路的三条：① `private` 是**文件级**作用域（`fileprivate` 一样）⇒ 跨文件访问必须放宽；② 自检块读 `mainWindow` / `onboardingHosting` / `statusPopover` / `statusItem` 四个私有属性，而且是**裸名**访问（不带 `self.`）⇒ 「块内没有 `self.`」这个判据**看不出**它们；③ 这些自检代码在 `Sources/SafeOutApp/` ⇒ **不在覆盖率分母里、也没有单测** ⇒ 外移只能靠「编译通过」验，**改坏了没有测试会红**。 ⚠️ **§8.101.4 追加（2026-09-20 15:15；**同节当天自我订正两次**）**：① §8.91 的「约 660 行」实测是 **1085 行**（占全文 46%）；② 我第一版给的「494 行可外移」**是错的** —— 口径只盯那 4 个属性名，**看不出隐式 `self`**（`runOnboardingPreview` 其实写了 `self.onboardingExitHandler`、`runSettingsPreview` 调 `dumpSettingsWindowState`/`showSettings`、`waitUntilOnboardingIsKey` 读 `onboardingWindow`）。改成「扫**全部成员**」、并修掉脚本自身两次口径错（`^[ \t]+` 与 `^ {4}` 都把**局部变量**当成成员 ⇒ 报出荒谬的「可外移 0 行」）之后，量对的结果是：**可外移 7 个 / 454 行**（⚠️ 此处的「454」是 **§8.101.5 重量过的**单元口径 = 文档注释 + 属性行 + 声明 + 体；本节原先写的「461 行」是**错的** —— 口径把「下一个函数的文档注释」也算进了上一个）（`waitUntilAppIsActive` / `trafficLightUnion` / `checkTrafficLightBaseline` / `checkTitleBarHorizontalSymmetry` / `measureRedLightInkCenter` / `checkEmptyStateInsteadOfSkeleton` / `dumpSettingsWindowState`），文件 2351 → **1895** 行（实测）。⚠️ **第一版那句「一条挡路理由都不碰」也是错的**：外移任何代码，**函数自己的 `private` 同样必须放宽**（`private` 是文件级作用域）⇒ 诚实说法是「**不放宽那 4 个状态属性**，但要放宽这 7 个纯函数（`private` → `internal`），并改 **7 处调用点**」。⚠️ **调用点数也是我原先写错的**：`trafficLightUnion` 与 `measureRedLightInkCenter` **没有外部调用点**（只被同族函数调用、一起搬走）⇒ 7 个函数里只有 **5 个**有调用点，合计 **7 处**（`waitUntilAppIsActive` ×3、其余四个各 ×1），不是 9 处。**建议仍是「只外移这一半」**（好处：「不碰应用状态」从「扫出来的」变成「**编译器强制的**」），但收益比第一版说的小。**不建议全量外移**（那 624 行要放宽 4 个状态属性）。⚠️ 外移**只换文件、不换 target** ⇒ 仍不进覆盖率分母；日后要做全量，**必须先建机械等价校验**（移动前后各跑一遍全部 `--preview-*` 自检、带 `-keys` 退出、逐字比对）。 |
 | 38 | **点击「检查更新」后有 3~4.5 秒界面零反馈** —— `UpdateUserDriver.showUserInitiatedUpdateCheck` 的注释写着「这一段通常只有**几百毫秒**，所以故意不画『正在检查…』」。真机实测（**dist 产物**，单时间轴 4 轮）是 **4.31 / 3.15 / 4.51 / 0.17s**，典型 **3~4.5 秒**；按下后连抓 AX 树 0.5~4.0s，更新区**零变化**，按钮仍是「检查更新」且仍 `enabled`（可反复点）⇒ **原决策的前提已被推翻**，是否补「正在检查…」中间态是**设计决策** | 你（**取舍**：补一态 vs 维持现状）→ ✅ **已关闭**（§8.98） | §8.93 | ✅ **已关闭**（§8.93 新开 / §8.98 关闭）。补的话要动 `UpdatePhase` / `CheckRowState` / `rowState` / 设置行画法 / 本地化，并让**七态变八态**（走查图清单要加一态，且受「各态渲染出来必须一样高」那条守卫约束，§8.82）。ⓘ Sparkle 给的 `cancellation` 闭包**目前被丢弃** —— 它正好是「取消」按钮的落点；只画文案不给取消 = 又一个「点了没反应」的按钮（同 `.ready` 态那条判据）。 ⚠️ **§8.98 关闭（2026-09-20）**：用户拍板**补**这一态。已加 `UpdatePhase.checking` / `CheckRowState.checking` + `rowState` 派生 + `checkForUpdates()` 里 `phase = .checking`（**必须放在 `ensureUpdater()` 之后** —— 放前面会让「updater 起不来」那条路永远停在「正在检查…」，而它实际是跳去下载页）+ 设置行画法（**带第二行**、不给按钮）+ 本地化 2 键。`cancellation` **仍被丢弃**（这一段只有几秒，给取消反而增加噪声；理由已重写进 `showUserInitiatedUpdateCheck` 的注释）。守卫：顺序源码断言 + 优先级三条 + 「各态一样高」；变异 A/C 全红。⚠️ 顺带把 `LocalizationCatalogTests/两个零消费者的文案键不再存在` 里钉「`updateChecking` 不存在」的那半条**转正**（详见 §8.98.7）。⚠️ **新开第 40 行**：设计稿还没有这两帧。 |
 | 39 | **从 dmg（只读卷）直接运行时，「检查更新」是只会说「已是最新版本」的假动作** —— `SPUUpdater.m:789` 发起 `checkForUpdates()` **即写**「上次检查时间」（不看成败）；随后 `SPUBasicUpdateDriver.m:71` 判 `isRunningOnReadOnlyVolume`（`SUHost.m:174` 用 `statfs` 查 `MNT_RDONLY`）为真 ⇒ **根本不去取 appcast**，直接 abort（错误码 1003）；而 `basicDriverIsRequestingAbortUpdateWithError:` **我们全仓库 0 处实现** ⇒ abort 无落点。实测：只读卷上点了之后**零网络请求**（本地 feed server 一行没多），而界面「上次检查」仍刷新成当下并宣称「已是最新版本」⇒ 即使 appcast 里有新版本，用户**永远看不到** | 你（**修法三选一**，见 §8.94.6）→ ✅ **已关闭**（§8.98，取方案 C） | §8.94 | ✅ **已关闭**（§8.94 新开 / §8.98 关闭）。⚠️ 与第 27 行同类但更彻底：那次是「做完了没显示」，这次是**根本没做却说做过了**。选项：① 接 Sparkle 那个 abort 回调（文案它已备好，且还覆盖 App Translocation）；② 自己 `statfs` 判只读后改走打开 Releases 页（**不加态**，最小）；③ 新增一态显示「请拷到应用程序文件夹」（体验最好，代价最大）。⚠️ **§8.95 订正：选项 ① 作废** —— 调用链追到底了（六跳，逐行对上）：abort 真正落到 `showUpdaterError(_:acknowledgement:)`，**不是** `basicDriverIsRequestingAbortUpdateWithError:`（那是 Sparkle **driver 之间**的内部协议，我们的 `SPUUserDriver` 不在那条链上，接不到）。⇒ **判定这一族所需的输入已现成**（错误码 1003 / 1005），可照 `isDownloadFailure` 的惯例抽纯函数 + 单测 + 变异，**这部分没有取舍**；只剩「判出来之后显示什么」要拍板：**A** 改走打开 Releases 页（**不加态**，最小）／**B** 复用 `.failed` 但「重试」在只读卷上**必然再失败**（**不建议**，又一个点了没反应的按钮）／**C** 新增一态「请拷到应用程序文件夹」（要加态 + 本地化 + 走查图，代价最大）。三者共同点：**都不再谎报「已是最新版本」**。⚠️ **§8.95.7 订正：上面那句「这部分没有取舍」是错的** —— 只加纯函数不接落点就是**死代码**（本仓库有 CI 守卫专门钉「有声明、没消费者」），为了不红就得偷偷接一个没拍板的落点 ⇒ **判定与落点必须一起拍板**。好消息：判定的**技术不确定性已全部消掉**（`SPUBasicUpdateDriver.m:78/:80` 构造 + `SPUUIBasedUpdateDriver.m:462→:485` 原样传递，逐行对上；**不需要真机验证**），拍板后只剩写代码。另：Sparkle 的 `userInfo` 里**自带** `NSLocalizedDescriptionKey` / `NSLocalizedRecoverySuggestionErrorKey`（选项 C 的文案不必自己写），⚠️ 但那是 Sparkle bundle 的本地化，**语言未必跟我们的 `LanguageManager`** ⇒ 要么自己写，要么先核实它有没有中文。 ⚠️ **§8.98 关闭（2026-09-20）**：用户拍板取**方案 C**（新增一态）。已加 `UpdatePhase.locationBlocked` / `CheckRowState.locationBlocked` + 纯函数 `isUpdateLocationBlocked(_:)`（**实现引符号、单测写字面量 `1003` / `1005`** —— 两边不同源，否则是「拿常量跟自己比」）+ `showUpdaterError` **三分支**（位置受限**排最前**；只读卷上 `phase` 还停在 `.idle` ⇒ `isDownloadFailure` 判不出来 ⇒ 不排最前就会谎报）+ `driverDidBlockAtLocation()`（存在的**唯一**理由：不回到「已是最新版本」）+ 设置行画法（**不给按钮** —— 我们没法替用户搬 `.app`，而「重试」在只读卷上**必然再失败**）+ 本地化 2 键。守卫：判定真值表（含两条反例）+ 优先级两条 + 「各态一样高」；变异 B 红（2 issues）。⚠️ **本轮没有挂 dmg 真机复验** —— 判定输入是 Sparkle 源码里写死的字面量（§8.95.7 逐行对上），不需要；需要真机验的是「三分支实际走哪一条」，属第 10/32 行那类（要能读应用日志的机器）。 |
 | 40 | **设计稿 `08-update.html` 缺「正在检查」与「位置不允许更新」两帧** —— 实现已按 §8.98 加上这两态（走查图 `SnapshotRenderTests` 也能出），但设计稿里查 `updateChecking` / `updateLocationBlocked` **零命中**（连「正在检查」这类字面串也没有）⇒ 「实现有、设计稿没有」的分叉：下一个照设计稿改实现的人会把这两态改没（或改成没有第二行的样子） | 你（**取舍**：补两帧 vs 明确记下「这两态只由实现定义」）→ ✅ **已关闭**（§8.98.8，按 B） | §8.98.8 | ✅ **已关闭**（§8.98 新开 / §8.98.8 关闭）。⚠️ 这正是 §8.82 / §8.69 那类「两边各写一句『记得同步』守不住」—— 面板尺寸就是这样分叉了一整轮（§8.43）。补帧的话，`updateCheckingHint` / `updateLocationBlockedHint` 要**各画一行 `.sline__desc`**（少一行就矮 14.8pt，§8.82 实测过），并且那一帧的键名要与实现**同源**（可比照 `设计稿3b那一帧与实现用同一个说明键` 那条守卫的写法） ⚠️ **§8.98.8 后续（2026-09-20 14:15）：已按 B 关闭** —— 调查后确认**选项 A 我做不了**：`data-page-node-id` 是**设计工具注入**的（证据是仓库里两条既有注释：`UpdateFeedTests.swift:215`「被**外部编辑器改写**（例如注入 `data-page-node-id`…）」与 `MeterThresholdParityTests.swift:33`「不是 `data-page-node-id` 那种**编辑器注入的**」），手改 HTML 会被编辑器重写覆盖。⇒ 记下「这两态的画法**由实现定义**（完全派生自 B 段既有结构：label + desc、无 control）」，**并用守卫堵上唯一的缺口**：新增 `UpdateSettingsTests/正在检查与位置受限两态都不给按钮`（变异 D+E 红 4 issues）。其余两条早被覆盖 —— 「整支删掉」编译器就报错（`switch` 穷尽）、「少第二行」被「各态一样高」抓住。⚠️ 若你日后在设计工具里补帧，那条守卫**仍然有用**（继续钉「不给按钮」）。 |
@@ -5459,7 +5459,7 @@ Sparkle 会不会装上这次更新 —— 依据是 `showUpdateFound` 的文档
 > 唯独「这些改动进了哪次提交」这一栏没有文档会替你记。
 > **下次实扫未完成项，第一条命令就该是 `git status --short | wc -l`。**
 
-⚠️ 那 48 项里，`DiskEjector-UI-Design/v2/` 下有一部分可能**来自另一个并发会话**（见 §8.34.3）
+⚠️ 那 48 项里，`SafeOut-UI-Design/v2/` 下有一部分可能**来自另一个并发会话**（见 §8.34.3）
 → 提交前逐项确认「这是不是我写的」，**不要 `git add -A`**。
 
 ## §8.43 面板高度拍板：设计稿同步为 800（2026-09-18）
@@ -5495,7 +5495,7 @@ Sparkle 会不会装上这次更新 —— 依据是 `showUpdateFound` 的文档
 ⚠️ 只看 `scrollHeight − clientHeight = 16` 会得出**错误的严重程度**（看起来像裁掉半行）。
 真正的判据是「**最后一个元素底边相对容器下沿的位置**」：`+0.25` 才是可见损失，
 它和 16 差了 65 倍。**量溢出要量「最后一个元素在哪」，不是量容器多装了多少。**
-（截图复核：`en-tall.png` 里九行内容一行不少，只是「DiskEjector」那行贴着窗口下沿。）
+（截图复核：`en-tall.png` 里九行内容一行不少，只是「SafeOut」那行贴着窗口下沿。）
 
 ### §8.43.3 加了守卫：两边不同数就红
 
@@ -5665,16 +5665,16 @@ appcast 里三个值都对得上产物：`sparkle:version=66` = `CFBundleVersion
 ### §8.46.2 顺手抓到的真坑：**指引里的文件名与 enclosure 不一致**
 
 `make_appcast.sh` 末尾的「下一步」原本让用户把 `$(basename "$ARCHIVE")` 传上去 ——
-也就是 **`DiskEjector.dmg`**；而 enclosure 里写的是
-**`DiskEjector-2026.09.18.3.dmg`**。照指引做，用户点「安装更新」时**必 404**，
+也就是 **`SafeOut.dmg`**；而 enclosure 里写的是
+**`SafeOut-2026.09.18.3.dmg`**。照指引做，用户点「安装更新」时**必 404**，
 而 appcast 本身**不会报任何错**。
 
 这正是脚本自己在 30 行前警告过的那个失败模式（「tag/文件名对不上就 404」），
 只是它守住了 **tag 那一段**、没守住 **文件名那一段**。
 
-**处置**：① 指引改成打印真正的待上传路径 `dist/updates/DiskEjector-<VERSION>.dmg`；
+**处置**：① 指引改成打印真正的待上传路径 `dist/updates/SafeOut-<VERSION>.dmg`；
 ② 补一条守卫 —— `basename(enclosure_url)` 必须与 `basename($UPLOAD_ASSET)` **逐字相同**，
-否则直接 `exit 1`。**实测这条守卫有牙**（同名放行、`DiskEjector.dmg` 被拦下）。
+否则直接 `exit 1`。**实测这条守卫有牙**（同名放行、`SafeOut.dmg` 被拦下）。
 
 > **判据：同一个事实被写在两个地方时，要配一条守卫去比对，不能两边各写一遍。**
 > 这里的「事实」是「上传的文件该叫什么名字」—— 指引写一次、enclosure 由工具生成一次，
@@ -5689,7 +5689,7 @@ appcast 里三个值都对得上产物：`sparkle:version=66` = `CFBundleVersion
 Release 是我用 `gh release create` 建的（见 §8.49.1）。
 `.3` 已作废不发布，最终发的是 **`.4`**（见 §8.47.5 / §8.49）。
 
-**必须用这个文件名**：`dist/updates/DiskEjector-2026.09.18.3.dmg`。
+**必须用这个文件名**：`dist/updates/SafeOut-2026.09.18.3.dmg`。
 
 顺序（脚本跑完会打印）：① 建 Release（tag `v2026.09.18.3`）+ 上传该文件 →
 ② appcast 已在仓库里、已推送 → ③ 老版本启动 → 检查更新 → 应看到 `2026.09.18.3`。
@@ -5701,7 +5701,7 @@ Release 是我用 `gh release create` 建的（见 §8.49.1）。
 > ⚠️ **2026-09-18 19:00 更正：这一版不发布了。** `.3` 的 dmg/zip 里没有 §8.47 那个修复
 > （updater 启动），装了 .3 的人自更新**不会生效** —— 所以改发 **`v2026.09.18.4`**（见 §8.47.5）。
 > 本节那三步仍然成立，只是版本号整体换成 `.4`：Release 的 tag 用 `v2026.09.18.4`，
-> 上传 `dist/updates/DiskEjector-2026.09.18.4.dmg`。
+> 上传 `dist/updates/SafeOut-2026.09.18.4.dmg`。
 
 ### §8.46.4 发布说明：`<description>` 从「没有」到「有 4 条」
 
@@ -5728,7 +5728,7 @@ Release 是我用 `gh release create` 建的（见 §8.49.1）。
 | 守卫 | 钉住什么 | 实测有牙 |
 |---|---|---|
 | `仓库里的appcast必须能解析出更新条目` | 交付物里的 `<description>` 必须真能解析出条目 | 删掉 `<description>` → 红 |
-| `appcast的下载文件名必须与待上传资产同名` | enclosure 末段 = `DiskEjector-<版本>.dmg`，且含 `/releases/download/v<版本>/` | 改成 `DiskEjector.dmg` → 红；去掉前缀斜杠 → 红 |
+| `appcast的下载文件名必须与待上传资产同名` | enclosure 末段 = `SafeOut-<版本>.dmg`，且含 `/releases/download/v<版本>/` | 改成 `SafeOut.dmg` → 红；去掉前缀斜杠 → 红 |
 | `发布说明文件里不能有HTML注释` | `release-notes/*.html` 里不能有 `<!--` | （脚本侧守卫已实测拦下） |
 
 ⚠️ 写第一条时踩到一个**会让守卫永远绿**的坑：`<description>` 是 **CDATA**，
@@ -5822,7 +5822,7 @@ A/C 两组**一个字都不用改**，跑的就是交付产物本身：
 显示「尚未检查」是**正常的**，不能据此判断开关没生效。
 
 ⚠️ A/C 用的是**真实 bundle id**，会写进用户真实的偏好域。跑完必须
-`defaults delete com.diskejector.app SULastCheckTime` —— 留着它，真实应用下次启动会以为
+`defaults delete com.safeout.app SULastCheckTime` —— 留着它，真实应用下次启动会以为
 「刚检查过」，**一整天不再检查**。（探针脚本的 `trap` 干这件事。它还会留下
 `SUHasLaunchedBefore = 1`，与真实首次启动会写的值相同，`SUEnableAutomaticChecks=true`
 下无行为差异。）
@@ -5856,7 +5856,7 @@ A/C 两组**一个字都不用改**，跑的就是交付产物本身：
 | 正式产物复验 | 拿 **build 74 本身**（未改动）跑一次：启动后 **+9s** 写入 `SULastCheckTime`，并抓到 `->127.0.0.1:7890` 的连接 |
 
 ⚠️ **还差的一步（不在我这边）**：建 GitHub Release `v2026.09.18.4`，上传
-`dist/updates/DiskEjector-2026.09.18.4.dmg`（**文件名不能改**）。在那之前 enclosure 实测 **404**。
+`dist/updates/SafeOut-2026.09.18.4.dmg`（**文件名不能改**）。在那之前 enclosure 实测 **404**。
 
 ⚠️ 另两条已知限制（**都不是这一轮引入的**）：① **没有 `edSignature`** ——
 要你跑一次 `generate_keys`，在那之前更新**可装但不验签**；② `.3` 的 tag 仍在远端
@@ -6223,7 +6223,7 @@ SwiftUI `body`、字符串反射都可能让「看起来没人调」的方法其
 ### §8.49.2 EdDSA 在这个项目里是**唯一**一道完整性防线
 
 - 本机**没有 Developer ID 证书**：`security find-identity -v -p codesigning` 只有 1 个身份
-  （自签的 `DiskEjector Dev Signing`）⇒ 应用**未公证** ⇒ Gatekeeper 不为它背书。
+  （自签的 `SafeOut Dev Signing`）⇒ 应用**未公证** ⇒ Gatekeeper 不为它背书。
 - ⇒ **除了 Sparkle 的验签，没有任何东西能证明「这个 dmg 是你发的」。**
 - 对照：`.4` 之前 `appcast.xml` 的 `edSignature` 计数 = **0**、Info.plist 无 `SUPublicEDKey`
   ⇒ Sparkle **跳过验签**（`build_app.sh` 自己的注释就写着「为空时…Sparkle 于是跳过验签」）。
@@ -6252,7 +6252,7 @@ SwiftUI `body`、字符串反射都可能让「看起来没人调」的方法其
   （`generate_keys -x <文件>`，导出的是明文，**别放仓库**）。
 - tag `v2026.09.18.4` 从 `7da076b` 移到 `ccf505e`（force-push `442d0a6 → 0645a9a`）。
 - Release **由我建**：`gh release create v2026.09.18.4 …`（`--prerelease`，与前 3 个一致），
-  资产 `DiskEjector-2026.09.18.4.dmg`（**名字没改**）+ `DiskEjector-2026.09.18.4.zip`。
+  资产 `SafeOut-2026.09.18.4.dmg`（**名字没改**）+ `SafeOut-2026.09.18.4.zip`。
 
 ### §8.49.5 验真：**「文件里出现了签名」不等于「签得对」**
 
@@ -6297,7 +6297,7 @@ SwiftUI `body`、字符串反射都可能让「看起来没人调」的方法其
 ## §8.50 把「有声明、没有消费者」钉进 CI：偏好键 + 设计令牌（2026-09-18 22:20）
 
 关掉「仍开着」表**第 16 行**。上一轮（§8.48）删掉了 15 个零消费者令牌 + 2 个零消费者文案键，
-但**当时没有守卫** —— 这一轮把两个 suite 补上：`Tests/DiskEjectorAppTests/DeclarationConsumerTests.swift`。
+但**当时没有守卫** —— 这一轮把两个 suite 补上：`Tests/SafeOutAppTests/DeclarationConsumerTests.swift`。
 
 ### §8.50.1 口径（两个 suite 共用）
 
@@ -6624,7 +6624,7 @@ cp /tmp/x.bak 文件 && cmp -s 文件 /tmp/x.bak && echo "还原 OK"
 **没有守卫，下一轮还会长出来**。而 §8.50 的经验是「扫描器 ≠ 守卫」，
 `.build/probe/*.py` 不进 CI，人一走就没人跑。
 
-新增 `Tests/DiskEjectorAppTests/DesignDraftIntegrityTests.swift`，两个维度共 **6 条**。
+新增 `Tests/SafeOutAppTests/DesignDraftIntegrityTests.swift`，两个维度共 **6 条**。
 
 ### §8.53.2 两个维度的**判据不同**，别混为一谈
 
@@ -7109,7 +7109,7 @@ ds.js 实现了**属性级翻译**（`data-i18n-attr="aria-label:键,title:键"`
 ### §8.59.3 ⚠️ 反向的排除源：代码块也会**假扮标题**
 
 首跑的反向清单里冒出一个 **「0」章** —— 追下去发现是代码围栏里的 AppKit 堆栈
-（`#0  [AppKit] NSBeep` … `#8  [DiskEjectorApp] …`）被当成 markdown 标题，
+（`#0  [AppKit] NSBeep` … `#8  [SafeOutApp] …`）被当成 markdown 标题，
 凭空造出 0–8 九个「章」。
 
 它的危害**不是**难看：假标题会**掩盖真的断引用**（写错成 `§3` 却恰好有个假的 "3"）
@@ -7394,7 +7394,7 @@ M43 的修法第一版是「`SPEC.md` 里所有 `scripts/*.sh` 引用必须唯�
 
 ### §8.62.7 已知局限
 
-- 「主名」按 `·` 切分取第一段 —— 页面标题都用 `名字 · DiskEjector UI v2` 这一格式；换格式要跟着改。
+- 「主名」按 `·` 切分取第一段 —— 页面标题都用 `名字 · SafeOut UI v2` 这一格式；换格式要跟着改。
 - 只比对 `screens/` 下的页面；`index.html` 自己不在范围内。
 - 不同页面**同名**不会被发现（只看「每个页面的名字是否自洽」）。
 - nav 只守「**列全**」，不守「可见」：给某条链接加 `hidden` 仍然算列全（M64 实测为绿）——
@@ -7562,7 +7562,7 @@ M71 / M72 / M76 各只红一条 ⇒ 三条守卫**不是靠同一处重复报警
 ### §8.65.3 第四条为什么判据可以这么硬
 
 「英文列含 CJK 就算漏翻」是个**很硬**的判据，能用是因为**实测英文列 0 处含中文**，
-不存在「本来就该留中文」的例外（应用名在英文列是 `DiskEjector`，不是中文）。
+不存在「本来就该留中文」的例外（应用名在英文列是 `SafeOut`，不是中文）。
 ⇒ 判据能不能硬，取决于**扫没扫过反例**，不是取决于它听起来严不严。
 
 ### §8.65.4 ⚠️ 装置坑：`matches` 固定取**捕获组 1**，非捕获组会 abort
@@ -7958,7 +7958,7 @@ function fill(value, args) {           // 按顺序把 %@ / %d 换成参数
 顺带把 03 的两处源码快照改成 `即将推出「Samsung T7」`（值里有「」）⇒ 兜底文本与加载后一致
 （§8.69.7 那条不变量）。
 
-剩下 **2 处**是**画框说明**（`DiskEjector 主窗口，列出三块外置磁盘`）—— 描述的是
+剩下 **2 处**是**画框说明**（`SafeOut 主窗口，列出三块外置磁盘`）—— 描述的是
 **设计稿这个画框本身**，不是产品界面文案 ⇒ 沿用 `frame__label` 的判据登记豁免，
 并配守卫 62 防止豁免表过期。
 
@@ -8063,7 +8063,7 @@ HTML 里的 `data-i18n-args` 全都还在 ⇒ **守卫 63 依然是绿的**，�
 ### §8.71.2 修法：不去逐个补断言，收成一张表 + 双向账本
 
 逐个补的话，**第 5 个、第 6 个窗口尺寸出现时，仍然没人知道该去哪儿补**。
-⇒ 新增 `Tests/DiskEjectorAppTests/DesignSizeParityTests.swift`：
+⇒ 新增 `Tests/SafeOutAppTests/DesignSizeParityTests.swift`：
 一张 `pairs` 表 + 三条差集守卫 + 一条取值歧义守卫。
 
 | 项 | 设计稿那一头 | 实现那一头 | 读数 |
@@ -8880,8 +8880,8 @@ scan.used.formUnion(Self.classAttributes(in: try read(jsURL)))
 
 | 文件 | 改动 |
 |---|---|
-| `Tests/DiskEjectorAppTests/DesignDraftIntegrityTests.swift` | 修 `load()` 第 ③ 步；新增 `runtimeClasses(in:)`；`Scan` 加 `pageLocal` / `runtimeCreated`；三张账本；4 条守卫（替换掉原来那条「只打印」） |
-| `DiskEjector-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.76；订正 §8.52.5 与 §8.75.7；「仍开着」表加第 24 行 + 刷新核对时刻 |
+| `Tests/SafeOutAppTests/DesignDraftIntegrityTests.swift` | 修 `load()` 第 ③ 步；新增 `runtimeClasses(in:)`；`Scan` 加 `pageLocal` / `runtimeCreated`；三张账本；4 条守卫（替换掉原来那条「只打印」） |
+| `SafeOut-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.76；订正 §8.52.5 与 §8.75.7；「仍开着」表加第 24 行 + 刷新核对时刻 |
 | `.build/probe/round28/*` | 探针与变异脚本（**不进版本库**，`.build` 已忽略） |
 
 ⚠️ **设计稿的 HTML / CSS / JS 一个字都没动** —— 本轮是「给已有事实补守卫」，不是改设计。
@@ -9082,9 +9082,9 @@ scan.used.formUnion(Self.classAttributes(in: try read(jsURL)))
 
 | 文件 | 改动 |
 |---|---|
-| `Tests/DiskEjectorAppTests/PaletteColorParityTests.swift` | **新增**（4 条守卫 / 同源表 26 项 / 豁免表 4 项 / 解析层含 `stripComments`） |
+| `Tests/SafeOutAppTests/PaletteColorParityTests.swift` | **新增**（4 条守卫 / 同源表 26 项 / 豁免表 4 项 / 解析层含 `stripComments`） |
 | `Sources/Views/DesignTokens.swift` | 新增 `edge(_:)`；`border` / `borderStrong` / `hairline` 改用 `edge`（**修掉 3 处深色侧偏差**）；补注释 |
-| `DiskEjector-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.77；订正 §8.57.6 #1 的边界；「仍开着」表加第 25 行 + 刷新核对时刻 |
+| `SafeOut-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.77；订正 §8.57.6 #1 的边界；「仍开着」表加第 25 行 + 刷新核对时刻 |
 | `.build/probe/round29/*` | 探针与变异脚本（**不进版本库**，`.build` 已忽略） |
 
 ⚠️ **设计稿的 HTML / CSS / JS 一个字都没动** —— 本轮是「给已有事实补守卫 + 修实现侧的偏差」。
@@ -9265,9 +9265,9 @@ M220b 只塞注释、不动代码 ⇒ **仍绿**（证明注释也不会**误伤
 | `Sources/Views/DesignSystemComponents.swift` | `NoticeBanner.message` 类型 `String` → **`Text`**；内部 `Text(message)` → `message` |
 | `Sources/Views/ContentView.swift` | `fdaBannerLead` 那处包 `MarkdownCopy.text(...)`（**修掉裸星号**）；`fdaGrantedBanner` 显式写 `Text(...)` + 注释说明**为什么别顺手改** |
 | `Sources/Views/OnboardingView.swift` | 删掉私有 `markdownText(_:)`（注释搬进 `MarkdownCopy`）；3 个调用点改指共享实现 |
-| `Tests/DiskEjectorAppTests/MarkdownCopyTests.swift` | **新增**（221 行）：3 条守卫 + 3 个解析辅助（整 suite `@MainActor`） |
-| `Tests/DiskEjectorAppTests/SnapshotRenderTests.swift` | 横幅夹具跟生产改；加注释「这两处的实参必须与 `ContentView.bannerArea` 逐字一致」 |
-| `DiskEjector-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.78；「仍开着」表加第 26 行 + 刷新核对时刻 |
+| `Tests/SafeOutAppTests/MarkdownCopyTests.swift` | **新增**（221 行）：3 条守卫 + 3 个解析辅助（整 suite `@MainActor`） |
+| `Tests/SafeOutAppTests/SnapshotRenderTests.swift` | 横幅夹具跟生产改；加注释「这两处的实参必须与 `ContentView.bannerArea` 逐字一致」 |
+| `SafeOut-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.78；「仍开着」表加第 26 行 + 刷新核对时刻 |
 | `.build/probe/round29/*` | 探针与变异脚本（**不进版本库**，`.build` 已忽略） |
 
 ⚠️ **设计稿的 HTML / CSS / JS 一个字都没动** —— 设计稿那一侧本来就是对的（§8.78.1）。
@@ -9284,7 +9284,7 @@ M220b 只塞注释、不动代码 ⇒ **仍绿**（证明注释也不会**误伤
 | tag | `v2026.09.19.1`（`git push origin v2026.09.19.1`） |
 | 版本 / build / commit | `2026.09.19.1` / **119** / `e981650` |
 | `SUPublicEDKey` | ✅ 已写入（`✓ SUPublicEDKey 已写入（更新会被验签）`） |
-| dmg / zip | `DiskEjector-2026.09.19.1.dmg`（2,702,041 B）+ `.zip`（2,603,477 B） |
+| dmg / zip | `SafeOut-2026.09.19.1.dmg`（2,702,041 B）+ `.zip`（2,603,477 B） |
 | GitHub Release | ✅ 已建（`--prerelease`） |
 | enclosure 回读 | ✅ **200**，`content-length: 2702041`（与本地逐字节同尺寸） |
 | `appcast.xml` | ✅ 已提交推送（`c59c81d`），raw 地址回读为 `2026.09.19.1` / `119` |
@@ -9465,7 +9465,7 @@ M220b 只塞注释、不动代码 ⇒ **仍绿**（证明注释也不会**误伤
 | 文件 | 改动 |
 |---|---|
 | `Sources/Services/UpdateController.swift` | **只有注释**：订正 `automaticallyDownloadsUpdates` 上一处**说反了**的说明，补上源码出处与本节实验结论 |
-| `DiskEjector-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.79；关掉「仍开着」表第 3 行、加第 27 行、刷新核对时刻 |
+| `SafeOut-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.79；关掉「仍开着」表第 3 行、加第 27 行、刷新核对时刻 |
 
 ⚠️ **`.build/probe/round30/` 的探针脚本不入库**（`.build/` 已被忽略）。
 其中值得留下来复用的四个：`quitprobe.swift`（内核视角问「退了没」）、
@@ -9682,9 +9682,9 @@ stash 前后用 `git diff | shasum` 核对指纹，确认改动完整还原。
 |---|---|
 | `Sources/Services/UpdateController.swift` | 新增 `updater(_:willInstallUpdateOnQuit:immediateInstallationBlock:)`（返回 `true`）＋ `PendingUpdate.init(appcastItem:)`（唯一的 appcast 翻译入口）；订正 `allowsAutomaticUpdates` 上一处与源码相反的注释；补 `readyReply` / `installReadyUpdate` 的两来源说明 |
 | `Sources/Services/UpdateUserDriver.swift` | `showUpdateFound` 改用 `PendingUpdate(appcastItem:)`；订正「开关开着就静默下载（设置行显示进度）」这句的**适用范围** |
-| `Tests/DiskEjectorAppTests/UpdateSettingsTests.swift` | 新增 4 条守卫（见 §8.80.5） |
-| `DiskEjector-UI-Design/v2/screens/08-update.html` | C 段第 3 / 7 / 8 行按本轮结论订正；D 段新增一条说明（为什么中间那段画不出来） |
-| `DiskEjector-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.80；关掉「仍开着」表第 27 行、加第 28 行、刷新核对时刻与表末那段 |
+| `Tests/SafeOutAppTests/UpdateSettingsTests.swift` | 新增 4 条守卫（见 §8.80.5） |
+| `SafeOut-UI-Design/v2/screens/08-update.html` | C 段第 3 / 7 / 8 行按本轮结论订正；D 段新增一条说明（为什么中间那段画不出来） |
+| `SafeOut-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.80；关掉「仍开着」表第 27 行、加第 28 行、刷新核对时刻与表末那段 |
 
 **提交**：`41fd71e`（5 files, +583/−23），**已推送**（`3ae3951..41fd71e`；
 本地 = 远端 = `41fd71e`，工作区 0 脏）。§8.80.9 那次修复与本节是同一个提交 ——
@@ -9872,9 +9872,9 @@ stash 前后用 `git diff | shasum` 核对指纹，确认改动完整还原。
 |---|---|
 | `Sources/Services/UpdateController.swift` | 新增 `updater(_:willDownloadUpdate:with:)`（自动那条路上「后台下载中」的唯一来源）；`UpdatePhase.downloading` 的百分比 `Double` → **`Double?`**（`nil` = 无从得知）；`shouldPublishProgress` 接受 `Double?`；`driverDidFindUpdate` 的自动分支改成 `nil`；订正 `willInstallUpdateOnQuit` 那段「中间那段画不出来」的结论（连「为什么漏」一起写下来） |
 | `Sources/Views/SettingsView.swift` | `.downloading` 那一支按 `fraction` 分岔：有值画进度条 + 「取消」；`nil` 只有那句话 + `EmptyView()` |
-| `Tests/DiskEjectorAppTests/UpdateSettingsTests.swift` | 新增 4 条守卫（25 → **29** 条）；新增 `caseBlock(_:in:)` 辅助（取 `switch` 里某一个 `case` 的整段） |
-| `DiskEjector-UI-Design/v2/screens/08-update.html` | **B 段新增 3b 一帧**（自动那条路的外观）；C 段第 3、7 行订正；D 段那条整段改写（「画不出来」→「画得出来，但不带百分比」） |
-| `DiskEjector-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.81；关掉「仍开着」表第 28 行、新开第 29/30/31 行；刷新核对时刻与表末那段 |
+| `Tests/SafeOutAppTests/UpdateSettingsTests.swift` | 新增 4 条守卫（25 → **29** 条）；新增 `caseBlock(_:in:)` 辅助（取 `switch` 里某一个 `case` 的整段） |
+| `SafeOut-UI-Design/v2/screens/08-update.html` | **B 段新增 3b 一帧**（自动那条路的外观）；C 段第 3、7 行订正；D 段那条整段改写（「画不出来」→「画得出来，但不带百分比」） |
+| `SafeOut-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.81；关掉「仍开着」表第 28 行、新开第 29/30/31 行；刷新核对时刻与表末那段 |
 | `scripts/coverage.sh` | **修一个「门槛本身是假的」的 bug**（§8.81.9）：原来用 `find -print -quit` 取 profdata，稳定取到陈旧的那份 ⇒ 覆盖率被系统性低估且零警告 |
 
 **本轮提交：`0d1f541`**（6 个文件 / +873 −326），已推送（`ba8e48b..0d1f541`）。
@@ -10055,11 +10055,11 @@ M239 改了 `Localizable.xcstrings` 但 **restore 脚本只还原了 view + html
 |---|---|
 | `Sources/Views/SettingsView.swift` | `.downloading` 的 else 分支加 `description: L10n.tr(.updateDownloadingHint)`（带「两种来源都成立」的注释）；注释里的「七态」→「各态」（2 处） |
 | `Sources/Localization/Localizable.xcstrings` | 新增 `updateDownloadingHint`（zh-Hans / en / zh-Hant） |
-| `DiskEjector-UI-Design/v2/assets/i18n.js` | 生成物，跟着 xcstrings 重生（`tools/build_i18n.py`） |
-| `DiskEjector-UI-Design/v2/screens/08-update.html` | 3b 帧加 `.sline__desc`（与实现同键）+ 说明段补「为什么这一态反而多了一行」 |
-| `Tests/DiskEjectorAppTests/SettingsLayoutTests.swift` | 加第八态；函数名 / 注释 / 打印 / 消息里的「七态」→「各态」 |
-| `Tests/DiskEjectorAppTests/SnapshotRenderTests.swift` | 加 `downloading-unknown` 那一格；注释里的「七态」→「八态」 |
-| `Tests/DiskEjectorAppTests/UpdateSettingsTests.swift` | 新增 `设计稿3b那一帧与实现用同一个说明键`；新增 `slice(after:upTo:in:)` 辅助（用 `range(of:)` 取真实值，不是 `contains`） |
+| `SafeOut-UI-Design/v2/assets/i18n.js` | 生成物，跟着 xcstrings 重生（`tools/build_i18n.py`） |
+| `SafeOut-UI-Design/v2/screens/08-update.html` | 3b 帧加 `.sline__desc`（与实现同键）+ 说明段补「为什么这一态反而多了一行」 |
+| `Tests/SafeOutAppTests/SettingsLayoutTests.swift` | 加第八态；函数名 / 注释 / 打印 / 消息里的「七态」→「各态」 |
+| `Tests/SafeOutAppTests/SnapshotRenderTests.swift` | 加 `downloading-unknown` 那一格；注释里的「七态」→「八态」 |
+| `Tests/SafeOutAppTests/UpdateSettingsTests.swift` | 新增 `设计稿3b那一帧与实现用同一个说明键`；新增 `slice(after:upTo:in:)` 辅助（用 `range(of:)` 取真实值，不是 `contains`） |
 
 **本轮提交：`682cd76`**（8 个文件 / +260 −21），已推送（`6c2a35a..682cd76`）。
 
@@ -10177,7 +10177,7 @@ M239 改了 `Localizable.xcstrings` 但 **restore 脚本只还原了 view + html
 | 文件 | 改动 |
 |---|---|
 | `Sources/Services/UpdateController.swift` | 新增 `nonisolated static func shouldEnterBackgroundDownload(phase:autoDownloads:)`（与 `shouldPublishProgress` / `isDownloadFailure` 同区）；`willDownloadUpdate` 体的 guard 改成调它 |
-| `Tests/DiskEjectorAppTests/UpdateSettingsTests.swift` | 改写 `自动那条路的下载开始也由delegate送达`（读**两个体**：纯函数体钉判据，方法体钉调用关系与不猜 0）；新增 `shouldEnterBackgroundDownload的真值表`（7 个组合，顺推 + reverse） |
+| `Tests/SafeOutAppTests/UpdateSettingsTests.swift` | 改写 `自动那条路的下载开始也由delegate送达`（读**两个体**：纯函数体钉判据，方法体钉调用关系与不猜 0）；新增 `shouldEnterBackgroundDownload的真值表`（7 个组合，顺推 + reverse） |
 
 **本轮提交：`7e4d6e8`**（3 个文件 / +230 −13），已推送（`793016e..7e4d6e8`）。
 
@@ -10260,7 +10260,7 @@ func failedToDownloadUpdate(...) {
 
 | 文件 | 改动 |
 |---|---|
-| `Tests/DiskEjectorAppTests/UpdateSettingsTests.swift` | 新增 `failedToDownloadUpdate必须真的接通delegate那条路`（3 条断言） |
+| `Tests/SafeOutAppTests/UpdateSettingsTests.swift` | 新增 `failedToDownloadUpdate必须真的接通delegate那条路`（3 条断言） |
 
 **本轮提交：`d6cb99b`**（2 个文件 / +134 −7），已推送（`860a262..d6cb99b`）。
 
@@ -10390,7 +10390,7 @@ func failedToDownloadUpdate(...) {
 
 | 文件 | 改动 |
 |---|---|
-| `DiskEjector-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.85；关掉「仍开着」表**第 30 行**、新开**第 34 行**、刷新核对时刻 |
+| `SafeOut-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.85；关掉「仍开着」表**第 30 行**、新开**第 34 行**、刷新核对时刻 |
 | `.build/probe/round36/`（不入库） | `axtext.swift` / `open_settings.swift` / `auto_ui` / `auto_download_probe.sh` / `logs/` |
 
 **本轮提交：`40b5807`**（1 个文件 / +122 −3），已推送（`514da3c..40b5807`）。
@@ -10466,7 +10466,7 @@ func failedToDownloadUpdate(...) {
 
 | 文件 | 改动 |
 |---|---|
-| `DiskEjector-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.86；刷新第 10、32 行的「现状」列与核对时刻 |
+| `SafeOut-UI-Design/v2/DESIGN-SPEC.md` | 新增 §8.86；刷新第 10、32 行的「现状」列与核对时刻 |
 | `.build/probe/round36/`（不入库） | `axtext.swift` / `open_settings.swift` / `local_feed` / `feedurl_honored.sh` / `filefeed.sh` / `nokey_real.sh` / `probefeed_auto.sh` / `dl_watch.sh` / `noproxy.sh` |
 
 ### §8.86.7 ⚠️ 门槛**偶发红了一次，而且没拿到它的名字**（新开第 35 行）
@@ -10772,7 +10772,7 @@ Sparkle 会走失败回调 ⇒ 直接进 `.failed`，**根本轮不到看门狗*
 
 ---
 
-## 8.91 第 36 轮续：`DiskEjectorApp.swift` 的分家尝试 —— **做不成，如实记**（新开第 37 行）
+## 8.91 第 36 轮续：`SafeOutApp.swift` 的分家尝试 —— **做不成，如实记**（新开第 37 行）
 
 ### §8.91.1 想做什么、撞到什么
 
@@ -10792,7 +10792,7 @@ Sparkle 会走失败回调 ⇒ 直接进 `.failed`，**根本轮不到看门狗*
    而且是**裸名**访问（不带 `self.`）。
    ⚠️ **我第一版的判据是「块内 `self.` 出现 0 次就安全」—— 这个判据是错的**，
    它看不见裸名访问。**先量后动**在这里救了我：编译立刻报出来，没有留下坏代码。
-3. 这些代码在 `Sources/DiskEjectorApp/` ⇒ **不在覆盖率分母里、也没有单测**
+3. 这些代码在 `Sources/SafeOutApp/` ⇒ **不在覆盖率分母里、也没有单测**
    ⇒ 外移**只能靠「编译通过」验收**，改坏了没有测试会红。
 
 ### §8.91.3 为什么当时没直接放宽访问
@@ -10870,7 +10870,7 @@ helper 自己的文档写着「**不持有会被立刻释放**」，而 5 个调
 
 ## 8.93 第 37 轮：把**发布产物**真的跑一遍（dist 冒烟）+ 一次「测量装置自己错了」的订正
 
-> 起点 `HEAD` = `dcfb57a`（工作区 0 脏）。这一轮做的事：**从 `dist/DiskEjector.app`
+> 起点 `HEAD` = `dcfb57a`（工作区 0 脏）。这一轮做的事：**从 `dist/SafeOut.app`
 > 普通启动**，把界面回执读出来 —— 打包问题只有从 `.app` 起来才暴露得出来。
 
 ### §8.93.1 为什么是 dist 产物，而不是 debug 构建
@@ -10985,13 +10985,13 @@ t≈0.5s … t≈4.0s   AXStaticText 『检查更新』   AXButton [enabled] 『
 
 ### §8.94.1 为什么还要再跑一次
 
-§8.93 跑的是 `dist/DiskEjector.app`（**中间产物**）。真正分发的是 **dmg**，
+§8.93 跑的是 `dist/SafeOut.app`（**中间产物**）。真正分发的是 **dmg**，
 而用户最常见的行为是「挂载后直接双击」（很多人不会拖到 Applications）。
 dmg 挂载出来是**只读卷** —— 那是完全另一种运行环境，前一轮的结论**不适用**于它。
 
 ### §8.94.2 现象：界面一切正常，但快得可疑
 
-从 `/Volumes/DiskEjector` 启动（`lsof` 确认可执行文件与 `Sparkle.framework` **都从卷里加载**）：
+从 `/Volumes/SafeOut` 启动（`lsof` 确认可执行文件与 `Sparkle.framework` **都从卷里加载**）：
 设置窗各格都在，版本显示 `2026.09.20.2 · 构建 145 · 官网直发版`，**没有任何「请拖到应用程序」的提示**。
 
 点「检查更新」：**0.17s 内**「上次检查」就刷新了，仍显示「已是最新版本」。
@@ -11522,7 +11522,7 @@ if let controller, UpdateController.isUpdateLocationBlocked(error) {
   `data-page-node-id="…"` 这类**属性**）时…」；
 - `MeterThresholdParityTests.swift:33`：「不是 `data-page-node-id` 那种**编辑器注入的**」。
 
-⇒ `data-page-node-id` 是**设计工具注入**的（`DiskEjector-UI-Design/` 下有 `.design` /
+⇒ `data-page-node-id` 是**设计工具注入**的（`SafeOut-UI-Design/` 下有 `.design` /
 `pages/` / `runtime-*.json`，是设计工具的工程），**我造不出合法 ID**，
 且手改会被编辑器重写覆盖。⇒ 选项 A（补帧）**需要设计工具，不是我能做的**。
 
@@ -11611,7 +11611,7 @@ if let controller, UpdateController.isUpdateLocationBlocked(error) {
 ⚠️ **`nonisolated` 与 `async` 缺一不可**：`nonisolated` 但**同步**的函数仍在**调用者的线程**上执行
 —— 从主 actor 调它就是占住主 actor。这一条后来直接变成了守卫口径的第 2 条（§8.99.5）。
 
-### §8.99.3 新增守卫：`Tests/DiskEjectorAppTests/MainActorBlockingTests.swift`
+### §8.99.3 新增守卫：`Tests/SafeOutAppTests/MainActorBlockingTests.swift`
 
 静态源码守卫。**为什么不能用运行时探针**：要测的是「主 actor 会不会被占住」，
 而占住它的是**别的**测试 ⇒ 在任何单个测试内部都观测不到。
@@ -11782,7 +11782,7 @@ EXIT=1，2 issues。还原用 `cp` + `cmp -s`，残留自证为空。
 看起来像 `log` 的报错。用 `bash -c` 包一层（**不带 zsh**）后拿到干净结论：
 
 ```
-$ bash -c 'log show --last 2m --predicate "subsystem == \"com.diskejector.app\""'
+$ bash -c 'log show --last 2m --predicate "subsystem == \"com.safeout.app\""'
 log: Cannot run while sandboxed
 ```
 
@@ -11881,7 +11881,7 @@ E. sandbox_init("(version 1)(allow default)") = 0
 
 | | §8.91 写的 | 实测（2026-09-20 15:15） |
 |---|---|---|
-| `DiskEjectorApp.swift` 总行数 | 2351 | **2351**（对） |
+| `SafeOutApp.swift` 总行数 | 2351 | **2351**（对） |
 | 自检区（598–1689，六个 `MARK` 段） | 「约 660 行」 | **1085 行**，占 **46%** |
 
 成因大概是当初只数了「入口 + `dump*`」那几支，漏了「交通灯基线」那一段 ——
@@ -11972,8 +11972,8 @@ v1 / v2 都跑得出来、表格也好看，只有**结论荒谬**（「一行�
 
 | | 搬运前 | 搬运后 |
 |---|---|---|
-| `Sources/DiskEjectorApp/DiskEjectorApp.swift` | 2351 行 | **1895 行** |
-| `Sources/DiskEjectorApp/WindowSelfCheck.swift` | 不存在 | **485 行**（新增） |
+| `Sources/SafeOutApp/SafeOutApp.swift` | 2351 行 | **1895 行** |
+| `Sources/SafeOutApp/WindowSelfCheck.swift` | 不存在 | **485 行**（新增） |
 | diff | — | 12 增 / 468 删（git 把旧 MARK 行与新 MARK 首行配成一对「改动」） |
 
 #### ① 交付物：`@MainActor enum WindowSelfCheck` + 7 个 `static func`
@@ -12073,7 +12073,7 @@ v1 / v2 都跑得出来、表格也好看，只有**结论荒谬**（「一行�
 #### ⑤ 这次**没有**变的东西（别当成已解决）
 
 - 这 7 个函数**仍不进覆盖率分母**（`coverage.sh` 的 `-ignore-filename-regex` 含
-  `Sources/DiskEjectorApp/`；外移**只换文件、不换 target**）⇒ 覆盖率数字**不变**（62.84%）
+  `Sources/SafeOutApp/`；外移**只换文件、不换 target**）⇒ 覆盖率数字**不变**（62.84%）
   **不是「没生效」**。
 - 它们**仍没有单测**。本次的「安全」完全来自**机械等价校验 + 编译器**，不是来自测试。
 - **全量外移**（那 624 行 `dump*` / 入口）**仍未做**，且**不建议做**（要放宽 4 个状态属性）。
@@ -12477,7 +12477,7 @@ CI run **`35502903622`**（提交 `ec0e18f`）**success**，`./run.sh ci` 退出
 
 ```
 $ git ls-files '*.md'
-DiskEjector-UI-Design/v2/DESIGN-SPEC.md
+SafeOut-UI-Design/v2/DESIGN-SPEC.md
 README.md
 SPEC.md
 release-notes/README.md
@@ -12735,7 +12735,7 @@ CI run **`35507037840`**（提交 `5031500`）**success**，退出码 **0**。
 **十几秒**，而且结果随网络抖动。⇒ 一道**与网络无关**的门槛自己变成 flaky，
 **那正是「门槛会自己烂掉」的来源**。`--offline` 那一档实测 **4.4s**（含 `gh_retry` 两次重试的 `sleep 1`）。
 
-**守卫**（`Tests/DiskEjectorAppTests/ToolingClaimTests.swift`，3 条）：
+**守卫**（`Tests/SafeOutAppTests/ToolingClaimTests.swift`，3 条）：
 
 - `活文件里不得写死门槛数量` —— 判据是「行里出现 **数量 + 道门槛**」（数量可以是
   阿拉伯数字也可以是中文数词，本仓库两种都真写过）；**变量不算**
@@ -12771,7 +12771,7 @@ CI run **`35507037840`**（提交 `5031500`）**success**，退出码 **0**。
 提交 `55a7af1` 的 CI run **`35509585072`** **failure**：门槛 4（脚本冒烟）报
 
 ```
-/Users/runner/work/DiskEjector/DiskEjector/scripts/test/ci_status_smoke.sh: line 65: name: unbound variable
+/Users/runner/work/SafeOut/SafeOut/scripts/test/ci_status_smoke.sh: line 65: name: unbound variable
 ```
 
 而**本地 5 道门槛全绿** —— 又一个「本地绿 / CI 红」。这次的成因此前没见过。
@@ -12916,7 +12916,7 @@ CI run **`35511035474`** failure：这次值对了（`nil`），红的是超时�
    若哪天超时真的失效，`callbackElapsed` 一样会红。
 2. **产品侧顺手加固**：超时定时器原本跑在 `DispatchQueue.global()` 上，
    而**管道的 `readabilityHandler` 也在那条队列上** ⇒ 抢的是同一批线程。
-   改成**专用队列** `DiskEjector.SubprocessOutput.timeout`。
+   改成**专用队列** `SafeOut.SubprocessOutput.timeout`。
    理由是它对**正确性**是前提：定时器来晚了 = 「超时是装饰」那个 bug（刷新一直转圈）又回来了。
 
 **⚠️ 诚实记录**：这条同样**修不出确定性回归测试** —— 那段延迟只在 CI 高负载时出现，
@@ -13114,7 +13114,7 @@ CI run **`35517042847`**（提交 `a3f6333`）**success**，退出码 **0**。
 
 ```
 test -d "$APP" || exit 1
-find "$APP" -maxdepth 4 \( -name "*.plist" -o -name "DiskEjectorApp" -o -name "*.icns" \)
+find "$APP" -maxdepth 4 \( -name "*.plist" -o -name "SafeOutApp" -o -name "*.icns" \)
 ```
 
 ⇒ **只要构建没崩就算过**。而下面每一条缺失时**打包都一路绿灯**：
@@ -13502,7 +13502,7 @@ nonisolated static func waitForExecutablePath(pid: Int32, timeoutMS: Int = 2000)
 
 ```text
 GET /appcast.xml                  UA=??????/2026.09.21.1 Sparkle/2.10.0
-GET /DiskEjector-2026.09.99.1.zip UA=??????/2026.09.21.1 Sparkle/2.10.0
+GET /SafeOut-2026.09.99.1.zip UA=??????/2026.09.21.1 Sparkle/2.10.0
 ```
 
 ⇒ Sparkle **真的取了 appcast、真的下载了归档**。两个关键前提，都是**撞对了才发现的**：
@@ -13512,7 +13512,7 @@ GET /DiskEjector-2026.09.99.1.zip UA=??????/2026.09.21.1 Sparkle/2.10.0
   ⚠️ 我先前用 `security find-generic-password -s "Sparkle"` 判定「没有私钥」，
   是**服务名猜错了**（Sparkle 存的不是这个 service）⇒ 差点为此白跑一次打包。
 - Sparkle 的 `SUFeedURL` **支持用户域覆盖** ⇒ `defaults write` 就够，
-  **不动 app 本体、不破坏代码签名**（bundle id = `com.diskejector.app`）。
+  **不动 app 本体、不破坏代码签名**（bundle id = `com.safeout.app`）。
 
 #### 观测结果：那一瞬**不存在**
 
@@ -13550,7 +13550,7 @@ GET /DiskEjector-2026.09.99.1.zip UA=??????/2026.09.21.1 Sparkle/2.10.0
 - ⬜ 未验：**Developer ID 签名**构建上的行为（本环境只有自签身份，没有 Apple 签发的证书；
   `TeamIdentifier=not set` 改不了）。
   ⚠️ **2026-09-21 订正（§8.113.14）**：当时记的「自签产物」其实**是签了的**
-  （`Authority=DiskEjector Dev Signing`、`--deep --strict` 通过）—— 界面那句
+  （`Authority=SafeOut Dev Signing`、`--deep --strict` 通过）—— 界面那句
   「当前构建未签名」是**误报**（真因是我们把自动检查关了），已在 §8.113.14 修。
   ⇒ 别再把这句当作「产物未签名」的证据。
 
@@ -13708,7 +13708,7 @@ green  浅 rgba(52,199,89)   深 rgba(76,217,100)    #34c759 / #4cd964
 
 #### 起因：那句「当前构建未签名」是假的
 
-`dist` 产物其实**是签了的**（`codesign -dv` ⇒ `Authority=DiskEjector Dev Signing`、
+`dist` 产物其实**是签了的**（`codesign -dv` ⇒ `Authority=SafeOut Dev Signing`、
 `--deep --strict` 通过、`spctl` accepted），可界面上写的是
 「当前构建未签名，系统不允许自动更新」。⇒ 那句文案**指错了原因**。
 
@@ -14095,7 +14095,7 @@ run `35567313262` **结论 success** ⇒ 门槛 6（`scripts/coverage.sh`，含�
 
 | 层 | 报错 | 真因 |
 |---|---|---|
-| 1 | `.../DiskEjector/xcstringstool is not an executable file` | CLT 没有 `xcstringstool`（处理 `Sources/Localization/Localizable.xcstrings`）⇒ `xcrun --find` 失败 ⇒ SwiftPM 回落到**裸名字**并按**包根**解析 |
+| 1 | `.../SafeOut/xcstringstool is not an executable file` | CLT 没有 `xcstringstool`（处理 `Sources/Localization/Localizable.xcstrings`）⇒ `xcrun --find` 失败 ⇒ SwiftPM 回落到**裸名字**并按**包根**解析 |
 | 2 | `external macro implementation type 'SwiftUIMacros.StateMacro' could not be found` | `libSwiftUIMacros.dylib` 在 **platform** 目录（`MacOSX.platform/Developer/usr/lib/swift/host/plugins`），不在 toolchain 里；CLT 没有 `Platforms/` |
 
 第 1 层试了三条「放哪儿」，只有一条成立（**这是本节最值得记的一段**）：
@@ -14210,14 +14210,14 @@ run `35571137702` **结论 success**。⇒ 新代码在 **CI 的 Xcode 工具链
 #### 一、上一轮把结论下早了
 
 §8.113.19 第七节把它记成「**门槛 1 红是工具链差异、不是代码问题，别为它们改生产代码**」，
-且只记了**一条**：`DiskEjectorApp.swift:633` 的 `ImplicitStrongCapture`。
+且只记了**一条**：`SafeOutApp.swift:633` 的 `ImplicitStrongCapture`。
 本轮照那句话办之前先把门槛 1 修到绿，才发现**那句话数错了** ——
 而藏起来的那条，比露出来的那条更该修。
 
 #### 二、修掉第一条，第二条才露出来
 
 门槛 1 的命令是 `swift build --build-tests -Xswiftc -warnings-as-errors`。
-上一轮看到的唯一 `error:` 是 `DiskEjectorApp.swift:633`；把它改掉之后再跑，**又红**，
+上一轮看到的唯一 `error:` 是 `SafeOutApp.swift:633`；把它改掉之后再跑，**又红**，
 这次换成 `TestLanguage.swift:52`。
 
 真因不是「诊断只有一条」，而是**编译顺序**：
@@ -14232,8 +14232,8 @@ run `35571137702` **结论 success**。⇒ 新代码在 **CI 的 Xcode 工具链
 
 | 处 | 诊断原文 | 是不是「工具链差异」 | 修法 |
 |---|---|---|---|
-| `Sources/DiskEjectorApp/DiskEjectorApp.swift:633` | `'weak' ownership of capture 'self' differs from implicitly-captured strong reference in outer scope` | **半是**：诊断本身是新工具链新增的，但它指出的**不一致是真的** | 给外层 `Task` 写出显式 `[self]`（**行为一字不变**）|
-| `Tests/DiskEjectorAppTests/TestLanguage.swift:52` | `'withValue(_:operation:isolation:file:line:)' is deprecated` | **不是**：是 deprecated API，而且那个重载**零消费者** | 删掉那个 `async` 重载（**死代码**）|
+| `Sources/SafeOutApp/SafeOutApp.swift:633` | `'weak' ownership of capture 'self' differs from implicitly-captured strong reference in outer scope` | **半是**：诊断本身是新工具链新增的，但它指出的**不一致是真的** | 给外层 `Task` 写出显式 `[self]`（**行为一字不变**）|
+| `Tests/SafeOutAppTests/TestLanguage.swift:52` | `'withValue(_:operation:isolation:file:line:)' is deprecated` | **不是**：是 deprecated API，而且那个重载**零消费者** | 删掉那个 `async` 重载（**死代码**）|
 
 #### 四、第一条：两处所有权**故意不同**，但「不一致」是真的
 
@@ -14280,9 +14280,9 @@ run `35571137702` **结论 success**。⇒ 新代码在 **CI 的 Xcode 工具链
 
 #### 六、落地与验证
 
-- `Sources/DiskEjectorApp/DiskEjectorApp.swift`：`Task {` → `Task { [self] in`，
+- `Sources/SafeOutApp/SafeOutApp.swift`：`Task {` → `Task { [self] in`，
   并把「两处所有权为什么故意不同」写进注释（否则下一个读到的人还会想把它改回一致）。
-- `Tests/DiskEjectorAppTests/TestLanguage.swift`：删 `async` 重载，原地留「为什么删 + 将来怎么写」。
+- `Tests/SafeOutAppTests/TestLanguage.swift`：删 `async` 重载，原地留「为什么删 + 将来怎么写」。
 - 两处都**不改行为**；都**没有新增守卫** —— 因为**门槛 1 本身就是守卫**
   （`-warnings-as-errors`），而且它现在在**两把尺子**上都要绿。
 - 门槛 1 单独复跑（原样那条命令）：`exit=0`、`Build complete!`、**零 `error:` 行**。
@@ -14659,7 +14659,7 @@ $ DEVELOPER_DIR=/Library/Developer/CommandLineTools /usr/bin/git rev-parse --sho
 - 新增入库：`scripts/lib/find_git.sh`、`scripts/test/find_git_smoke.sh`、
   `scripts/test/fake-git-headless/git`；改动：`scripts/ci_status.sh`、
   `scripts/preflight.sh`、`scripts/test/ci_status_smoke.sh`、
-  `Tests/DiskEjectorAppTests/ToolingClaimTests.swift`。
+  `Tests/SafeOutAppTests/ToolingClaimTests.swift`。
 - 一次性诊断（**不入库**，`.build/` 会消失）：`.build/probe/scan_unbraced_vars.py`
   （同口径复刻那条守卫，可在 `git add` **之前**扫；带阳性/阴性对照自证）。
   ⇒ 有了第 2 条修法之后**不再需要**它，所以没入库。
@@ -14793,12 +14793,12 @@ CI 里测试跑在 `build_app.sh` **之前** ⇒ 它在 CI 上**永远空转**�
 变异：删掉键 ⇒ 判红；把值改成空串 ⇒ **不判红**（反向守卫）。
 
 **③ `AppVersionInfoTests.打包产物里确实写入了版本号与构建号` 硬编码绝对路径**
-（`/Users/wenbo/MyCode/AppleProject/DiskEjector/dist/DiskEjector.app`）⇒
+（`/Users/wenbo/MyCode/AppleProject/SafeOut/dist/SafeOut.app`）⇒
 在任何别的 checkout（CI runner / 另一台机器 / 另一个目录）上 `fileExists` 都是 false
 ⇒ 整条用例**静默空转**，与「查过了没问题」**逐字相同**。
 ⇒ 改成从 `#filePath` 派生仓库根，并把**跳过打出来**
 （`[打包产物] 跳过：… —— 本用例**未执行**`）。
-另加一条自证：派生出的路径必须 `hasSuffix("/dist/DiskEjector.app")`，
+另加一条自证：派生出的路径必须 `hasSuffix("/dist/SafeOut.app")`，
 否则「路径算错了」与「产物不存在」会走同一个 `return`（两者诊断方向完全不同）。
 
 #### 6. 仍开着
@@ -14828,8 +14828,8 @@ CI 里测试跑在 `build_app.sh` **之前** ⇒ 它在 CI 上**永远空转**�
   该提交只动了 `find_git.sh` 的 PATH 判据 + 冒烟脚本的回归用例 + 本文件。
 - 改动：`build_app.sh`、`scripts/lib/find_git.sh`、`scripts/test/find_git_smoke.sh`、
   `scripts/preflight.sh`、`scripts/verify_app.sh`、
-  `Tests/DiskEjectorAppTests/AppVersionInfoTests.swift`、
-  `Tests/DiskEjectorAppTests/ToolingClaimTests.swift`；
+  `Tests/SafeOutAppTests/AppVersionInfoTests.swift`、
+  `Tests/SafeOutAppTests/ToolingClaimTests.swift`；
   新增：`scripts/test/build_app_version_smoke.sh`。
 - ⚠️ **本轮的「门槛红」有一次是「我新写的注释自己违规」**：那条「`$变量` 后不得紧跟多字节字符」
   的守卫**连注释一起扫**，我把坏例子 `$ST` + 全角括号原样写进注释 ⇒ 当场判红。
@@ -14894,7 +14894,7 @@ CI 里测试跑在 `build_app.sh` **之前** ⇒ 它在 CI 上**永远空转**�
 
 **(1) `waitForDisk(timeout:probe:)`** —— 轮询到盘出现为止；返回 ``WaitOutcome`` ＋ **等到的那块盘**。
 
-- **复用既有的 ``WaitOutcome``**（`Tests/DiskEjectorAppTests/WaitOutcome.swift`），
+- **复用既有的 ``WaitOutcome``**（`Tests/SafeOutAppTests/WaitOutcome.swift`），
   **不造第三套**等待口径（另两处是 `OccupancyStoreTests.waitUntil` /
   `ProcessAppResolverTests.waitForExecutablePath`）。
 - 探针走 `Task.detached`，与 `DiskListStore.refresh()` **同一条路**（不占协作线程池的线程）。
@@ -14969,7 +14969,7 @@ CI 里测试跑在 `build_app.sh` **之前** ⇒ 它在 CI 上**永远空转**�
   `You have not agreed to the Xcode license agreements`（§8.113.19 那条）。
   ⇒ **门槛红 ≠ 代码红**：先看失败门的**名字**（这次三条同因，一眼能认），
   再决定要不要看代码。
-- 改动：`Tests/DiskEjectorAppTests/IntegrationEjectTests.swift`（测试侧）；
+- 改动：`Tests/SafeOutAppTests/IntegrationEjectTests.swift`（测试侧）；
   新增 `scripts/test/integration_wait_mutation.py`（变异装置，入库）；本文件。
   **生产代码一行未动** —— 这也是这一轮「要不要改产品」那个问题的答案。
 - ⚠️ 最慢 3 条第 1 条 `真实占用时关闭进程并推出()` 记的是 **21.604s** —— 那是
@@ -15048,8 +15048,8 @@ CI 里测试跑在 `build_app.sh` **之前** ⇒ 它在 CI 上**永远空转**�
 
 #### 6. 改动与门槛
 
-- `Tests/DiskEjectorAppTests/IntegrationEjectTests.swift`（① 改 2 拍、新增 ④、口径注释）
-- `Tests/DiskEjectorAppTests/WaitOutcome.swift`（`polls` 口径订正 + 「不许写 N ≥ 3」的推论）
+- `Tests/SafeOutAppTests/IntegrationEjectTests.swift`（① 改 2 拍、新增 ④、口径注释）
+- `Tests/SafeOutAppTests/WaitOutcome.swift`（`polls` 口径订正 + 「不许写 N ≥ 3」的推论）
 - `scripts/test/integration_wait_mutation.py`（M4 入库）
 - 本文件（§8.118）
 
@@ -15109,7 +15109,7 @@ CI 里测试跑在 `build_app.sh` **之前** ⇒ 它在 CI 上**永远空转**�
 #### 5. 改动清单（本节对应的两次提交）
 
 - `c692f61` —— `scripts/preflight.sh`（无条件 `export LC_ALL`）+ `GateParityTests`（新增守卫）
-- `4d88a86` —— `Tests/DiskEjectorAppTests/DocTableIntegrityTests.swift`（`--others`；
+- `4d88a86` —— `Tests/SafeOutAppTests/DocTableIntegrityTests.swift`（`--others`；
   `DocStatusMarkerTests` 复用同一函数 ⇒ 一处修两个守卫）+ 测试更名与两条失败信息改准
 
 **两者都是纯代码提交**（这次**没写** SPEC 章节）。补记在此，免得下一轮把
@@ -15132,7 +15132,7 @@ CI 里测试跑在 `build_app.sh` **之前** ⇒ 它在 CI 上**永远空转**�
 | delegate | `UpdateController.swift:810` | `下载失败：…` |
 | user driver | `UpdateUserDriver.swift:172` | `更新出错：…` |
 
-两条都是 `subsystem=com.diskejector.app` / `category=Update` / `privacy: .public`
+两条都是 `subsystem=com.safeout.app` / `category=Update` / `privacy: .public`
 ⇒ **读日志就能分清走的是哪条**，不需要碰界面。
 
 #### 3. 怎么造出一次「真的下载、且真的失败」
@@ -15159,7 +15159,7 @@ CI 里测试跑在 `build_app.sh` **之前** ⇒ 它在 CI 上**永远空转**�
 ⚠️ 一个小坑：Sparkle 只在「距上次检查超过间隔」时才在启动检查 ⇒ 还要删掉
 `SULastCheckTime` 才会真的去查。
 
-#### 4. 结果（`log show --predicate 'subsystem == "com.diskejector.app"'`）
+#### 4. 结果（`log show --predicate 'subsystem == "com.safeout.app"'`）
 
 ```
 00:45:37.690 I [Update] Sparkle 已启动，feed: http://127.0.0.1:8899/appcast.xml
@@ -15555,7 +15555,7 @@ validator 只在**安装器进程**里被实例化（`Autoupdate/AppInstaller.m:
 
 #### 1. 签名不是卡点（源码 + 实测）
 
-产物 `TeamIdentifier=not set` —— 自签身份（`DiskEjector Dev Signing`，OU=`DISKEJECTOR01`）
+产物 `TeamIdentifier=not set` —— 自签身份（`SafeOut Dev Signing`，OU=`DISKEJECTOR01`）
 **不产生** team ID ⇒ `SUCodeSigningVerifier.m:448-451` 拿不到 ⇒ **不设任何 XPC 校验要求**
 （`SetNoRequirementSuccess`）；`codesign -vvv --deep --strict` 嵌套代码全部 validated。
 
@@ -15568,11 +15568,11 @@ validator 只在**安装器进程**里被实例化（`Autoupdate/AppInstaller.m:
 1. 打包 `2026.09.22.1`（build 237）/ `2026.09.22.2`（238）；
    `generate_appcast --download-url-prefix http://127.0.0.1:8899/`（用钥匙串里的私钥签名）；
 2. `feedsrv.py 8899 --log .build/probe/round44/feed-hits.log` 供 feed 与 dmg；
-3. `defaults write com.diskejector.app SUFeedURL …`、删掉 `SULastCheckTime`、置 `SUAutomaticallyUpdate=1`；
+3. `defaults write com.safeout.app SUFeedURL …`、删掉 `SULastCheckTime`、置 `SUAutomaticallyUpdate=1`；
 4. 结果（feed 命中原文）：
    ```
    10:46:50  GET /appcast.xml                  UA=…/2026.09.21.1 Sparkle/2.10.0
-   10:46:50  GET /DiskEjector-2026.09.22.1.dmg UA=…/2026.09.21.1 Sparkle/2.10.0
+   10:46:50  GET /SafeOut-2026.09.22.1.dmg UA=…/2026.09.21.1 Sparkle/2.10.0
    ```
    `Autoupdate` 解压并校验（Sparkle 的 Installation 缓存里出现新 app），`Updater` 进度 agent 起来，
    **退出 app 后版本变成 `2026.09.22.1`**；再跑一轮变 `2026.09.22.2`。
@@ -15596,7 +15596,7 @@ validator 只在**安装器进程**里被实例化（`Autoupdate/AppInstaller.m:
 
 日志（原文）：
 ```
-11:01:47      GET /DiskEjector-2026.09.22.3.dmg
+11:01:47      GET /SafeOut-2026.09.22.3.dmg
 11:01:48.600  "An error occurred while extracting the archive…" → 解压时出现错误，请稍后再试。
 11:01:48.602  E  Failed to unarchive …/3FAF56F9-…09.22.3.dmg
 ```
@@ -15615,8 +15615,8 @@ validator 只在**安装器进程**里被实例化（`Autoupdate/AppInstaller.m:
 打包新版本 → `generate_appcast` 指向本地 → `feedsrv.py <port> --log <probe 目录>` →
 `defaults` 改 `SUFeedURL` + 删 `SULastCheckTime`（走自动那条路还要 `SUAutomaticallyUpdate=1`）
 → 起 app → 观察 feed 命中 +
-`log stream --predicate 'process == "DiskEjectorApp" OR process == "Autoupdate" OR process == "Updater"'`
-⚠️ 谓词里的进程名是 **`DiskEjectorApp`**（可执行文件叫什么就写什么）—— 写成 `DiskEjector`
+`log stream --predicate 'process == "SafeOutApp" OR process == "Autoupdate" OR process == "Updater"'`
+⚠️ 谓词里的进程名是 **`SafeOutApp`**（可执行文件叫什么就写什么）—— 写成 `SafeOut`
 会一条都抓不到，而退出码仍是 0（「装置瞎了」与「真的没有」逐字相同）。
 
 
@@ -15775,7 +15775,7 @@ CI 慢一倍 ⇒ 41.8s，**与 CI 报的 41.73 吻合**。
 | 变异（等待装置 6 条） | ✅ **6/6 被抓住**，装置自证齐全 |
 | 定向套件连跑 3 轮 | ✅ 全绿；只剩 1 条付自己的 4.7s |
 | 编译 | ✅ 0 error |
-| 新增文件 | `Tests/DiskEjectorAppTests/SubprocessAwait.swift`（**已 `git add`**，否则静态守卫按 `git ls-files` 枚举会漏扫） |
+| 新增文件 | `Tests/SafeOutAppTests/SubprocessAwait.swift`（**已 `git add`**，否则静态守卫按 `git ls-files` 枚举会漏扫） |
 
 #### 10. 限定（如实写）
 
@@ -16012,7 +16012,7 @@ L132 才标在 `struct OccupancyStoreTests` 上。摘了前者 ⇒ **编译绿**
 ⚠️ 试过给 `NSBitmapImageRep` 传 `.alphaNonpremultiplied` 把这一步省掉 ——
 **实测拿到全零缓冲区**（`rawValue = 2`，每个字节都是 0），那条路走不通。
 
-#### 8.129.4 改法（四处，都在 `Tests/DiskEjectorAppTests/`）
+#### 8.129.4 改法（四处，都在 `Tests/SafeOutAppTests/`）
 
 | 改动 | 为什么 |
 |---|---|
@@ -16112,7 +16112,7 @@ L132 才标在 `struct OccupancyStoreTests` 上。摘了前者 ⇒ **编译绿**
 门槛 1（构建，`-Xswiftc -warnings-as-errors`）红，**全量日志里只有一处** error：
 
 ```
-Tests/DiskEjectorAppTests/OffscreenRender.swift:149:16: error: cannot convert return
+Tests/SafeOutAppTests/OffscreenRender.swift:149:16: error: cannot convert return
 expression of type '(CGFloat, CGFloat, CGFloat)' to return type '(Double, Double, Double)'
 ```
 
@@ -16332,7 +16332,7 @@ hi = hi.map { Swift.max($0, x) } ?? x
 
 #### 8.131.6 产品代码里的两处：**登记，不收敛**
 
-`Sources/DiskEjectorApp/WindowSelfCheck.swift:191` 与 `:297` 各有一处逐像素循环
+`Sources/SafeOutApp/WindowSelfCheck.swift:191` 与 `:297` 各有一处逐像素循环
 （账本原先**没登记**，是本轮实扫发现的）。**决定：登记，不收敛**，理由是两条都成立：
 
 1. 它读的是 `CGWindowListCreateImage` 的**真机截图**，**不在测试 target 里**
@@ -16760,7 +16760,7 @@ var ok: Bool { stopReason == .conditionMet }   // ← 派生，不另存一份
 | 原句 | 现状 | 判据 |
 |---|---|---|
 | `SUPublicEDKey` 尚未写入 | **已写入** | `build_app.sh:381` `DEFAULT_SPARKLE_PUBLIC_ED_KEY="DZSAElJGUg13m+uorm7qlJhQKPyxk4D1DXMYGEOtbBs="`（与账本 #1 记的公钥**逐字相同**）；`:382` 用它兜底 |
-| enclosure 404 | **不再 404** | 仓库根 `appcast.xml` 的 enclosure 指向 `v2026.09.21.1/DiskEjector-2026.09.21.1.dmg`，且带 `sparkle:edSignature` |
+| enclosure 404 | **不再 404** | 仓库根 `appcast.xml` 的 enclosure 指向 `v2026.09.21.1/SafeOut-2026.09.21.1.dmg`，且带 `sparkle:edSignature` |
 | 「唯一还差的一步」 | **不成立** | `v2026.09.18.3` 那个 Release **确实没建过** —— 当时改发 `.4`（账本 #8） |
 
 处置照本仓库手法：**原句保留**（它标了「2026-09-18 实测」，是那一天的实况）+ 追加 ⚠️ 订正段。
@@ -17453,7 +17453,7 @@ swift run -v -Xswiftc -plugin-path -Xswiftc /tmp/definitely-nope-xyz <exe>   →
 - 完整门槛 `DISABLE_SANDBOX=1 ./scripts/preflight.sh --with-tests` → **EXIT=0，11/11 绿，
   覆盖率 65.90%**（与改动前逐字一致）。
 - 工作区 3 个文件：`Sources/Services/UpdateController.swift`(+33)、
-  `Tests/DiskEjectorAppTests/UpdateSettingsTests.swift`(+81)、`tools/clt_swift_env.sh`(+40/−1)。
+  `Tests/SafeOutAppTests/UpdateSettingsTests.swift`(+81)、`tools/clt_swift_env.sh`(+40/−1)。
 
 ## 8.141 目录大写化 + 部署目标统一到 14：**「最低系统版本」收成一处真相**（2026-09-24）
 
@@ -17500,7 +17500,7 @@ git mv scripts .rename-tmp-scripts && git mv .rename-tmp-scripts Scripts
 动态解析，见 `WindowSelfCheck.captureWindowImage`）与 `.onChange(of:perform:)` 单参闭包
 （改双参）；并清掉一层死代码（`disableFocusRingIfAvailable` → `disableFocusRing`）。
 
-### 8.141.3 守卫：`Tests/DiskEjectorAppTests/DeploymentTargetTests.swift`（5 条）
+### 8.141.3 守卫：`Tests/SafeOutAppTests/DeploymentTargetTests.swift`（5 条）
 
 | 轴 | 判据 | 变异证明 |
 |---|---|---|
@@ -17737,7 +17737,7 @@ selector 与 delegate 方法，变异装置造不出可编译的那一版）。p
 **现象**（用户原文）：推出一个**有占用**的磁盘，「关闭并推出」弹窗**很久**才出现；
 而主窗口里那行占用信息**立刻**就有。用户怀疑「弹窗那条路查占用的方式和窗口不一样」。
 
-**实测证据**（`/usr/bin/log show --predicate 'subsystem == "com.diskejector.app"'`）：
+**实测证据**（`/usr/bin/log show --predicate 'subsystem == "com.safeout.app"'`）：
 
 ```
 22:53:30.884 Df [EjectService] 请求推出卷: /Volumes/wenbo-data
@@ -17933,7 +17933,7 @@ selector 与 delegate 方法，变异装置造不出可编译的那一版）。p
 本轮选的是前者：`awaitPreemptiveChoice` / `dismissPreemptivePopupIfNeeded` 两个函数
 把顺序收进**可被调用**的地方，测试直接驱动它们。
 
-**新增的守卫**（都在 `Tests/DiskEjectorAppTests/EjectFlowControllerTests.swift`）：
+**新增的守卫**（都在 `Tests/SafeOutAppTests/EjectFlowControllerTests.swift`）：
 
 | 名字 | 守什么 |
 |---|---|
@@ -18204,7 +18204,7 @@ static func effectiveIsOn(userWants: Bool, availability: Self) -> Bool
 
 ```bash
 OUTPUT_DIR=<一个全新目录> ./build_app.sh          # 见坑 ①
-open -n <那个目录>/DiskEjector.app --args --preview-settings-no-fda
+open -n <那个目录>/SafeOut.app --args --preview-settings-no-fda
 swift Tools/probe/windowid.swift 磁盘推出助手       # 见坑 ②
 screencapture -x -o -l<窗口号> settings-no-fda.png
 ```
@@ -18219,11 +18219,11 @@ screencapture -x -o -l<窗口号> settings-no-fda.png
 
 三个这轮新踩的坑：
 
-1. **`build_app.sh` 会被 safe-delete 守卫挡下**（它要先删旧 `Dist/DiskEjector.app`，
+1. **`build_app.sh` 会被 safe-delete 守卫挡下**（它要先删旧 `Dist/SafeOut.app`，
    里面 105 个文件 > 阈值 5 ⇒ `SAFE_DELETE_BULK_CONFIRM_REQUIRED`，脚本在 `[2/5]` 就停）。
    ⇒ 截图这类「只要一个能跑的包」的场合，`OUTPUT_DIR=<全新目录>` 最省事（那里没有东西要删）。
    ⚠️ 别把它当成「构建失败」——`Dist/` 里那份 `.app` 会是**旧日期的**，很容易拿去验错版本。
-2. **窗口的拥有者名是本地化后的「磁盘推出助手」，不是 `DiskEjector`**
+2. **窗口的拥有者名是本地化后的「磁盘推出助手」，不是 `SafeOut`**
    （与「菜单栏 App 菜单标题读 `CFBundleName`」同源）。
    按英文名去 `CGWindowList` 里找 ⇒ 一条都匹配不到，看着像「窗口没建起来」。
    ⇒ 新收了个探针 `Tools/probe/windowid.swift`；它顺手记下另一个坑：
@@ -18360,7 +18360,7 @@ $ python3 Scripts/test/eject_hook_mutation.py
 补验的过程顺带测出一个**真 bug**（用户决策太久 ⇒ 点了没反应），见 §8.149。
 ⚠️ 本轮顺带修掉 `Scripts/poc_e2e.sh` 的两个**会让人白跑**的缺陷：
 
-1. **它硬编码 `Dist/DiskEjector.app`** —— 而 `Dist/` 会被 safe-delete 守卫挡住（停在 `[2/5]`），
+1. **它硬编码 `Dist/SafeOut.app`** —— 而 `Dist/` 会被 safe-delete 守卫挡住（停在 `[2/5]`），
    里面是**旧日期**的包。现支持 `APP=…` 覆盖；
 2. **它从没打开 `takeOverFinderEject`** —— 开关默认**关**，而判定层第一关就是
    「开关关 ⇒ 放行」⇒ 不打开它，脚本**永远看不到弹窗**，输出却与「hook 坏了」逐字相同。
@@ -18491,7 +18491,7 @@ spike 的 `block15` 只看了「访达有没有弹它自己的错框」，`out-b
 
 ### 8.149.6 守卫与变异对照
 
-守卫：`Tests/DiskEjectorAppTests/EjectHookPolicyTests.swift` 的
+守卫：`Tests/SafeOutAppTests/EjectHookPolicyTests.swift` 的
 `@Suite("接管访达推出的用户决策窗口")`（4 条）。
 
 | 守卫 | 守什么 |
@@ -18839,7 +18839,7 @@ SwiftUI 的**完整改动清单**。规格数值全部在 09 页的「规格 Han
    （本节原先写「断言窗口就是 480 × 920」，那句把「判据」说成了「字面量」；
    真正要改的只是它文档注释里那句「480 × 920」。）
 3. `SnapshotRenderTests` —— 用 `settingsPanel` 尺寸出离屏图（**同样是读令牌，不用改**）。
-4. `DiskEjectorApp` 里 `--preview-settings-keys` 的**自检文案**：会打印
+4. `SafeOutApp` 里 `--preview-settings-keys` 的**自检文案**：会打印
    「窗口高应是 920」—— 数字写死在校验信息里。
    ⚠️ **更正**：该文案也是插值 `settingsPanel.height`，**同样不用改**。
    ⇒ 这一条清单里「要改的四处」实际只有第 1 条是真的（第 1 条确实整体重写了）。
@@ -19380,7 +19380,7 @@ DESIGN-SPEC ×4 + 08-update 说明文字       Sources/ 六处注释
 ## 9. 文件清单
 
 ```
-DiskEjector-UI-Design/v2/
+SafeOut-UI-Design/v2/
 ├── index.html                  设计规范总览（令牌 / 组件库 / 屏幕索引 / 无障碍 / 交付）
 ├── DESIGN-SPEC.md              本文件
 ├── assets/

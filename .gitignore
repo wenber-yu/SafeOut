@@ -28,7 +28,7 @@ DerivedData/
 # solo-design 生成的调度清单与会话摘要，内含本机绝对路径（/Users/...），
 # 属工具元数据而非设计交付物；设计本身见 ui/pages/*.html 与 ui/colors_and_type.css。
 #
-# ⚠️ 这条锚的是**迁移后**的路径（2026-09-24：DiskEjector-UI-Design/ → Design/ui/）。
+# ⚠️ 这条锚的是**迁移后**的路径（2026-09-24：SafeOut-UI-Design/ → Design/ui/）。
 #    目录一搬，旧规则会**静默失效** —— 不报错、也没有任何东西会红，
 #    只是那两个 runtime-*.json 突然出现在 `git status` 里（实测已复现）。
 Design/ui/runtime-*.json

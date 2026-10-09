@@ -44,7 +44,7 @@ enum DistributionChannel: String, Sendable, CustomStringConvertible {
 /// 渠道判定与 UI 无需再分叉 —— 不上架 MAS 之后，渠道只剩一种，没有第二个分支要照顾。
 enum UpdateService {
 
-    private static let logger = Logger(subsystem: "com.diskejector.app", category: "Update")
+    private static let logger = Logger(subsystem: "com.safeout.app", category: "Update")
 
     // MARK: - 需要替换的常量
 
@@ -55,7 +55,7 @@ enum UpdateService {
     ///
     /// 指向 `/releases` **列表页**而不用 `/releases/latest`：后者只认最新的正式版，
     /// 当前发布还是 pre-release，`latest` 会落到 404。等首个正式版发布后再考虑切换。
-    private static let downloadPageURL: URL? = URL(string: "https://github.com/wenber-yu/DiskEjector/releases")
+    private static let downloadPageURL: URL? = URL(string: "https://github.com/wenber-yu/SafeOut/releases")
 
     // MARK: - 渠道判定
 

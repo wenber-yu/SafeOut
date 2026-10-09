@@ -41,7 +41,7 @@ class OccupancyDetector: @unchecked Sendable {
     /// 开放给测试注入 mock 子类；生产环境一律使用 `shared`。
     init() {}
 
-    private static let logger = Logger(subsystem: "com.diskejector.app", category: "Occupancy")
+    private static let logger = Logger(subsystem: "com.safeout.app", category: "Occupancy")
 
     /// lsof 单次调用的最长等待时间（秒），超时即视为检测失败。
     ///
@@ -363,7 +363,7 @@ final class SubprocessOutput: @unchecked Sendable {
     ///
     /// 超时是本类的**正确性前提** —— 晚了就等于「超时是装饰」那个 bug 又回来了
     /// （用户报的「刷新一直转圈」正是那条路）。⇒ 给它一条专用队列。
-    private static let timerQueue = DispatchQueue(label: "DiskEjector.SubprocessOutput.timeout")
+    private static let timerQueue = DispatchQueue(label: "SafeOut.SubprocessOutput.timeout")
 
     /// 是否已经收尾（同步路径靠它轮询）。
     var isFinished: Bool {

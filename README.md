@@ -1,12 +1,12 @@
-# DiskEjector
+# SafeOut
 
 **推出硬盘之前，先看清是谁占着它。**
 
-![DiskEjector 主窗口：列出正在占用移动硬盘的程序](Design/screenshots/disk-list.png)
+![SafeOut 主窗口：列出正在占用移动硬盘的程序](Design/screenshots/disk-list.png)
 
 macOS 14+ · SwiftUI · 菜单栏常驻 + 独立窗口 · 应用中文名「磁盘推出助手」 · 简体中文 / 繁體中文 / English
 
-[![CI](https://github.com/wenber-yu/DiskEjector/actions/workflows/ci.yml/badge.svg)](https://github.com/wenber-yu/DiskEjector/actions/workflows/ci.yml)
+[![CI](https://github.com/wenber-yu/SafeOut/actions/workflows/ci.yml/badge.svg)](https://github.com/wenber-yu/SafeOut/actions/workflows/ci.yml)
 
 ---
 
@@ -22,7 +22,7 @@ macOS 14+ · SwiftUI · 菜单栏常驻 + 独立窗口 · 应用中文名「磁�
 
 硬盘就这么卡在那儿，谁也动不了。赶时间的时候，很多人干脆把线一拔；而这一拔，正在写入的数据可能就废了。
 
-**DiskEjector 就是为了结束这场猜谜。** 它把占用者直接摆出来：图标加名字，是谁占着，一眼看到。想推出，就从这里推。
+**SafeOut 就是为了结束这场猜谜。** 它把占用者直接摆出来：图标加名字，是谁占着，一眼看到。想推出，就从这里推。
 
 ## 它做的事
 
@@ -44,27 +44,27 @@ macOS 14+ · SwiftUI · 菜单栏常驻 + 独立窗口 · 应用中文名「磁�
 
 ### 方式一：dmg（推荐）
 
-1. 到 [Releases](../../releases) 下载 `DiskEjector.dmg`
-2. 双击挂载，把 `DiskEjector` 拖进 `Applications` 文件夹（dmg 里已备好 Applications 替身）
+1. 到 [Releases](../../releases) 下载 `SafeOut.dmg`
+2. 双击挂载，把 `SafeOut` 拖进 `Applications` 文件夹（dmg 里已备好 Applications 替身）
 3. 首次打开：**右键点图标 → 打开**（当前构建未经 Apple 公证，见下方说明）
 4. 按引导授权「完全磁盘访问」（下一节就是它）
 
 ### 方式二：zip
 
-下载 `DiskEjector.zip`，解压得到 `DiskEjector.app`，拖进 `Applications`，同样需要第 3、4 步。
+下载 `SafeOut.zip`，解压得到 `SafeOut.app`，拖进 `Applications`，同样需要第 3、4 步。
 
 > **为什么首次打开要绕一下？**
 > 本版本使用开发期自签证书，**未经过 Apple 公证（notarization）**，Gatekeeper 会默认拦截。
 > 若「右键 → 打开」无效，可移除隔离属性后再打开：
 > ```bash
-> xattr -dr com.apple.quarantine /Applications/DiskEjector.app
+> xattr -dr com.apple.quarantine /Applications/SafeOut.app
 > ```
 
 ## 需要「完全磁盘访问」授权
 
 **这是核心功能的前置条件，不授权就看不到占用进程。** 启动后主窗口顶部会出现引导横幅，点「打开系统设置」直达：
 
-> 系统设置 › 隐私与安全性 › 完全磁盘访问 › 勾选 DiskEjector
+> 系统设置 › 隐私与安全性 › 完全磁盘访问 › 勾选 SafeOut
 
 **为什么非它不可。** 要读出**其他**进程打开了哪些文件，应用必须以「完全磁盘访问」运行；否则系统会让它对其他进程的文件一律不可见。而这恰恰是最容易漏掉的一类占用者 —— 比如 Spotlight 的索引进程正抓着你的盘，它属于系统，普通权限根本看不到。未授权时，应用不会假装「没有占用」，而是明确显示「需要完全磁盘访问」。
 

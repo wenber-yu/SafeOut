@@ -14,7 +14,7 @@ import Foundation
 /// | 运行方式 | `bundlePath` | `infoDictionary` |
 /// |---|---|---|
 /// | 裸可执行文件（`swift run` / 直接跑 `.build/debug/…`） | `.build/debug` | **0 个键** |
-/// | `.app` bundle（`open` / 双击） | `…/DiskEjector.app` | 5 个键 |
+/// | `.app` bundle（`open` / 双击） | `…/SafeOut.app` | 5 个键 |
 ///
 /// 也就是说：**跑法一变，版本号就从真值变成兜底值，而且不会报任何错。**
 /// 所以这里**只负责读，不负责编** —— 读不到就返回 `nil`，把「怎么显示」留给调用方，

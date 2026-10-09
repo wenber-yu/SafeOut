@@ -19,7 +19,7 @@ enum EjectUI {
     ///
     /// ## 为什么需要「缓存结论」这个入参（Bug：占用弹窗要等十几秒才出现）
     ///
-    /// 真机日志（`/usr/bin/log show --predicate 'subsystem == "com.diskejector.app"'`）：
+    /// 真机日志（`/usr/bin/log show --predicate 'subsystem == "com.safeout.app"'`）：
     ///
     /// ```text
     /// 22:53:30.884 请求推出卷: /Volumes/wenbo-data
@@ -323,7 +323,7 @@ enum EjectUI {
     /// （`SIGTERM` → 1.5s → `SIGKILL` → 普通重试）。
     /// 文案与实现是一对，改文案前先看实现，改实现后必须回来看文案。
     ///
-    /// 品牌名走 `appName` 本地化键而不是硬编码 `DiskEjector`：中文界面里应用叫
+    /// 品牌名走 `appName` 本地化键而不是硬编码 `SafeOut`：中文界面里应用叫
     /// 「磁盘推出助手」，正文里突然出现英文品牌名是断裂的。
     static var busyWarningText: String {
         String(format: L10n.tr(.ejectBusyWarning), L10n.tr(.appName))

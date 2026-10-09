@@ -35,12 +35,12 @@ final class EjectFlowController {
     /// 系统日志出口（`log stream` 诊断用；**不**进用户可见的 `error.log` ——
     /// 「被外部推手抢先推成」不是失败，不该让「已记入日志」的承诺说谎）。
     private static let logger = Logger(
-        subsystem: "com.diskejector.app", category: "EjectFlow")
+        subsystem: "com.safeout.app", category: "EjectFlow")
 
     private let ejectService: EjectService
     private let occupancyDetector: OccupancyDetector
 
-    /// 写「用户可见日志」的入口。生产默认落 ``LogService``（`~/Library/Logs/DiskEjector/error.log`）。
+    /// 写「用户可见日志」的入口。生产默认落 ``LogService``（`~/Library/Logs/SafeOut/error.log`）。
     ///
     /// **为什么做成可注入的闭包**：失败弹窗向用户承诺「已记入日志」，
     /// 这条承诺必须有测试兜住 —— 否则将来有人把 ``recordFailure(disk:failure:)`` 改回直接

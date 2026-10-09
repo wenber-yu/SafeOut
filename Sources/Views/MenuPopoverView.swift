@@ -55,7 +55,7 @@ struct MenuPopoverView: View {
     ///
     /// **为什么加这个 init**：`store` 从「直读 `.shared` 的 `let`」变成注入属性后，
     /// 需要显式把它们接进 `@ObservedObject` 的包装器；顺带把默认值收在这里，
-    /// 生产调用点（`DiskEjectorApp`）一个字都不用改。
+    /// 生产调用点（`SafeOutApp`）一个字都不用改。
     init(
         store: DiskListStore = .shared,
         occupancyStore: OccupancyStore = .shared,

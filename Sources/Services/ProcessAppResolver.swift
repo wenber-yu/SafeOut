@@ -26,7 +26,7 @@ import OSLog
 /// 图标 = 该可执行文件自身的系统图标（`exec` 图标），不会伪造一个不存在的应用名。
 enum ProcessAppResolver {
 
-    private static let logger = Logger(subsystem: "com.diskejector.app", category: "ProcessApp")
+    private static let logger = Logger(subsystem: "com.safeout.app", category: "ProcessApp")
 
     /// `proc_pidpath` 的缓冲区大小（`libproc.h` 里的 `PROC_PIDPATHINFO_MAXSIZE` 即 4096）。
     private static let pidPathBufferSize = 4096

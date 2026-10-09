@@ -3,7 +3,7 @@ import Foundation
 /// 一个正在访问外置卷的进程。
 ///
 /// **关于命名**：此前该类型叫 `ProcessInfo`，与 Foundation 的 `ProcessInfo` 同名，
-/// 导致测试文件里不得不写 `private typealias AppProcessInfo = DiskEjectorApp.ProcessInfo`
+/// 导致测试文件里不得不写 `private typealias AppProcessInfo = SafeOutApp.ProcessInfo`
 /// 来消除歧义——命名冲突的成本已经外溢到调用方，这本身就是该改名的信号。
 ///
 /// **关于「名字」有两个**（这是用户报过的一个 bug 的根因）：

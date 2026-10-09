@@ -74,8 +74,8 @@ ARROW_HEAD = 16  # 箭头三角的长度
 ARROW_HALF = 9  # 箭头三角的半高
 ARROW_LINE_END = 14  # 线段停在三角底部**之内** 2pt ⇒ 接缝不会露白（不是笔误）
 
-TITLE = "DiskEjector"
-HINT = "把 DiskEjector 拖进右侧的 Applications 文件夹即可安装"
+TITLE = "SafeOut"
+HINT = "把 SafeOut 拖进右侧的 Applications 文件夹即可安装"
 
 # ---- 配色（取自应用的明色令牌）----
 BG_TOP = (247, 247, 249)

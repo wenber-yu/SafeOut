@@ -126,7 +126,7 @@ def failing(raw: str) -> list[str]:
 
 MAIN = ROOT / "Package.swift"
 TOOL = ROOT / "Tools/gen_l10n_tool/Package.swift"
-TESTS = ROOT / "Tests/DiskEjectorAppTests/DeploymentTargetTests.swift"
+TESTS = ROOT / "Tests/SafeOutAppTests/DeploymentTargetTests.swift"
 V14 = "platforms: [.macOS(.v14)],"
 V13 = "platforms: [.macOS(.v13)],"
 V15 = "platforms: [.macOS(.v15)],"

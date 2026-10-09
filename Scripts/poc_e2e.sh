@@ -9,17 +9,17 @@
 #   ① 无占用场景：Finder 点推出 → 立即推出，无我们的弹窗（缓存 .none）
 #   ② 有占用场景：保持占用进程活着（脚本里开 tail -f）→ Finder 点推出 → 弹我们的窗
 #                  → 杀进程 + Finder 完成推出，**无系统报错框**
-#   ③ 自排除：DiskEjector 自己点推出 → 立即放行，不卡住
+#   ③ 自排除：SafeOut 自己点推出 → 立即放行，不卡住
 #
 # ⚠️ 本脚本会启动 .app 并触发 Finder 推出。会抢占前台。运行后会自动退出 app。
 set -e
-# ⚠️ **默认 `Dist/DiskEjector.app`，但那个目录会被 safe-delete 守卫挡住**：
+# ⚠️ **默认 `Dist/SafeOut.app`，但那个目录会被 safe-delete 守卫挡住**：
 # `build_app.sh` 要删旧 `.app` 里上百个文件（> 阈值 5）⇒ 脚本停在 `[2/5]`，
 # `Dist/` 里留下的是**旧日期**的包（拿去验就会验错版本，2026-09-28 实测踩过）。
 # ⇒ 用新目录构建后，用 `APP=…` 覆盖：
 #     OUTPUT_DIR=/tmp/de DISABLE_SANDBOX=1 ./build_app.sh
-#     APP=/tmp/de/DiskEjector.app ./Scripts/poc_e2e.sh
-APP="${APP:-Dist/DiskEjector.app}"
+#     APP=/tmp/de/SafeOut.app ./Scripts/poc_e2e.sh
+APP="${APP:-Dist/SafeOut.app}"
 SPIKE=".build/probe/da_approval_spike/spike.dmg"
 LOG_OUT=".build/probe/poc_e2e_$(date +%s).log"
 
@@ -66,8 +66,8 @@ sleep 18
 # 与「hook 坏了」**逐字相同**（2026-09-28 实测：不打开时只有「已注册」一行日志）。
 # 结束时会还原成原值。
 echo "--- 打开「接管访达的推出」开关（结束会还原）---"
-TAKEOVER_ORIG="$(defaults read com.diskejector.app takeOverFinderEject 2>/dev/null || echo MISSING)"
-defaults write com.diskejector.app takeOverFinderEject -bool true
+TAKEOVER_ORIG="$(defaults read com.safeout.app takeOverFinderEject 2>/dev/null || echo MISSING)"
+defaults write com.safeout.app takeOverFinderEject -bool true
 
 # 启动 .app
 echo "--- 启动 $APP ---"
@@ -76,7 +76,7 @@ sleep 3
 
 # 看 hook 是否注册了
 echo "--- 看 hook 注册日志（最近 5s）---"
-/usr/bin/log show --predicate 'subsystem == "com.diskejector.app" AND category == "EjectHook"' --last 5s --style compact
+/usr/bin/log show --predicate 'subsystem == "com.safeout.app" AND category == "EjectHook"' --last 5s --style compact
 
 # 触发 Finder 推出（会触发我们的 hook；如果有占用，会弹我们的窗）
 echo "--- 触发 Finder eject /Volumes/SpikeVol ---"
@@ -108,11 +108,11 @@ sleep 10
 
 # 看应用日志
 echo "--- EjectHook 日志（最近 40s）---"
-/usr/bin/log show --predicate 'subsystem == "com.diskejector.app" AND category == "EjectHook"' --last 40s --style compact
+/usr/bin/log show --predicate 'subsystem == "com.safeout.app" AND category == "EjectHook"' --last 40s --style compact
 
 # 看 EjectService 日志（自排除应该出现）
 echo "--- EjectService 日志（最近 40s）---"
-/usr/bin/log show --predicate 'subsystem == "com.diskejector.app" AND category == "EjectService"' --last 40s --style compact
+/usr/bin/log show --predicate 'subsystem == "com.safeout.app" AND category == "EjectService"' --last 40s --style compact
 
 # 最终状态
 echo "--- /Volumes/SpikeVol 状态 ---"
@@ -120,13 +120,13 @@ ls -d /Volumes/SpikeVol 2>&1
 
 # 关 app（PoC 测试结束）
 echo "--- 退出 app ---"
-osascript -e 'tell application id "com.diskejector.app" to quit' 2>/dev/null || true
+osascript -e 'tell application id "com.safeout.app" to quit' 2>/dev/null || true
 
 # 还原开关：⚠️ 别留一个「开着」的残留 —— 不然你下次在访达点推出会莫名弹窗
 if [ "$TAKEOVER_ORIG" = "MISSING" ]; then
-    defaults delete com.diskejector.app takeOverFinderEject 2>/dev/null || true
+    defaults delete com.safeout.app takeOverFinderEject 2>/dev/null || true
 else
-    defaults write com.diskejector.app takeOverFinderEject -bool "$TAKEOVER_ORIG"
+    defaults write com.safeout.app takeOverFinderEject -bool "$TAKEOVER_ORIG"
 fi
 echo "开关已还原（原值：${TAKEOVER_ORIG}）"
 

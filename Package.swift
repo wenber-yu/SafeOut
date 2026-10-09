@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "DiskEjectorApp",
+    name: "SafeOutApp",
     platforms: [.macOS(.v14)],
     dependencies: [
         // 本地化生成器（独立本地 package，仅作为插件工具依赖，不进入主程序）。
@@ -15,7 +15,7 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "DiskEjectorApp",
+            name: "SafeOutApp",
             dependencies: [
                 .product(name: "Sparkle", package: "Sparkle")
             ],
@@ -24,7 +24,7 @@ let package = Package(
             // `L10n.generated.swift`，不经过 `Bundle.module`），所以这里把它摘出 target。
             //
             // 不摘的话 SwiftPM 会顺手把它当 **resource** 再编一遍，产出
-            // `.build/out/Products/<配置>/DiskEjectorApp_DiskEjectorApp.bundle`
+            // `.build/out/Products/<配置>/SafeOutApp_SafeOutApp.bundle`
             // （内含 en / zh-Hans / zh-Hant 三份 Localizable.strings）——
             // 而**没有任何代码读它**：Sources/ 里 `Bundle.module` 出现 0 次，
             // `build_app.sh` 也不把这个 .bundle 拷进 .app。
@@ -40,12 +40,12 @@ let package = Package(
             plugins: ["LocalizationGenerator"]
         ),
         .testTarget(
-            name: "DiskEjectorAppTests",
-            dependencies: ["DiskEjectorApp"],
+            name: "SafeOutAppTests",
+            dependencies: ["SafeOutApp"],
             // 显式写 path：把「目录名 = target 名」这条**隐含约定**变成写在纸上的契约。
             // 不写也能跑（SPM 会按约定去 Tests/<TargetName> 找），但改了目录名时报错措辞很绕
             // （"Source files for target X should be located under …"），不如显式。
-            path: "Tests/DiskEjectorAppTests"
+            path: "Tests/SafeOutAppTests"
         ),
         .plugin(
             name: "LocalizationGenerator",

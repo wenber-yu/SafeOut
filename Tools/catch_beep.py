@@ -89,7 +89,7 @@ _labels = {}
 
 
 # 本应用的模块名。调用栈里命中它 = 找到了「我们这边的那一行」。
-_APP_MODULES = {"DiskEjectorApp", "DiskEjector"}
+_APP_MODULES = {"SafeOutApp", "SafeOut"}
 
 
 def _print_stack(frame):

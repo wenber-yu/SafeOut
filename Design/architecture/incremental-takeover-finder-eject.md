@@ -121,7 +121,7 @@ let occupancy = MainActor.assumeIsolated {
 DA 会把「没有 approval 者」当作批准 ⇒ **盘照样推出、我们的功能一次都没生效、应用静默死掉**。
 「没弹窗」的两种解释（功能没生效 / 应用已经死了）在用户看来**逐字相同**。
 
-> 旁证：`Sources/DiskEjectorApp/DiskEjectorApp.swift` 里另外两处 `assumeIsolated`
+> 旁证：`Sources/SafeOutApp/SafeOutApp.swift` 里另外两处 `assumeIsolated`
 > （`:1301`、`:1950`）都明确写在 `queue: .main` 的回调里，所以是对的 ——
 > **全仓只有这一处用错了前提**。
 
@@ -161,7 +161,7 @@ enum OccupancySnapshotStore {
 | 位置 | 什么时候发生 |
 |---|---|
 | `ContentView.swift`（默认参数） | **用户打开主窗口**时 |
-| `DiskEjectorApp.swift:1594` | 用户从**菜单栏自己**发起推出时 |
+| `SafeOutApp.swift:1594` | 用户从**菜单栏自己**发起推出时 |
 | `EjectHookService.swift:119`（本缺陷 A 那行） | 拦截时（但那行会崩） |
 
 ⇒ 用户打开开关、然后**直接在访达里点推出**（正是本功能的目标场景！）时，
@@ -216,7 +216,7 @@ sleep 2 && diskutil eject /Volumes/SpikeVol
 | `Sources/Services/EjectHookPolicy.swift` | 判定层：请求解析、三关 + 开关判定、同盘去重、用户选择 → 回话决策。**纯值，不依赖 DADisk / 单例 / MainActor** |
 | `Sources/Services/ProcessTerminator.swift` | 同步清场器：`SIGTERM` → 宽限 → `SIGKILL`，`nonisolated`、`kill`/`sleep` 可注入 |
 | `Sources/Services/OccupancySnapshotStore.swift` | 占用结论的**跨线程只读快照**（`NSLock` 保护）—— 修缺陷 A：DA 回调线程读不到 `@MainActor` 单例 |
-| `Tests/DiskEjectorAppTests/EjectHookPolicyTests.swift` | 上述两者的全部单测（P0-5 判据） |
+| `Tests/SafeOutAppTests/EjectHookPolicyTests.swift` | 上述两者的全部单测（P0-5 判据） |
 | `Scripts/test/eject_hook_mutation.py` | 变异脚本（每条守卫一个变异体 + 「未变异时全绿」自检） |
 | `Design/architecture/incremental-takeover-finder-eject.md` | 本文件 |
 | `Design/architecture/sequence-diagram.mermaid` | 本文件 §4 时序图的独立副本 |
@@ -229,15 +229,15 @@ sleep 2 && diskutil eject /Volumes/SpikeVol
 |---|---|
 | `Sources/Services/EjectHookService.swift` | `handle` 改为「解析 → 判定 → 去重 → 弹窗 → 回话」五段；接入开关、去重、清场、结构化日志；**删掉 `MainActor.assumeIsolated` 那行**（缺陷 A） |
 | `Sources/Services/OccupancyStore.swift` | `results` 的两处赋值收敛成 `publish(_:)`，同时写 `OccupancySnapshotStore`（缺陷 A 的另一半） |
-| `Sources/DiskEjectorApp/DiskEjectorApp.swift` | `applicationDidFinishLaunching` 末尾加 `syncOccupancyPolling()`（缺陷 B：开关为真时启动轮询） |
+| `Sources/SafeOutApp/SafeOutApp.swift` | `applicationDidFinishLaunching` 末尾加 `syncOccupancyPolling()`（缺陷 B：开关为真时启动轮询） |
 | `Sources/Services/EjectFlowController.swift` | 私有 `terminate(_:signal:)` 下沉到 `ProcessTerminator`，行为逐字不变（纯重构） |
 | `Sources/Views/SettingsView.swift` | 「通用」组、登录启动行之后新增开关行（复用 `line(...)` + `SettingsSwitch`）；`onTap` 里 toggle 后调 `syncOccupancyPolling()` |
 | `Sources/Views/DesignTokens.swift` | `Size.settingsPanel.height` 800 → **876**（依据 §6-Q4） |
 | `Sources/Localization/Localizable.xcstrings` | 压缩 `takeOverFinderEjectFootnote` 的 **en**（158 → ≤ ~130 字符），使中英折行数相同 |
 | `Design/ui/v2/screens/05-settings.html` | 设计稿新增同一行（否则「实现与设计稿同数」不成立） |
 | `Design/ui/v2/assets/ds.css` | `--h-settings: 800px` → **876px** |
-| `Tests/DiskEjectorAppTests/SettingsLayoutTests.swift` | 中文期望值 766.44 → 重测值；`分隔线` 期望 4 → 5 |
-| `Tests/DiskEjectorAppTests/DocTableIntegrityTests.swift` | `docs` 加 **2** 条：`Design/prd/incremental-takeover-finder-eject.md`、`Design/architecture/incremental-takeover-finder-eject.md` |
+| `Tests/SafeOutAppTests/SettingsLayoutTests.swift` | 中文期望值 766.44 → 重测值；`分隔线` 期望 4 → 5 |
+| `Tests/SafeOutAppTests/DocTableIntegrityTests.swift` | `docs` 加 **2** 条：`Design/prd/incremental-takeover-finder-eject.md`、`Design/architecture/incremental-takeover-finder-eject.md` |
 | `Scripts/poc_e2e.sh` | 三条链路改成可判定的脚本（自动点按钮 / 自动截屏 / 自动读日志），结果落 `.build/probe/` |
 | `README.md` | 能力表 +1 行；补一段「跨盘冻结」与「`diskutil eject` 同样会被接管」 |
 | `SPEC.md` | 功能列表 +1 项；目录结构补 `EjectHookPolicy.swift`、`ProcessTerminator.swift`、`Scripts/poc_e2e.sh` |
@@ -438,7 +438,7 @@ struct EjectHookRequest: Sendable, Equatable {
 enum EjectHookPassReason: String, Sendable, Equatable {
     /// 设置里的开关是关的（PRD P0-2：开关在**三关之前**读）。
     case takeOverDisabled
-    /// 这次推出是 DiskEjector 自己发起的（`EjectService.isHookSelfInitiated`）。
+    /// 这次推出是 SafeOut 自己发起的（`EjectService.isHookSelfInitiated`）。
     case selfInitiated
     /// 取不到描述 / 没有挂载路径（含「整个盘」的 eject 回调）。
     case noVolumePath
@@ -773,9 +773,9 @@ sequenceDiagram
 | # | 任务 | 涉及文件 | 依赖 | 优先级 | 验收点 |
 |---|---|---|---|---|---|
 | T01 | **判定层、清场器与跨线程快照（纯逻辑地基）** | `Sources/Services/EjectHookPolicy.swift`（新）、`Sources/Services/ProcessTerminator.swift`（新）、`Sources/Services/OccupancySnapshotStore.swift`（新）、`Sources/Services/OccupancyStore.swift`（改：`publish(_:)` 单一写入点）、`Sources/Services/EjectFlowController.swift`（改：`terminate` 下沉） | — | P0 | `swift build` 零警告；`EjectFlowController` / `OccupancyStore` 现有测试**全绿且不改断言** ⇒ 证明是纯重构 |
-| T02 | **hook 接线（开关 + 去重 + 清场 + 日志）+ 修两处 PoC 缺陷** | `Sources/Services/EjectHookService.swift`、`Sources/DiskEjectorApp/DiskEjectorApp.swift`、`Sources/Settings/AppSettings.swift`（仅注释） | T01 | P0 | 读代码可逐条对上 §3.6 的八段；**`grep -rn assumeIsolated Sources/Services/EjectHookService.swift` 必须为空**（缺陷 A）；开关为真时启动即创建 `OccupancyStore`（缺陷 B，日志可见首次轮询）；开关关掉时 `handle` 在**第一段**就返回；去重命中时回话耗时 < 5ms |
-| T03 | **设置面板开关行 + 高度契约同步** | `Sources/Views/SettingsView.swift`、`Sources/Views/DesignTokens.swift`、`Sources/Localization/Localizable.xcstrings`、`Design/ui/v2/screens/05-settings.html`、`Design/ui/v2/assets/ds.css`、`Tests/DiskEjectorAppTests/SettingsLayoutTests.swift` | — | P0 | `SettingsLayoutTests` **10 条全绿**（含新增的「中英折行数相同」判据）；`DesignSizeParityTests` 绿；开关行有 `accessibilityValue` 开/关；无写死中文；`onTap` 后 `syncOccupancyPolling()` 被调用 |
-| T04 | **单测 + 变异守卫** | `Tests/DiskEjectorAppTests/EjectHookPolicyTests.swift`（新）、`Scripts/test/eject_hook_mutation.py`（新）、`Tests/DiskEjectorAppTests/DocTableIntegrityTests.swift`（docs +2） | T01、T02 | P0 | `swift test` 全绿且**总数 ≥ 514**；变异脚本输出「未变异时全绿」自检 + 每个变异体 `killed`、**存活 0**、`invalid` 0；`DocTableIntegrityTests` 3 条全绿 |
+| T02 | **hook 接线（开关 + 去重 + 清场 + 日志）+ 修两处 PoC 缺陷** | `Sources/Services/EjectHookService.swift`、`Sources/SafeOutApp/SafeOutApp.swift`、`Sources/Settings/AppSettings.swift`（仅注释） | T01 | P0 | 读代码可逐条对上 §3.6 的八段；**`grep -rn assumeIsolated Sources/Services/EjectHookService.swift` 必须为空**（缺陷 A）；开关为真时启动即创建 `OccupancyStore`（缺陷 B，日志可见首次轮询）；开关关掉时 `handle` 在**第一段**就返回；去重命中时回话耗时 < 5ms |
+| T03 | **设置面板开关行 + 高度契约同步** | `Sources/Views/SettingsView.swift`、`Sources/Views/DesignTokens.swift`、`Sources/Localization/Localizable.xcstrings`、`Design/ui/v2/screens/05-settings.html`、`Design/ui/v2/assets/ds.css`、`Tests/SafeOutAppTests/SettingsLayoutTests.swift` | — | P0 | `SettingsLayoutTests` **10 条全绿**（含新增的「中英折行数相同」判据）；`DesignSizeParityTests` 绿；开关行有 `accessibilityValue` 开/关；无写死中文；`onTap` 后 `syncOccupancyPolling()` 被调用 |
+| T04 | **单测 + 变异守卫** | `Tests/SafeOutAppTests/EjectHookPolicyTests.swift`（新）、`Scripts/test/eject_hook_mutation.py`（新）、`Tests/SafeOutAppTests/DocTableIntegrityTests.swift`（docs +2） | T01、T02 | P0 | `swift test` 全绿且**总数 ≥ 514**；变异脚本输出「未变异时全绿」自检 + 每个变异体 `killed`、**存活 0**、`invalid` 0；`DocTableIntegrityTests` 3 条全绿 |
 | T05 | **真机 e2e 三条链路 + 文档** | `Scripts/poc_e2e.sh`、`.build/probe/da_approval_spike/dedup_case.sh`（新）、`README.md`、`SPEC.md`、`Release-notes/<版本>.html` | T02、T03 | P0 | A1–A5 / B1–B2 / C1 各跑通一次，日志与截屏落 `.build/probe/`；`./run.sh check` 绿；`Scripts/coverage.sh` ≥ 40% |
 
 ### 5.1 T03 的高度同步必须**一次做完**（顺序不能拆）
@@ -971,7 +971,7 @@ en' ≤ H ≤ zh' + 40
 | **去重窗口记在哪** | **进程内内存**（`EjectHookThrottleStore`），**不落 `UserDefaults`** | 跨启动去重会把「刚重启后点推出」静默吞掉 |
 | **窗口起点** | 上一次**弹窗结束**的时刻（`release` 时钉） | 访达的重试发生在**我们回话之后** |
 | **窗口值** | `EjectHookPolicy.dedupWindow` = 30（单一常量，只在这里写） | 与 `EjectHookService` 的 `userDecisionTimeout` 并列放在判定层，便于一处复核 |
-| **日志 category** | `subsystem: com.diskejector.app`、`category: EjectHook` | 与 PoC 一致；`log show --predicate` 的命令已经在 `poc_e2e.sh` 里 |
+| **日志 category** | `subsystem: com.safeout.app`、`category: EjectHook` | 与 PoC 一致；`log show --predicate` 的命令已经在 `poc_e2e.sh` 里 |
 | **日志必打的行** | 每次回话**一条**：`放行 reason=<EjectHookPassReason.rawValue> mount=<path>` 或 `拦截 mount=<path> 占用=<n>`；弹窗结束打 `choice=<x> 阻塞=<t>s`；清场打 `SIGTERM <n> → 存活 <m> → SIGKILL` | P1-2：真机上「没弹窗」有两种解释（去重生效 / hook 没注册），**长得一模一样** |
 | **开关语义边界** | 只控制「**要不要弹窗拦这一块盘**」。**自排除**与**无挂载路径放行**永远生效，与开关无关 | 关掉开关也必须能推出自己的盘（G3：与没装这个应用一样，但更不能把自己卡死） |
 | **开关读法** | 每次回调读 `AppSettings.takeOverFinderEject`（`UserDefaults.bool`），**不缓存** | 「改了即时生效不重启」（P0-2）；缓存一份就多一个会漂的真相 |
@@ -1003,7 +1003,7 @@ en' ≤ H ≤ zh' + 40
 
 ### 9.1 新 `.md` 进 `DocTableIntegrityTests.docs` 列表（**不要 gitignore**）
 
-`Tests/DiskEjectorAppTests/DocTableIntegrityTests.swift:76` 的 `docs` 是**手写清单**，
+`Tests/SafeOutAppTests/DocTableIntegrityTests.swift:76` 的 `docs` 是**手写清单**，
 而同一文件的 `扫描范围必须覆盖所有会被提交的文档` 会用
 `git ls-files --cached --others --exclude-standard '*.md'` 反查「凡在范围内的 `.md` 都要在列表里」。
 本次新增**两个**被跟踪的 `.md` ⇒ 必须**两条一起加**，否则该守卫判红：
@@ -1035,7 +1035,7 @@ private static let docs = [
 | `Design/ui/v2/assets/ds.css` | `--h-settings: 800px` → `876px` |
 | `Sources/Views/DesignTokens.swift` | `Size.settingsPanel = CGSize(width: 480, height: 876)` |
 | `Design/ui/v2/screens/05-settings.html` | 新增「接管访达的推出」行（`data-i` 用已在 `xcstrings` 里的两个键，`DesignDraftIntegrityTests` 才认） |
-| `Tests/DiskEjectorAppTests/SettingsLayoutTests.swift` | ① 中文期望 766.44 → **重测值**；② `分隔线只画在卡片内的行与行之间` 期望 **4 → 5**（通用卡 3 行 → 4 行，多一条行间线） |
+| `Tests/SafeOutAppTests/SettingsLayoutTests.swift` | ① 中文期望 766.44 → **重测值**；② `分隔线只画在卡片内的行与行之间` 期望 **4 → 5**（通用卡 3 行 → 4 行，多一条行间线） |
 
 `DesignSizeParityTests` 的两条（`--w-settings` / `--h-settings`）会**自动跟着 `ds.css` 走**，
 不需要单独改期望值 —— 但必须确认它绿。

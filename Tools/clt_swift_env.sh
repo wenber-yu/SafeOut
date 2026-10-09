@@ -22,7 +22,7 @@
 # 1. **`xcstringstool`**（处理 `Sources/Localization/Localizable.xcstrings`）
 #    CLT 里没有这个工具 ⇒ `xcrun --find xcstringstool` 失败
 #    ⇒ SwiftPM 回落到**裸名字**、按**包根**解析成 `<仓库>/xcstringstool`
-#    ⇒ 报「`.../DiskEjector/xcstringstool` is not an executable file」。
+#    ⇒ 报「`.../SafeOut/xcstringstool` is not an executable file」。
 #    实测过三条「放哪儿」的路，只有最后一条成立：
 #      - **调用目录**相对 ✗ —— 从别的目录 `swift build --package-path <仓库>`，
 #        报的仍然是 `<仓库>/xcstringstool`（是**包根**相对）；
@@ -48,7 +48,7 @@
 # **编译器版本也不同** ⇒ 诊断的集合不一样。2026-09-21 实测两条：
 #
 # - **门槛 1（`-warnings-as-errors`）会红**：CLT 的 Swift 6.4 对
-#   `Sources/DiskEjectorApp/DiskEjectorApp.swift:633` 报 `ImplicitStrongCapture`
+#   `Sources/SafeOutApp/SafeOutApp.swift:633` 报 `ImplicitStrongCapture`
 #   （`Task {}` 强捕获 self，而内层闭包写 `[weak self]`），CI 的 Xcode 工具链**不报**这条。
 #   ⇒ 这是**工具链差异**，不是代码问题：别为了让本地门槛变绿去改生产代码。
 # - **门槛 8 偶发红**：`IntegrationEjectTests.真实占用时关闭进程并推出` 要真的
@@ -168,14 +168,14 @@ rm -f "${TMPDIR:-/tmp}/xcrun_db"
 # `swift run` 的官方用法行是
 #     swift run [<options>] [<executable>] [<arguments> ...]
 # —— 可执行名**之后**的东西是**传给程序的**，不是给 SwiftPM 的。
-# 所以旧写法 `swift run DiskEjectorApp -Xswiftc -plugin-path …` 里，
+# 所以旧写法 `swift run SafeOutApp -Xswiftc -plugin-path …` 里，
 # 那几个 `-Xswiftc` 全被当成**应用自己的参数**吃掉了，构建**一个插件路径都没拿到**，
 # 于是满屏 `SwiftUIMacros.StateMacro could not be found`（`@State` 编不过）。
 #
 # 判据（两条实测，互为对照；`definitely-nope-xyz` 是造出来的 token）：
-#   `swift run -v DiskEjectorApp -Xswiftc -plugin-path -Xswiftc /tmp/definitely-nope-xyz`
+#   `swift run -v SafeOutApp -Xswiftc -plugin-path -Xswiftc /tmp/definitely-nope-xyz`
 #       → 构建输出里 token 出现 **0 次**（参数没进构建）
-#   `swift run -v -Xswiftc -plugin-path -Xswiftc /tmp/definitely-nope-xyz DiskEjectorApp`
+#   `swift run -v -Xswiftc -plugin-path -Xswiftc /tmp/definitely-nope-xyz SafeOutApp`
 #       → token 出现 **5 次**（参数进了构建）
 #
 # ⚠️ **为什么以前没被发现**：`swift build` / `swift test` **没有位置参数**

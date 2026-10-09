@@ -136,7 +136,7 @@ extension EnvironmentValues {
 /// ⚠️ **故意不挂在 `LiquidGlassBackground` 上**：那个类型是 `@available(macOS 26.0, *)` 的，
 /// 而这里的判据在**部署目标 14** 下也要能编译、能读 —— 挂上去，14 那条路就引用不到了。
 enum GlassIdentifiers {
-    static let surface = NSUserInterfaceItemIdentifier("DiskEjector.GlassSurface")
+    static let surface = NSUserInterfaceItemIdentifier("SafeOut.GlassSurface")
 }
 
 /// 一块玻璃底衬是哪一条路的产物。

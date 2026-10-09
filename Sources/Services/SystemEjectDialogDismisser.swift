@@ -63,7 +63,7 @@ import OSLog
 /// 调用方须放到后台线程。
 enum SystemEjectDialogDismisser {
 
-    private static let logger = Logger(subsystem: "com.diskejector.app", category: "DismissDialog")
+    private static let logger = Logger(subsystem: "com.safeout.app", category: "DismissDialog")
 
     /// 弹框进程的**窗口拥有者名**（`kCGWindowOwnerName`）。
     ///

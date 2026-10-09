@@ -45,7 +45,7 @@ struct OnboardingStep: Equatable {
 
     /// 圆点里的序号（设计稿 `.step__dot` 写的是 `1 / 2 / 3`）。
     let number: Int
-    /// 步骤正文。可含 `**粗体**`（设计稿里 `DiskEjector` 是 `<b>`）。
+    /// 步骤正文。可含 `**粗体**`（设计稿里 `SafeOut` 是 `<b>`）。
     let textKey: L10n.Key
     /// 步骤注释。
     let note: Note
@@ -73,9 +73,38 @@ extension OnboardingStep {
             textKey: .fdaOnboardingStep3Text,
             note: .text(.fdaOnboardingStep3Note)),
     ]
+
+    /// 步骤正文**上屏时的样子** —— 应用名已填进 `%@`。
+    ///
+    /// **为什么把格式化收在这里，而不是让视图在 `Text()` 里现填**：
+    /// 格式化的正确性必须**可被测试直接断言**。若视图里写
+    /// `MarkdownCopy.text(L10n.tr(step.textKey))` 而忘了套 `String(format:)`，
+    /// `%@` 会原样显示给用户，而任何只看**模板**的测试都照样全绿
+    /// （模板里确实有 `%@`）—— 这是真实踩过的盲区。
+    /// 收敛成一个函数后，视图与测试走**同一个入口**：视图漏格式化 ⇒ 测试必红。
+    func renderedText(locale: Locale = .current) -> String {
+        String(format: L10n.tr(textKey, locale: locale), L10n.tr(.appName, locale: locale))
+    }
 }
 
 // MARK: - 视图
+
+/// 三处注入点的**单一出口**：把 `%@` 填成 ``L10n/appName``。
+///
+/// 为什么不让各视图现填 `String(format:)`：漏填时 `%@` 会**原样上屏**，
+/// 而只看模板的测试全绿 —— 真实踩过的盲区。收成函数后视图与测试同源，漏了必红。
+enum OnboardingText {
+
+    /// 面板说明段（`fdaOnboardingBody`）。
+    static func body(locale: Locale = .current) -> String {
+        String(format: L10n.tr(.fdaOnboardingBody, locale: locale), L10n.tr(.appName, locale: locale))
+    }
+
+    /// 底部信息提示块（`fdaOnboardingPrivacy`）。
+    static func privacy(locale: Locale = .current) -> String {
+        String(format: L10n.tr(.fdaOnboardingPrivacy, locale: locale), L10n.tr(.appName, locale: locale))
+    }
+}
 
 /// 自绘的「完全磁盘访问」引导面板（设计稿 `04-onboarding.html`）。
 ///
@@ -154,7 +183,7 @@ struct OnboardingView: View {
     }
 
     private var description: some View {
-        MarkdownCopy.text(L10n.tr(.fdaOnboardingBody))
+        MarkdownCopy.text(OnboardingText.body())
             .font(.system(size: DesignTokens.FontSize.body))
             .foregroundStyle(DesignTokens.Palette.mutedForeground)
             .multilineTextAlignment(.center)
@@ -217,7 +246,12 @@ struct OnboardingView: View {
 
     private func textColumn(_ step: OnboardingStep, isLast: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            MarkdownCopy.text(L10n.tr(step.textKey))
+            // ⚠️ 步骤正文里的应用名走 ``OnboardingStep/renderedText(locale:)`` 注入，
+            // **不是硬编码、也不在这里现填 `%@`**。为什么：FDA 引导的落点是
+            // 「让用户去系统设置列表里找到本应用」，而那份列表显示的是**本地化后的名字**
+            // （中文环境 = 中文名）。文案写死一个名字 ⇒ 中英文各写一遍 ⇒ 改名必漏，
+            // 且漏了用户按文案找会**找不到那一行开关**（该缺陷真实发生过）。
+            MarkdownCopy.text(step.renderedText())
                 .font(.system(size: DesignTokens.FontSize.caption))
                 .foregroundStyle(DesignTokens.Palette.foreground)
                 // 设计稿 `.step__text { line-height: 1.5 }`（12 → 18）。
@@ -316,7 +350,7 @@ struct OnboardingView: View {
         AlertCallout(
             kind: .info,
             systemImage: "checkmark.shield",
-            text: L10n.tr(.fdaOnboardingPrivacy),
+            text: OnboardingText.privacy(),
             accent: accent
         )
     }

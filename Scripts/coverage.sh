@@ -14,9 +14,9 @@
 # 一个被 UI 代码体量主导、对改进不敏感的数字。门槛的意义是防止核心逻辑的测试
 # 被悄悄删掉，而不是追求一个漂亮的百分比。
 #
-# 排除范围是 **`Sources/DiskEjectorApp/` 整个目录**，而不是逐个文件列：
+# 排除范围是 **`Sources/SafeOutApp/` 整个目录**，而不是逐个文件列：
 # 该目录是 AppKit 应用装配层（AppDelegate + MainMenu）。原先只排除了
-# `DiskEjectorApp.swift` 一个文件，导致 2026-09-12 新增 `MainMenu.swift` 后
+# `SafeOutApp.swift` 一个文件，导致 2026-09-12 新增 `MainMenu.swift` 后
 # 147 行无人测试的菜单构造代码混进分母，覆盖率从 62.5% 稀释到 56.7% ——
 # 一个纯粹的记账噪音，掩盖了真实的核心逻辑覆盖率。按目录排除对后续新增文件免疫。
 
@@ -95,7 +95,7 @@ PROFDATA="$(find .build -name 'default.profdata' -print0 2>/dev/null \
 # ⚠️ **2026-09-24 修**：这里原来写的是 `*PackageTests.xctest/Contents/MacOS/*`，
 # 那是**原生**构建系统的命名（测试二进制叫 `<包名>PackageTests`）。
 # SwiftPM 6.4（本机与 CI 同一支）**默认走 SwiftBuild 构建系统**，产物落在
-#     .build/out/Products/Debug/DiskEjectorAppTests.xctest/Contents/MacOS/DiskEjectorAppTests
+#     .build/out/Products/Debug/SafeOutAppTests.xctest/Contents/MacOS/SafeOutAppTests
 # （`.build/debug` 只是指向上面那层的**软链**，`find` 默认不穿透软链目录）。
 # 那个模式在新布局下**一条都匹配不到** ⇒ BINARY 为空 ⇒ 报「找不到覆盖率产物」，
 # 而**测试本身 489 条全绿** —— 症状与「覆盖率真掉了」逐字相同。
@@ -131,7 +131,7 @@ echo
 echo "▶ 核心逻辑覆盖率（排除 Views/ 与 App 入口）..."
 REPORT="$(xcrun llvm-cov report "$BINARY" \
     -instr-profile "$PROFDATA" \
-    -ignore-filename-regex='\.build|/Tests/|Views/|Sources/DiskEjectorApp/')"
+    -ignore-filename-regex='\.build|/Tests/|Views/|Sources/SafeOutApp/')"
 
 echo "$REPORT"
 

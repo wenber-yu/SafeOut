@@ -27,7 +27,7 @@ python3 Tools/probe/make_broken_appcast.py .build/probe/broken-feed/appcast.xml
 python3 Tools/probe/feedsrv.py 8899        # 服务的是它自己的目录，见 feedsrv.py
 ```
 
-配合 `defaults write com.diskejector.app SUFeedURL http://127.0.0.1:8899/appcast.xml`
+配合 `defaults write com.safeout.app SUFeedURL http://127.0.0.1:8899/appcast.xml`
 把 app 指过来（`SUFeedURL` 可被 user defaults 覆盖：`SPUUpdater.m:179` / `:1155`）。
 
 ## ⚠️ 用完必须还原

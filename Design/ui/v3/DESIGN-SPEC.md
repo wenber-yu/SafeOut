@@ -1,4 +1,4 @@
-# DiskEjector 界面设计规范 v3 — 代际归属与实现交接
+# SafeOut 界面设计规范 v3 — 代际归属与实现交接
 
 > 应用中文名：磁盘推出助手 · 最低 macOS 14 · 分发 = 官网直发（不开沙盒）
 > 设计稿：`Design/ui/v3/screens/`（`_` 前缀 = 未采纳草稿）
@@ -52,7 +52,7 @@
 > ② **部署目标订正：是 `macOS 14` 不是 13**（`Package.swift:8 platforms: [.macOS(.v14)]` 是唯一真相，
 >    commit `d5bb64e` 起生效；本文件与 `ds.css` 共 60 处已同步）；
 > ③ ❗**既有代码里有两处在给 `contentView.layer` 写死 12pt 圆角**
->    （主窗口 `ContentView.swift:227`、设置窗口 `DiskEjectorApp.swift:2368`）——
+>    （主窗口 `ContentView.swift:227`、设置窗口 `SafeOutApp.swift:2368`）——
 >    与 §12.3 第 1 类直接冲突，**必须重新判定**，见 **§12.3.1**。
 > 逐组件处置见 §10.4，浮岛与工具栏实测数据见
 > [第 11 节](#11-工具栏与浮岛实测2026-09-30--macos-26)，
@@ -498,7 +498,7 @@ WWDC 2025-323 的迁移建议同向：
 - [ ] **实现阶段**：实测 `Toggle` 的 label 在 macOS 14 上是否可点（决定「整行可点」怎么保）
 - [ ] ❗**实现阶段（第 13 轮新增，优先级最高）**：处理 `contentView.layer.cornerRadius = 12` 的两处赋值
       —— 主窗口 `Sources/Views/ContentView.swift:227–234`（经 `WindowAccessor`）、
-      设置窗口 `Sources/DiskEjectorApp/DiskEjectorApp.swift:2367–2369`。
+      设置窗口 `Sources/SafeOutApp/SafeOutApp.swift:2367–2369`。
       12 与实测窗口圆角（31.5 / 17.5）**不是一个量级** ⇒ 遮罩会切出**比窗口更小的圆**。
       按 §12.3.1 处置（截图判定、不要盲删也不要盲留）。详见 `HANDOFF.md` §3.7.3
 
@@ -824,7 +824,7 @@ WWDC26-289《Modernize your AppKit app》：`cornerConfiguration` 覆写 +
 | 位置 | 代码 | 处置 |
 |---|---|---|
 | `Sources/Views/ContentView.swift:227–234`（主窗口，经 `WindowAccessor`） | `window.contentView?.layer?.cornerRadius = DesignTokens.Radius.window`（**= 12**）+ `masksToBounds = true` | ❗**待判定**（见下） |
-| `Sources/DiskEjectorApp/DiskEjectorApp.swift:2367–2369`（设置窗口） | 同上 | **随设置窗口退役一并删除** |
+| `Sources/SafeOutApp/SafeOutApp.swift:2367–2369`（设置窗口） | 同上 | **随设置窗口退役一并删除** |
 
 **为什么不能就这么留着**：`DesignTokens.Radius.window = 12`（`DesignTokens.swift:37`）与实测窗口圆角
 （26 上 unified **31.5pt** / 仅标题栏 **17.5pt**，§12.2.2）**不是一个量级**。

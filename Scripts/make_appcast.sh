@@ -10,7 +10,7 @@
 #
 # 产出：Dist/updates/appcast.xml
 #   把它**提交进仓库**（或推 gh-pages），SUFeedURL 指向它的 raw 地址：
-#   https://raw.githubusercontent.com/wenber-yu/DiskEjector/master/appcast.xml
+#   https://raw.githubusercontent.com/wenber-yu/SafeOut/master/appcast.xml
 #
 # 私钥的三种给法（优先级从高到低）：
 #   1) SPARKLE_PRIVATE_KEY 环境变量 —— 走 stdin，不落盘，CI 里从 secret 注入
@@ -32,8 +32,8 @@ PACKAGE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 # 才暴露成「产物找不到」—— 与「还没打包」逐字相同。别改回去。
 OUTPUT_DIR="${OUTPUT_DIR:-$PACKAGE_DIR/Dist}"
 UPDATES_DIR="$OUTPUT_DIR/updates"
-APP_NAME="DiskEjector"
-REPO_URL="https://github.com/wenber-yu/DiskEjector"
+APP_NAME="SafeOut"
+REPO_URL="https://github.com/wenber-yu/SafeOut"
 
 VERSION="${VERSION:-$(git -C "$PACKAGE_DIR" describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || true)}"
 if [ -z "$VERSION" ]; then
@@ -66,7 +66,7 @@ rm -rf "$UPDATES_DIR"
 mkdir -p "$UPDATES_DIR"
 # ⚠️ 上传时用的文件名**必须**与 appcast 里 enclosure 的末段逐字相同 ——
 # 下方「回读」里有一条守卫专门比对这两者（2026-09-18 加：此前脚本的
-# 指引写的是 `DiskEjector.dmg`，而 enclosure 是 `DiskEjector-<版本>.dmg`，
+# 指引写的是 `SafeOut.dmg`，而 enclosure 是 `SafeOut-<版本>.dmg`，
 # 照指引做 = 用户点「安装更新」时 404，而 appcast 本身不报任何错）。
 ARCHIVE_EXT="$(basename "$ARCHIVE" | awk -F. '{print $NF}')"
 UPLOAD_ASSET="$UPDATES_DIR/$APP_NAME-$VERSION.$ARCHIVE_EXT"
@@ -108,9 +108,9 @@ GEN_ARGS+=(--embed-release-notes)
 # GitHub Release 的资产地址：https://github.com/OWNER/REPO/releases/download/TAG/FILE
 #
 # ⚠️ 结尾的斜杠**不能省**（实测 2026-09-18）：不带斜杠时 generate_appcast 会把前缀最后一段
-# 当成文件名替换掉，产出 `.../download/DiskEjector-1.2.3.dmg` —— tag 那一段没了，
+# 当成文件名替换掉，产出 `.../download/SafeOut-1.2.3.dmg` —— tag 那一段没了，
 # 而它**不报错**，只在用户点「安装更新」时 404。带斜杠才得到
-# `.../download/v1.2.3/DiskEjector-1.2.3.dmg`。
+# `.../download/v1.2.3/SafeOut-1.2.3.dmg`。
 GEN_ARGS+=(--download-url-prefix "$REPO_URL/releases/download/v$VERSION/")
 
 if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then

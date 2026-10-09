@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================
-# DiskEjector — CI 严格门槛本地预检
+# SafeOut — CI 严格门槛本地预检
 #
 # 【为什么需要这个脚本】
 # CI 在普通 `swift build` 之外还加了更严的门槛，其中最早的两道是：
@@ -138,7 +138,7 @@ GATE_NO=0
 #    那一支同文件 —— 见那边注释）。这里只提供 LOG / KEEP_DIR 两个变量。
 source "$REPO_ROOT/Scripts/lib/gate_report.sh"
 
-echo "DiskEjector 预检（仓库：${REPO_ROOT}）"
+echo "SafeOut 预检（仓库：${REPO_ROOT}）"
 
 # ---------------------------------------------------------------
 # 门槛 1：构建（警告视为错误）

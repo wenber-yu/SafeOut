@@ -1,4 +1,4 @@
-# DiskEjector — MVP 需求规格文档
+# SafeOut — MVP 需求规格文档
 
 > 版本：v1.0 MVP  
 > 日期：2026-04-08  
@@ -11,7 +11,7 @@
 
 | 字段 | 内容 |
 |------|------|
-| 项目名称 | DiskEjector |
+| 项目名称 | SafeOut |
 | 类型 | macOS 工具类应用 |
 | 最低系统版本 | **macOS 14.0+**（Sonoma 及以上；`Package.swift` 的 `platforms` 是**唯一真相**，本行由 `DeploymentTargetTests` 钉住一致） |
 | UI 框架 | SwiftUI |
@@ -63,7 +63,7 @@
 ### 3.2 菜单栏模式
 
 ```
-[ 💻 DiskEjector 图标（SF Symbol: externaldrive.fill）]
+[ 💻 SafeOut 图标（SF Symbol: externaldrive.fill）]
   ↓ 点击
 [ 弹出面板 - Liquid Glass 毛玻璃 ]
   ├─ 磁盘A: Samsung T7 — 1TB / 已用 300GB / 剩余 700GB   [ ⏏️ 推出 ]
@@ -141,7 +141,7 @@
    直发版未授予「完全磁盘访问」时，`lsof` 同样拿不到其他进程，此时检测返回
    `.needsFullDiskAccess` 并提示用户去系统设置授权——授权后恢复列出（`.occupied`）。
    保留 `lsof -Fpcn0` 解析实现；`build_app.sh` 渠道固定为直发，
-   签名用 `DiskEjector.direct.entitlements`（无 sandbox），并在签名后**回读校验**
+   签名用 `SafeOut.direct.entitlements`（无 sandbox），并在签名后**回读校验**
    包里没有 `com.apple.security.app-sandbox`。
 3. **安全推出**：`NSWorkspace.unmountAndEjectDevice(at:)`（实测沙盒内可用）。
    **不再使用 `diskutil unmount force`**——force 会绕过「有进程占用就失败」这层系统保护，
@@ -154,16 +154,16 @@
 **仓库根目录即 SPM 包根**（`Package.swift` 在仓库根，与 FCPX2AAF / ProxyGenerator 布局一致）。
 
 ```
-DiskEjector/
-├── Package.swift                    # SPM 清单（可执行 target DiskEjectorApp + 测试 target）
+SafeOut/
+├── Package.swift                    # SPM 清单（可执行 target SafeOutApp + 测试 target）
 ├── .swift-format                    # swift-format 配置（4 空格缩进 / 120 行宽）
 ├── build_app.sh                     # 一键打包 .app（渠道/签名/公证；STRICT_CI=1 先过 CI 门槛）
 ├── run.sh                           # 源码目录直接编译运行；`run.sh check` 只跑 CI 门槛
 ├── SPEC.md                          # 本文件
 ├── .github/workflows/ci.yml         # CI：零警告构建 + 格式检查 + 覆盖率门槛 + 打包验证
 ├── Sources/
-│   ├── DiskEjectorApp/
-│   │   ├── DiskEjectorApp.swift     # 应用入口 + AppDelegate（status item、popover 定位）
+│   ├── SafeOutApp/
+│   │   ├── SafeOutApp.swift     # 应用入口 + AppDelegate（status item、popover 定位）
 │   │   └── WindowSelfCheck.swift    # `--preview-*` 自检里**不碰应用状态**的量测函数（7 个 static func）
 │   ├── Models/
 │   │   ├── DiskInfo.swift           # 磁盘数据模型 + 外置判定（DiskClassifier）
@@ -195,13 +195,13 @@ DiskEjector/
 │   └── Localization/
 │       └── Localizable.xcstrings    # 本地化字符串（简中 / 繁中 / 英）
 ├── Tests/
-│   └── DiskEjectorAppTests/         # 单元测试 + 集成测试（真机挂 dmg 验证推出）
+│   └── SafeOutAppTests/         # 单元测试 + 集成测试（真机挂 dmg 验证推出）
 ├── Plugins/
 │   └── LocalizationGenerator/       # 构建插件：由 .xcstrings 生成 L10n.Key 枚举
 ├── Resources/
 │   ├── AppIcon.icns                 # 应用图标资产（由 Scripts/build_icon.sh 生成）
 │   ├── AppIcon.png
-│   └── DiskEjector.direct.entitlements # 直发版（无沙盒，可列出占用进程；沙盒版 entitlements 已随不上架决定删除）
+│   └── SafeOut.direct.entitlements # 直发版（无沙盒，可列出占用进程；沙盒版 entitlements 已随不上架决定删除）
 ├── Scripts/
 │   ├── build_icon.sh                # 源图 → AppIcon.icns（sips + iconutil）
 │   ├── catch-beep.sh                # 抓「系统提示音」用的辅助脚本
@@ -252,7 +252,7 @@ DiskEjector/
 
 | 元素 | 处理 |
 |------|------|
-| 状态栏按钮 | `setAccessibilityLabel("DiskEjector")` + role `.button` |
+| 状态栏按钮 | `setAccessibilityLabel("SafeOut")` + role `.button` |
 | 菜单磁盘行 | role `.group`，标签含「磁盘名 + 已用百分比 + 已用/总容量」 |
 | 推出按钮 | 标签形如「推出 wenbo-data」——多个按钮都叫「推出」时无法区分 |
 | 装饰图标 | `accessibilityHidden(true)` / `setAccessibilityElement(false)` |
@@ -286,7 +286,7 @@ helper 的登录项方案。（「符合 MAS 要求」这条理由随不上架�
 （它要带 `sparkle:` 命名空间的 RSS）。`appcast.xml` 由 `Scripts/make_appcast.sh`
 （内部调 `generate_appcast`）生成并提交进仓库，`SUFeedURL` 指向它的
 `raw.githubusercontent.com` 地址；真正的下载地址写在 appcast 的 enclosure 里，
-指向 `…/releases/download/v<TAG>/DiskEjector-<VERSION>.dmg`。
+指向 `…/releases/download/v<TAG>/SafeOut-<VERSION>.dmg`。
 
 > **现状（2026-09-18 实测）**：`appcast.xml` 已生成并提交，线上
 > `raw.githubusercontent.com/…/master/appcast.xml` 返回 **200**，内容与仓库里那份逐字一致；
@@ -300,15 +300,15 @@ helper 的登录项方案。（「符合 MAS 要求」这条理由随不上架�
 >   （2026-09-20「公钥入库当默认值」—— 它本来就烤在每个发行包里、是公开的）
 >   ⇒ 产物 Info.plist 会带上它，现在是**验签**的。
 > - **Release 已建、enclosure 不再 404**：仓库根 `appcast.xml` 现在的 enclosure 指向
->   `v2026.09.21.1/DiskEjector-2026.09.21.1.dmg` 且带 `sparkle:edSignature`。
+>   `v2026.09.21.1/SafeOut-2026.09.21.1.dmg` 且带 `sparkle:edSignature`。
 >   （`v2026.09.18.3` 那个 Release **确实没建过** —— 当时改发 `.4`，见账本 #8。）
 > - 判据落在 `Scripts/verify_app.sh`：它校验 `SUPublicEDKey` 存在且与仓库里的默认值同源，
 >   缺了 / 不一致都算产物不合格。⚠️ 它是**打包后手跑**的，**不在 preflight 门槛里**。
 > ⇒ 「唯一还差的一步」这句话在 2026-09-18 是对的，**今天已经不成立**。
-> 上传时**必须用** `Dist/updates/DiskEjector-<VERSION>.dmg` 这个文件名（改名即 404，
+> 上传时**必须用** `Dist/updates/SafeOut-<VERSION>.dmg` 这个文件名（改名即 404，
 > 而 appcast 本身不报任何错）。`make_appcast.sh` 现在会打印该路径，并有一条守卫
 > 比对「enclosure 末段」与「待上传文件名」是否逐字相同 —— 这条守卫是补的，
-> 因为此前脚本的指引写的是 `DiskEjector.dmg`，与 enclosure 不一致。
+> 因为此前脚本的指引写的是 `SafeOut.dmg`，与 enclosure 不一致。
 
 **updater 必须在启动时建起来**（`applicationDidFinishLaunching` 调
 `UpdateController.startIfNeeded()`）：Sparkle **只在 `SPUUpdater.start()` 之后**才按
