@@ -3,21 +3,23 @@
     <channel>
         <title>SafeOut</title>
         <item>
-            <title>2026.10.09</title>
-            <pubDate>Fri, 09 Oct 2026 16:13:52 +0800</pubDate>
+            <title>2026.10.10</title>
+            <pubDate>Sat, 10 Oct 2026 16:49:41 +0800</pubDate>
             <link>https://github.com/wenber-yu/SafeOut</link>
-            <sparkle:version>329</sparkle:version>
-            <sparkle:shortVersionString>2026.10.09</sparkle:shortVersionString>
+            <sparkle:version>332</sparkle:version>
+            <sparkle:shortVersionString>2026.10.10</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
             <description><![CDATA[<ul>
-<li><strong>应用改名为 SafeOut</strong>：英文名从 DiskEjector 改为 SafeOut，中文名「磁盘推出助手」保持不变。功能、界面与操作方式完全没有变化，只有名字和图标所在的位置变了</li>
-<li><strong>更新后需要重新授权「完全磁盘访问」</strong>：系统按「应用身份 + 签名」记录这项授权，而应用身份随改名一起更新了，旧的授权因此不再适用。首次打开会重新出现引导，按提示到「系统设置 → 隐私与安全性 → 完全磁盘访问」里把 SafeOut 打开即可。不做这一步，应用仍能推出磁盘，但看不到「是哪个程序占着它」</li>
-<li><strong>「应用程序」里可能同时出现新旧两个版本</strong>：新旧版本的应用身份不同，系统会把它们当作两个不同的应用。装好后如果看到 DiskEjector 和 SafeOut 并存，把旧的那个拖进废纸篓即可 —— 旧版本不会再收到更新</li>
-<li><strong>下载地址换了，旧链接会自动跳转</strong>：项目地址随改名一起更新，老链接仍能打开并自动跳到新地址。已经下载过的旧版本可以正常使用，只是不再更新</li>
+<li><strong>界面文案改了一遍</strong>：把「更新组件未能启动」「注册已提交」这类只有开发看得懂的说法，换成你平时会用的说法</li>
+<li><strong>统一了称呼</strong>：全应用现在一律叫「磁盘」，不再混着出现「硬盘」「卷」</li>
+<li><strong>空状态的标题不再自相矛盾</strong>：窗口标题叫「外置磁盘」、空状态却叫「没有可移动磁盘」，看起来像筛选规则变了。现在两处一致</li>
+<li><strong>授权说明写清是给哪个应用授权</strong>：不再只写「需要完全磁盘访问」</li>
+<li><strong>几处啰嗦的句子缩短了</strong>：「完成后自动重启完成安装」→「装好后自动重启」</li>
+<li><strong>繁体中文的用词保持不变</strong>：eject 仍按 Apple 官方译法写作「退出」，与系统里的访达菜单一致</li>
 </ul>
 ]]></description>
-            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.10.09/SafeOut-2026.10.09.dmg" length="2838337" type="application/octet-stream" sparkle:edSignature="FKCmViBNcogWxmKVBswfOs3TxJRHcx8pxrPLgwmJ33jwcGWcMKKsqsa4C3VVSsc8ejZbfTF2FD2UlAjifzTwDA=="/>
+            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.10.10/SafeOut-2026.10.10.dmg" length="2838172" type="application/octet-stream" sparkle:edSignature="iJLG0VsS50fFZ514VKbZikC0yomi82Ljx7gQX+l5AR9/AiSB2PG0aaNSdVvnc4t8ek72xb5+pB5o+0O6Wm29DQ=="/>
         </item>
     </channel>
 </rss>
