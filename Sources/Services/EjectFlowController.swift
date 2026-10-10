@@ -331,7 +331,12 @@ final class EjectFlowController {
     /// `occupying` 为空表示系统判定忙但本应用无法列出具体进程（通常未授予完全磁盘访问）。
     nonisolated func busyMessage(disk: DiskInfo, occupying: [OccupyingProcess]) -> String {
         if occupying.isEmpty {
-            return String(format: L10n.tr(.ejectBusyNoProcessInfo), disk.displayName)
+            // ⚠️ 两个 %@：磁盘名 + 应用名。应用名**必须走 %@**（2026-10-10）——
+            // 原文案把「磁盘推出助手」/「SafeOut」三语都硬编码进值里，改应用名时
+            // 会漏掉其中一语；`fdaOnboardingBody` / `fdaOnboardingPrivacy` 早已用 %@，此处对齐。
+            return String(
+                format: L10n.tr(.ejectBusyNoProcessInfo), disk.displayName,
+                L10n.tr(.appName))
         }
         return L10n.tr(.ejectBusyMessageFormat)
     }

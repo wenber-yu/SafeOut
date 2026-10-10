@@ -10,16 +10,16 @@
     },
     "accessibilityOnboardingMessage" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已开启推出提醒。磁盘推出后，本应用会自动关掉系统留下的「占用中」提示框。若在系统设置里额外允许「%@」使用辅助功能，这一步会更精确：只会关掉目标磁盘的提示框，不影响其它磁盘。不授权也能正常使用。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Eject alerts are on. When a disk is ejected, the system\u2019s leftover \u201cin use\u201d alert is closed for you. Allowing %@ to use Accessibility in System Settings makes this exact \u2014 only that disk\u2019s alert is closed, never another one\u2019s. The feature works without it." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已開啟退出提醒。磁碟退出後，本應用會自動關掉系統留下的「佔用中」提示框。若在系統設定裡額外允許「%@」使用輔助功能，這一步會更精確：只會關掉目標磁碟的提示框，不影響其他磁碟。不授權也能正常使用。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已开启推出提醒。磁盘推出后，系统留下的「占用中」提示框会自动关掉。如果在系统设置里允许 %@ 使用辅助功能，会关得更准：只关这块盘的提示框，不动其它盘。不授权也能用。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Eject alerts are on. After a disk is ejected, the system's leftover \"in use\" alert closes by itself. If you allow %@ to use Accessibility in System Settings, it closes more precisely — only that disk's alert, never another one. It works without it." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已開啟推出提醒。磁碟退出後，系統留下的「佔用中」提示框會自動關掉。如果在系統設定裡允許 %@ 使用輔助功能，會關得更準：只關這顆磁碟的提示框，不動其它磁碟。不授權也能用。" } }
       }
     },
     "accessibilityOnboardingTitle" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "可选：授予辅助功能权限" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Optional: Grant Accessibility Access" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "可選：授予輔助功能權限" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "可选：允许辅助功能" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Optional: Allow Accessibility" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "可選：允許輔助功能" } }
       }
     },
     "appLanguage" : {
@@ -73,9 +73,9 @@
     },
     "autoUpdateUnavailableHint" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "更新组件未能启动；仍可手动检查。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The update component didn't start; check manually." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "更新元件未能啟動；仍可手動檢查。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自动更新没起来；可以手动检查。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Auto-update didn't start; check manually." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "自動更新沒起來；可以手動檢查。" } }
       }
     },
     "cancel" : {
@@ -136,9 +136,9 @@
     },
     "notifEjectBlockedBody" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ 正在使用这块磁盘。点按这条通知，可在%@里关闭它并推出。" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ 正在使用这块磁盘。点按这条通知，可以在 %@ 里关掉它并推出。" } },
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ is using this disk. Click this notification to close it and eject from %@." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%@ 正在使用這顆磁碟。點一下這則通知，可在%@裡關閉它並退出。" } }
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%@ 正在使用這顆磁碟。點一下這則通知，可以在 %@ 裡關掉它並推出。" } }
       }
     },
     "notifEjectResultFailureTitle" : {
@@ -150,9 +150,9 @@
     },
     "notifEjectResultSuccessBody" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "磁盘已推出，现在可以安全拔下了。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The disk was ejected. You can safely unplug it now." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "磁碟已退出，現在可以安全拔下了。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已推出，现在可以拔下。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ejected. You can unplug it now." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已退出，現在可以拔下。" } }
       }
     },
     "notifEjectResultSuccessTitle" : {
@@ -164,9 +164,9 @@
     },
     "ejectFailedInUseReason" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "磁盘仍然被占用。有一个程序在这块盘上打开了文件，请关闭它后重试。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The disk is still in use. An app has files open on it — quit that app and try again." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "磁碟仍被佔用中。有程式在這顆磁碟上開啟了檔案，請關閉它後再試一次。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这个盘还被占着。有程序在上面打开了文件，关掉它再试一次。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This disk is still in use. An app has files open on it — quit that app and try again." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這顆磁碟還被佔著。有程式在上面開啟了檔案，關掉它再試一次。" } }
       }
     },
     "ejectDiskFormat" : {
@@ -269,16 +269,16 @@
     },
     "ejectFailedCauseNotRemovable" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这块卷不是可推出的设备（例如内置磁盘、网络宗卷）" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This volume is not an ejectable device (for example a built-in disk or a network volume)" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這個卷宗不是可退出的裝置（例如內建磁碟、網路卷宗）" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这块磁盘不能推出（比如内置磁盘、网络盘）" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This disk can't be ejected (such as a built-in disk or a network drive)" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這顆磁碟不能推出（例如內建磁碟、網路磁碟）" } }
       }
     },
     "ejectFailedCauseSystemHold" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "系统正在持有这块卷（例如系统镜像，或由管理策略挂载的宗卷）" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The system is holding this volume (for example a system image, or a managed volume)" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "系統正在持有這個卷宗（例如系統映像，或由管理政策掛載的卷宗）" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "系统正在使用这块磁盘（比如系统镜像，或公司管理的磁盘）" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The system is using this disk (such as a system image, or a disk managed by your organization)" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "系統正在使用這顆磁碟（例如系統映像，或公司管理的磁碟）" } }
       }
     },
     "ejectBusyTitle" : {
@@ -290,9 +290,9 @@
     },
     "ejectBusyMessageFormat" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "以下程序正在读写这块磁盘。它们挡着推出的路，需要先结束才能推出。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The following apps are reading from or writing to this disk. They are blocking the eject and must be quit first." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "以下程式正在讀寫這顆磁碟。它們擋住了退出，必須先結束才能退出。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下面这些程序正在读写这块磁盘。得先关掉它们，才能推出。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "These apps are reading from or writing to this disk. Quit them first to eject." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "下面這些程式正在讀寫這顆磁碟。要先關掉它們，才能退出。" } }
       }
     },
     "ejectBusyOccupiedHeaderFormat" : {
@@ -318,16 +318,16 @@
     },
     "ejectBusyNoProcessInfo" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "磁盘「%@」正被占用，但当前无法列出具体程序。请确认已在「系统设置 › 隐私与安全性 › 完全磁盘访问」中允许磁盘推出助手后重试。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The disk \"%@\" is in use, but the specific apps cannot be listed. Make sure SafeOut is granted Full Disk Access in System Settings › Privacy & Security, then try again." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "磁碟「%@」正被佔用，但目前無法列出具體程式。請確認已在「系統設定 › 隱私與安全性 › 完全磁碟存取」中允許磁碟推出助手後再試。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "磁盘「%@」正被占用，但查不出是哪些程序。请到「系统设置 › 隐私与安全性 › 完全磁盘访问」里允许 %@，再重试。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "\"%@\" is in use, but we can't tell which apps. Allow %@ under System Settings › Privacy & Security › Full Disk Access, then try again." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "磁碟「%@」正被佔用，但查不出是哪些程式。請到「系統設定 › 隱私權與安全性 › 完全磁碟存取」裡允許 %@，再重試。" } }
       }
     },
     "ejectBusyWarning" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭它们会丢失未保存的内容。%@会先请求正常退出，几秒后仍未退出的将被强制结束，然后重新尝试推出。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Quitting them loses any unsaved work. %@ first asks them to quit, force-quits any that are still running a few seconds later, then tries to eject again." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "關閉它們會遺失未儲存的內容。%@ 會先請求正常結束，幾秒後仍未結束的將被強制結束，然後重新嘗試退出。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关掉它们会丢失没保存的内容。%@ 会先请它们正常退出，几秒后还在的会被强制结束，然后重试推出。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Quitting them loses unsaved work. %@ asks them to quit first, force-quits any that are still open a few seconds later, then tries again." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "關掉它們會遺失沒儲存的內容。%@ 會先請它們正常結束，幾秒後還在的會被強制結束，然後重試推出。" } }
       }
     },
     "closeAndEject" : {
@@ -339,7 +339,7 @@
     },
     "insertDiskHint" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请插入移动硬盘或U盘" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请插入移动硬盘或 U 盘" } },
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Insert an external drive or USB disk" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請插入外接硬碟或隨身碟" } }
       }
@@ -395,16 +395,16 @@
     },
     "launchAtLoginFootnote" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开机后自动驻留菜单栏，插盘即可用。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stays in the menu bar after login, ready when you plug in a disk." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開機後自動常駐選單列，插上磁碟即可使用。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开机后驻留菜单栏，插上盘就能用。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lives in the menu bar after login, ready when you plug in a disk." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開機後常駐選單列，插上磁碟就能用。" } }
       }
     },
     "noRemovableDisks" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有可移动磁盘" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No Removable Disks" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有可卸除式磁碟" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有外置磁盘" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No External Disks" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有外接磁碟" } }
       }
     },
     "fdaOnboardingTitle" : {
@@ -423,9 +423,9 @@
     },
     "fdaOnboardingStep1Text" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点下方按钮，直接打开对应面板" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点下面的按钮，直接打开设置" } },
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Click the button below to open the right pane" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "點下方按鈕，直接開啟對應面板" } }
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "點下面的按鈕，直接開啟設定" } }
       }
     },
     "fdaOnboardingPathSettings" : {
@@ -437,9 +437,9 @@
     },
     "fdaOnboardingStep2Text" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在列表中找到 **%@**，打开右侧开关" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Find **%@** in the list and turn on the switch" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在列表中找到 **%@**，開啟右側開關" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在列表里找到 %@，打开它右边的开关" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Find %@ in the list and turn on its switch" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在列表裡找到 %@，開啟它右邊的開關" } }
       }
     },
     "fdaOnboardingStep2Note" : {
@@ -472,9 +472,9 @@
     },
     "fdaOnboardingPrivacy" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这项权限只用于读取「哪个进程打开了磁盘上的文件」，%@ 不会读取你的文件内容。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This permission is only used to read which process has a file open on the disk. %@ never reads your file contents." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這項權限只用於讀取「哪個行程開啟了磁碟上的檔案」，%@ 不會讀取你的檔案內容。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这项权限只用来知道「哪个程序打开了这个盘上的文件」，%@ 不会读你的文件内容。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This permission only tells us which app has a file open on the disk. %@ never reads your files." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這項權限只用來知道「哪個程式開啟了這個磁碟上的檔案」，%@ 不會讀你的檔案內容。" } }
       }
     },
     "notNow" : {
@@ -486,9 +486,9 @@
     },
     "occupiedProcessesTitle" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "占用程序:" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "占用程序：" } },
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Occupied by:" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "佔用程式:" } }
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "佔用程式：" } }
       }
     },
     "restartNow" : {
@@ -500,9 +500,9 @@
     },
     "safeToEject" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "该硬盘可安全推出" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "该磁盘可安全推出" } },
         "en" : { "stringUnit" : { "state" : "translated", "value" : "This disk can be safely ejected" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "此硬碟可安全退出" } }
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "此磁碟可安全退出" } }
       }
     },
     "ok" : {
@@ -514,9 +514,9 @@
     },
     "processExecutableNameFormat" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@（进程名 %@）" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ (process name: %@)" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%@（程式名稱 %@）" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ · %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ · %@" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%@ · %@" } }
       }
     },
     "processNameListSeparator" : {
@@ -563,16 +563,16 @@
     },
     "takeOverFinderEjectFootnote" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在访达中点推出、但磁盘正被占用时，在菜单栏提醒你谁在占用，可一键关闭并推出。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "When Finder\u2019s eject is blocked, the menu bar shows what holds the disk, with one-click close and eject." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 Finder 中點退出、但磁碟正被佔用時，在選單列提醒你是誰在佔用，可一鍵關閉並退出。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在访达里点推出，磁盘被占用时菜单栏会告诉你是谁在占用，可一键关掉并推出。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "If Finder can't eject a disk, the menu bar tells you what's holding it, with a one-click fix." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 Finder 裡點退出，磁碟被佔用時選單列會告訴你是誰在佔用，可一鍵關掉並退出。" } }
       }
     },
     "takeOverFinderEjectNeedsFDA" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要「完全磁盘访问」才能列出占用者，否则提醒无法显示是谁在占用。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Listing what holds a disk needs Full Disk Access." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要「完全磁碟存取權」，否則無法顯示是誰在佔用。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要「完全磁盘访问」才能看出是谁在占用。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Full Disk Access is needed to see what's using a disk." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要「完全磁碟存取」才能看出是誰在佔用。" } }
       }
     },
     "tintedMode" : {
@@ -612,9 +612,9 @@
     },
     "updateAlertTitleFormat" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ %@ 已发布" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ %@ 可更新" } },
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ %@ Is Available" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%@ %@ 已發佈" } }
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%@ %@ 可更新" } }
       }
     },
     "updateAlertVersionsFormat" : {
@@ -633,9 +633,9 @@
     },
     "updateCallout" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点「后台更新并重启」后，应用会在后台下载并校验签名，完成后自动重启完成安装。正在推出的磁盘不会被打断。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "After you choose “Update in Background & Restart”, the app downloads and verifies the update in the background, then restarts to finish installing. Disks that are being ejected are not interrupted." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "按下「背景下載並重新啟動」後，應用程式會在背景下載並驗證簽章，完成後自動重新啟動以完成安裝。正在退出的磁碟不會被中斷。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点「后台更新并重启」后，应用会在后台下载并校验签名，装好后自动重启。正在推出的磁盘不会被打断。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "After you choose \"Update in Background & Restart\", the app downloads and verifies the update in the background, then restarts to install. Disks being ejected aren't interrupted." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "按下「背景下載並重新啟動」後，應用程式會在背景下載並驗證簽章，裝好後自動重新啟動。正在退出的磁碟不會被中斷。" } }
       }
     },
     "updateCheckFailedFormat" : {
@@ -654,9 +654,9 @@
     },
     "updateCheckingHint" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "通常只需要几秒钟。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This usually takes a few seconds." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "通常只需要幾秒鐘。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "很快就好。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Just a moment." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "很快就好。" } }
       }
     },
     "updateDownloadingFormat" : {
@@ -668,9 +668,9 @@
     },
     "updateDownloadingHint" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下载完成后会自动安装，无需你再操作。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "It installs automatically once the download finishes." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "下載完成後會自動安裝，無需你再操作。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下载完会自动装上，不用你再管。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "It installs itself when the download finishes." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "下載完會自動裝上，不用你再管。" } }
       }
     },
     "updateEscHint" : {
@@ -724,9 +724,9 @@
     },
     "updateInstallFailedHint" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "更新已下载，但没能装上。可以重试。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "It downloaded, but couldn't be installed. Try again." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "更新已下載，但沒能裝上。可以重試。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "新版本已下载，但没能装上。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "It downloaded, but wouldn't install." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "新版本已下載，但沒能裝上。" } }
       }
     },
     "updateLocationBlocked" : {
@@ -738,9 +738,9 @@
     },
     "updateLocationBlockedHint" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "应用当前所在的磁盘位置不允许它更新自己。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The app can't update itself from where it is right now." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "應用程式目前所在的磁碟位置不允許它更新自己。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "应用不在「应用程序」文件夹里，更不了新版本。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Move the app to Applications to update it." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "應用程式不在「應用程式」資料夾裡，更不了新版本。" } }
       }
     },
     "updateNeverChecked" : {
@@ -766,9 +766,9 @@
     },
     "updateReadyHint" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重启后完成安装；下次退出应用时也会自动安装。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Installs after a restart; it also installs when you next quit the app." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "重新啟動後完成安裝；下次結束應用程式時也會自動安裝。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重启后完成安装；下次退出应用时也会装上。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Installs after a restart; it also installs when you quit the app." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "重新啟動後完成安裝；下次結束應用程式時也會裝上。" } }
       }
     },
     "updateSkipVersion" : {
@@ -780,9 +780,9 @@
     },
     "updateSkippedFormat" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已跳过 %@ · 再点一次仍会检查并提示" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skipped %@ · checking again still shows it" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已跳過 %@ · 再點一次仍會檢查並提示" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已跳过 %@ · 再点一次会重新提示" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skipped %@ · checking again will show it" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已跳過 %@ · 再點一次會重新提示" } }
       }
     },
     "updateTryAgain" : {
@@ -997,16 +997,16 @@
     },
     "busyEvidenceTitleFallback" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "有程序正在占用" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This disk is in use" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "有程式正在使用" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "有程序在用" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apps are using this disk" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "有程式在使用" } }
       }
     },
     "busyEvidenceTitleFormat" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 个程序正在占用" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 个程序在用" } },
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%d apps are using this disk" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%d 個程式正在使用" } }
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%d 個程式在使用" } }
       }
     },
     "closeAndEjectDiskFormat" : {
@@ -1018,9 +1018,9 @@
     },
     "compactBusyFormat" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 个程序占用" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 个程序在用" } },
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%d in use" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%d 個程式使用中" } }
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "%d 個程式在使用" } }
       }
     },
     "compactSafe" : {
@@ -1067,9 +1067,9 @@
     },
     "emptyStateFilterHint" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "系统盘与网络卷不会被列出。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Internal and network volumes are never listed." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "系統磁碟與網路卷不會被列出。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "系统盘和网络盘不会出现在这里。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Internal disks and network drives don't show up here." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "系統磁碟與網路磁碟不會出現在這裡。" } }
       }
     },
     "externalDisksTitle" : {
@@ -1088,16 +1088,16 @@
     },
     "fdaGrantedBanner" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已获得「完全磁盘访问」，现在可以列出占用程序" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Full Disk Access granted — usage detection is now available" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已取得「完全磁碟存取權」，現在可以列出佔用程式" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已获得「完全磁盘访问」，现在能看出是谁在占用" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Full Disk Access granted — you can now see what's using a disk" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已取得「完全磁碟存取」，現在能看出是誰在佔用" } }
       }
     },
     "launchAtLoginPendingHint" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "注册已提交，但还需在系统设置中手动打开，否则不会自动启动。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Registration submitted — you still need to enable it in System Settings, or it will not launch." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "註冊已提交，但還需在系統設定中手動開啟，否則不會自動啟動。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已经提交了，但还要在系统设置里手动打开，否则不会自动启动。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Submitted — you still need to turn it on in System Settings, or it won't start." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "已經送出，但還要在系統設定裡手動開啟，否則不會自動啟動。" } }
       }
     },
     "launchAtLoginPendingTitle" : {
@@ -1137,9 +1137,9 @@
     },
     "safeToEjectConclusion" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有程序占用，可以安全推出" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No apps are using it — safe to eject" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有程式佔用，可以安全退出" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有程序在用，可以推出" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No apps are using it — you can eject" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "沒有程式在使用，可以退出" } }
       }
     },
     "settingsGroupAbout" : {
@@ -1187,15 +1187,15 @@
     "updateChannelDevelopment" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开发版" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Development build" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dev build" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開發版" } }
       }
     },
     "updateChannelDirect" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "官网直发版" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Direct build" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "官網直發版" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "官网下载版" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Official download" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "官網下載版" } }
       }
     },
     "versionLineFormat" : {
@@ -1207,9 +1207,9 @@
     },
     "versionDirtyNoticeFormat" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "含 %d 处未提交改动 · 提交 %@" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d uncommitted changes · commit %@" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "含 %d 處未提交變更 · 提交 %@" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开发版（%d 处未保存改动 · 构建 %@）" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dev build (%d uncommitted changes · build %@)" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開發版（%d 處未儲存變更 · 建置 %@）" } }
       }
     },
     "collapseList" : {

@@ -48,12 +48,17 @@ struct AlertLayoutTests {
         /// `.alert__foot { padding: 12px 20px }` + 按钮 30
         static let foot: CGFloat = 54
 
-        /// A 变体总高（警示块折 3 行）
-        static let busyTotal: CGFloat = 330.13
+        /// A 变体总高（警示块折 2 行）
+        /// ⚠️ 330.13 → **312.13**（2026-10-10 文案去 AI 化）：`ejectBusyMessageFormat` 变短
+        /// （删掉「它们挡着推出的路」那句拟人化修辞），弹窗总高随之下移 18pt。
+        /// 量法：`03-eject-flow.html` 里**第一个** `.alert`，探针量 `.getBoundingClientRect().height`。
+        static let busyTotal: CGFloat = 312.13
         /// A 的 `.alert__section`：`label 15.94 + 6 + list 59.69`
         static let busySection: CGFloat = 81.63
-        /// A 的 `.callout`：`padding 9×2 + 18 × 3 行`
-        static let busyCallout: CGFloat = 72
+        /// A 的 `.callout`：`padding 9×2 + 18 × 2 行`
+        /// ⚠️ 72 → **54**：`ejectBusyWarning` 变短一行（3 行 → 2 行）。
+        /// 断言里写 `Spec.busyCallout + 12`（系统偏差补偿），故期望 = 54 + 12 = 66。
+        static let busyCallout: CGFloat = 54
 
         /// B 变体总高
         static let failureTotal: CGFloat = 314.22
@@ -200,15 +205,16 @@ struct AlertLayoutTests {
             "B 区块应 \(Spec.failureSection + Spec.sectionTop)，实际 \(failureSection)")
     }
 
-    /// 提示块（含上边距 12）：A 折 3 行（72）、B 折 2 行（54）。
+    /// 提示块（含上边距 12）：A 折 2 行（54）、B 折 2 行（54）。
+    /// ⚠️ 2026-10-10：A 曾是 3 行（72），文案变短后成 2 行 —— 与 B 同高了。
     ///
-    /// **折行数是文案与列宽共同的结果，必须钉住**：A 的警示文案正好卡在折行边界
-    /// （每行 26 个汉字 = 312pt，列宽 316pt），列宽或行高任一处变动都会改变行数。
+    /// **折行数是文案与列宽共同的结果，必须钉住**：警示文案卡在折行边界上，
+    /// 列宽、行高或文案任一处变动都会改变行数 ⇒ A 与 B 会同时受影响。
     @Test func 提示块高度与设计稿一致() {
         let busyCallout = height(designBusy) - height(variant(designBusy, callout: .some(nil)))
         #expect(
             abs(busyCallout - (Spec.busyCallout + 12)) <= Spec.tolerance,
-            "A 提示块应 \(Spec.busyCallout + 12)（3 行），实际 \(busyCallout)")
+            "A 提示块应 \(Spec.busyCallout + 12)（2 行），实际 \(busyCallout)")
 
         let failureCallout =
             height(designFailure) - height(variant(designFailure, callout: .some(nil)))

@@ -129,9 +129,12 @@ struct MarkdownCopyTests {
     /// **会漏报、不会误报**，与 `LocalizationCatalogTests.每个键都必须有消费者` 同一取舍。
     @Test func 带markdown标记的文案键必须在解析markdown的文件里被消费() throws {
         let keys = try markdownKeys()
+        // 范围锚：从 3 降到 2（2026-10-10）—— `fdaOnboardingStep2Text` 的 `**%@**`
+        // 已去掉：那一屏应用名出现四次，加粗它零信息量，真正该强调的是「打开右侧开关」。
+        // 若日后又给某个值加回 `**`，请把这条锚一并调回去（它防的是「解析口径坏了」）。
         #expect(
-            keys.count >= 3,
-            "只找到 \(keys.count) 个带 `**` 的键（真实 3 个）—— 解析口径坏了，下面的结论作废")
+            keys.count >= 2,
+            "只找到 \(keys.count) 个带 `**` 的键（真实 2 个）—— 解析口径坏了，下面的结论作废")
 
         let byFile = try strippedSourceByFile()
         #expect(

@@ -336,8 +336,23 @@ struct EjectFlowControllerTests {
         let controller = EjectFlowController()
         let disk = makeDisk()
         let message = controller.busyMessage(disk: disk, occupying: [])
-        let expected = String(format: L10n.tr(.ejectBusyNoProcessInfo), "测试盘")
-        #expect(message == expected)
+
+        // ⚠️ 这里**不能**写 `message == String(format: L10n.tr(…), …)` ——
+        // 那是拿文案和它自己比：值里删掉一个 %@，两边一起变，断言照样绿（2026-10-10 变异实测）。
+        // 判据必须是**与文案无关**的东西：占位符全部替换掉 + 两个实参都真的进去了。
+        #expect(!message.contains("%@"), "占位符必须全部被替换，少传一个参数就会残留字面量")
+        #expect(message.contains("测试盘"), "说明句要指名是哪块盘，否则多盘时用户不知道在说哪一块")
+        #expect(message.contains(L10n.tr(.appName)), "授权说明要点名应用，否则用户不知道要给谁授权")
+
+        // 格式串**三语**都必须恰好两个占位符 —— 改了文案却忘了改这里的参数个数时，这条会先红。
+        // ⚠️ 必须逐语查：2026-10-10 实际漏过繁体与英文（各只有 1 个 %@），只查运行语言会漏。
+        for identifier in ["zh-Hans", "zh-Hant", "en"] {
+            let format = L10n.tr(
+                .ejectBusyNoProcessInfo, locale: Locale(identifier: identifier))
+            #expect(
+                format.components(separatedBy: "%@").count - 1 == 2,
+                "\(identifier) 的格式串应恰好有 2 个 %@（磁盘名 + 应用名），实际：\(format)")
+        }
     }
 
     // MARK: failureMessage
@@ -509,12 +524,18 @@ struct EjectFlowControllerTests {
         // 「说明句自带授权引导」是**中文设计稿的文案契约**，所以显式在中文下解析再核对。
         // 不能直接写 `model.subtitle.contains("完全磁盘访问")` —— 那样结论会随运行机器的
         // 系统语言变（英文版文案里没有这几个字），于是本地绿、CI 红。见 `TestLanguage`。
-        let designSubtitle = String(
-            format: L10n.tr(.ejectBusyNoProcessInfo, locale: Locale(identifier: TestLanguage.design)),
-            "测试盘")
+        //
+        // ⚠️ 也**不能**拿 `model.subtitle == String(format: 同一份文案, …)` ——
+        // 那是拿文案和它自己比，改了值两边一起变、断言永真（2026-10-10 变异实测）。
+        // 这里断言的是**格式串本身**含该路径，与最终渲染结果无关。
+        let designFormat = L10n.tr(
+            .ejectBusyNoProcessInfo, locale: Locale(identifier: TestLanguage.design))
         #expect(
-            designSubtitle.contains("完全磁盘访问"),
+            designFormat.contains("完全磁盘访问"),
             "说明句必须指明去「完全磁盘访问」授权，否则用户不知道该给什么权限")
+        #expect(
+            model.subtitle.contains(L10n.tr(.appName)),
+            "说明句要点名应用，否则用户不知道要给谁授权")
     }
 
     /// 警示必须写清动作序列（设计稿文案原则），且与 ``EjectFlowController/terminateAndEject``
@@ -528,10 +549,14 @@ struct EjectFlowControllerTests {
         #expect(!text.contains("%@"), "格式化占位符必须已被替换")
 
         // 三步动作序列是**中文设计稿的文案契约**，显式在中文下核对（见 `TestLanguage`）。
+        // ⚠️ 只认动作本身，不认整句（2026-10-10：文案去掉「重新尝试」的冗余后变「重试推出」，
+        // 守卫随之放宽到「重试 + 推出」两个词 —— 契约是"说清第三步"，不是"逐字复述"）。
         let design = L10n.tr(.ejectBusyWarning, locale: Locale(identifier: TestLanguage.design))
         #expect(design.contains("正常退出"), "缺少第一步「先请求正常退出」")
         #expect(design.contains("强制结束"), "缺少第二步「强制结束」")
-        #expect(design.contains("重新尝试推出"), "缺少第三步「重新尝试推出」")
+        #expect(
+            design.contains("重试") && design.contains("推出"),
+            "缺少第三步「重试推出」")
     }
 
     // MARK: 弹窗版式契约
