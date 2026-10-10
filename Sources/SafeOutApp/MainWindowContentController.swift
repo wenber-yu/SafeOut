@@ -47,8 +47,12 @@ final class MainWindowContentController: NSSplitViewController {
 
     /// 侧栏与详情区共享的那一份导航状态。
     ///
-    /// 公开给 ``AppDelegate/showSettings()``：那三个「设置」入口
-    /// （齿轮 / ⌘, / 菜单栏面板）要做的是「显示主窗口 + 选中设置·通用」。
+    /// 公开给 ``AppDelegate/presentMainWindow(landing:)``：「打开主窗口」与「设置…」两类入口
+    /// 要做的是「亮窗口 + 落在某一页」，而落在哪一页就是它那份 `selection`。
+    ///
+    /// ⚠️ 它**比窗口活得久**（窗口 `isReleasedWhenClosed = false`，关闭只是收起来）——
+    /// 所以「关掉前停在哪一页」会在下次打开时原样留着。落点因此必须由**每次打开的那个入口**
+    /// 显式给定（``MainWindowLanding``），不能指望 `selection` 的初值兜底。
     let model = MainWindowModel()
 
     /// 详情区磁盘页读的那份列表（已解析，非可选）。
@@ -193,6 +197,24 @@ final class MainWindowContentController: NSSplitViewController {
         // 「52 + 安全区 52」的位置上，标题掉到 78pt。
         hosting.safeAreaRegions = []
         return hosting
+    }
+
+    /// 把侧栏拨到 `landing` 那一页。
+    ///
+    /// ## 为什么值得从 ``AppDelegate`` 那边抽成方法
+    ///
+    /// 这一步是「打开主窗口回主页 / 打开设置回设置页」这条契约的**全部**内容，
+    /// 而它**不含任何窗口操作** —— 把它留在 `presentMainWindow(landing:)` 里，
+    /// 就只能靠真机自检去验（「调 `showMainWindow()` 然后读 `model.selection`」），
+    /// 门槛跑不到那条路。抽出来之后单测能直接走**同一条**实现：
+    /// 造一个控制器 → 先手动拨到「设置 · 通用」→ 落点 `.disks` → 断言回到外置磁盘。
+    ///
+    /// ⚠️ **这条赋值本身不是可选的**：`model` 的生命周期长于窗口
+    /// （`isReleasedWhenClosed = false`），不拨的话上次停在哪一页就会**跨次沿用**。
+    @discardableResult
+    func applyLanding(_ landing: MainWindowLanding) -> MainNavItem {
+        model.selection = landing.navItem
+        return model.selection
     }
 
     /// 重新枚举磁盘（工具栏尾端那颗刷新按钮的 action）。

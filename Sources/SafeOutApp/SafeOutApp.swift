@@ -1223,7 +1223,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 mainWindow.appearance = NSAppearance(named: .aqua)
             }
 
+            // ⚠️ **先把选中项弄脏，再走真实入口** —— 否则这条判据恒绿。
+            //
+            // 「打开主窗口回外置磁盘」这条契约（2026-10-10 用户报的现象）验的是
+            // **覆盖**行为：新一次打开必须盖掉上一次残留的那一页。
+            // 而本预览起手时 `selection` 本来就是 `.disks`（新建控制器的初值），
+            // 直接走 `showMainWindow()` 再读回来，**无论落点有没有接线都会绿** ——
+            // 那正是「关掉窗口停在通用、再打开还是通用」的形态。
+            //
+            // 所以先把 ``MainWindowModel/selection`` 拨到「设置 · 通用」
+            // 复现用户的前置状态，再让**真实入口**去落点。
+            // 拨脏这一步必须在 ``setupMainWindow`` **之后**（`model` 随控制器而生）。
+            mainWindowContent?.model.selection = .settings(.general)
+
             showMainWindow()
+
+            // 3 · **落点必须是「外置磁盘」。**
+            if let content = mainWindowContent, content.model.selection != .disks {
+                mismatches.append(
+                    "A 打开主窗口后侧栏选中项是 \(content.model.selection.id)，应为 disks —— "
+                        + "「打开主窗口」必须无条件回应用主页（``AppDelegate/presentMainWindow(landing:)`` "
+                        + "里的 `applyLanding(.disks)`）。"
+                        + "它没生效时用户看到的是「关掉主窗口前停在哪一页，再打开还是那一页」，"
+                        + "而 `model` 的生命周期长于窗口（`isReleasedWhenClosed = false`），"
+                        + "残留是必然的 —— 落点必须由**每次打开的那个入口**显式给出。")
+            }
 
             // **自证：注入真的生效了。**
             // 这一条防的是「守卫因为别的原因通过」—— 光看像素数分不出窗口里画的是
@@ -1276,7 +1300,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 print(
                     "✅ 主窗口真机自检通过：窗口 800×520、玻璃覆盖整窗（含标题栏）、"
                         + "侧栏锁宽 200 且详情区顶距 0、标题与交通灯同一 26pt 基线（红灯画出来是圆）、"
-                        + "\(scope)")
+                        + "「打开主窗口」无条件回外置磁盘、\(scope)")
                 exit(0)
             }
             for line in mismatches { print("❌ \(line)") }
@@ -1417,15 +1441,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// ## v3 起设置不再是独立窗口
     ///
     /// 三个入口（内容区齿轮 / 主菜单 ⌘, / 菜单栏面板的「设置…」）现在都落在
-    /// 「显示主窗口 + 选中设置·通用」上（``showSettings()``）。所以这个自检要回答的是
+    /// 「显示主窗口 + 停在设置·通用」上（``showSettings()``）。所以这个自检要回答的是
     /// **两个 v3 特有的问题**：
     ///
     /// 1. **没有第二个窗口冒出来** —— v2 时代设置是独立 `NSWindow`。任何一条老路径漏改
     ///    都会「设置照旧开一个新窗」，而界面看上去**完全正常**（用户看到两个窗口，
     ///    以为设置还能单独摆着）。判据 = 进程里的可见窗口集合。
-    /// 2. **侧栏选中项真的被拨到「设置 · 通用」** —— 三条入口共用 ``AppDelegate/showSettings()``
-    ///    里那一句 `model.selection = .settings(.general)`；漏了它，齿轮 / ⌘, 会打开主窗口
+    /// 2. **侧栏真的被拨到「设置 · 通用」** —— 三条入口共用 ``AppDelegate/showSettings()``
+    ///    里的 `presentMainWindow(landing: .settingsGeneral)`；漏了它，齿轮 / ⌘, 会打开主窗口
     ///    却停在「外置磁盘」页，用户以为设置按钮坏了。
+    ///
+    /// 第 2 条**先把选中项弄脏再走入口**：契约是「覆盖上一次残留的那一页」，
+    /// 而起手时它本来就在 `.disks`（新建控制器的初值）—— 不弄脏的话这条判据恒绿，
+    /// 恰恰放过它本该抓的那个缺陷（见 ``MainWindowLandingTests`` 的抬头）。
     ///
     /// 另外复用主窗口那几条真机判据（装配 / 交通灯 / 玻璃铺满），因为**它就是同一个窗口**。
     ///
@@ -1441,6 +1469,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func runSettingsPreview(autoKeys: Bool) {
         Task {
             var mismatches: [String] = []
+
+            // ⚠️ **先把选中项弄脏，再走真实入口** —— 否则这条判据恒绿。
+            //
+            // 本预览起手时 `selection` 的初值是 `.disks`（新建控制器的初值），
+            // 直接 `showSettings()` 再读回来，**无论落点有没有接线都会绿**。
+            // 契约验的是**覆盖**行为，所以必须先复现「上一次停在磁盘页」这个前提
+            // （`model` 的生命周期长于窗口，残留必然发生，见
+            // ``MainWindowLandingTests``）。与 ``runMainWindowPreview`` 里那一条同源。
+            mainWindowContent?.model.selection = .disks
 
             // 走**真实路径**：三个入口用的都是 ``showSettings()``。
             // 另写一份「预览专用的代码」等于什么都没验。
@@ -1477,8 +1514,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if selection != .settings(.general) {
                 mismatches.append(
                     "A 打开设置后侧栏选中项是 \(selection.id)，应为 settings.general —— "
-                        + "齿轮 / ⌘, / 菜单栏面板三处都靠 ``AppDelegate/showSettings()`` 里那一句 "
-                        + "`model.selection = .settings(.general)`；漏了它，用户会看到"
+                        + "齿轮 / ⌘, / 菜单栏面板三处都靠 ``AppDelegate/showSettings()`` 里的 "
+                        + "`presentMainWindow(landing: .settingsGeneral)`；漏了它，用户会看到"
                         + "「点设置打开了主窗口，却停在磁盘页」")
             }
 
@@ -2089,10 +2126,41 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// 必须处理**最小化态**：菜单栏模式下 App 没有 Dock 图标，⌘M 把窗口缩进 Dock 后
     /// 用户**没有任何办法点回来**（Dock 上根本没有这个 App），是一个真正的死路。
     /// 这里先 `deminiaturize` 再前置，保证这条恢复路径对「关掉」和「缩掉」两种状态都有效。
+    ///
+    /// ## 落点是「外置磁盘」，且**无条件**落
+    ///
+    /// 「打开主窗口」在用户心里是「回到应用主页」，不是「把上次那一页搬回来」。
+    /// 这也是为什么这里**不看窗口关掉前停在哪一页**：
+    /// 条件化（「只在窗口原本不可见时才重置」）会造出一个用户自己都说不清的分叉 ——
+    /// 「窗口恰好开着时点菜单栏算不算打开？」—— 而它的收益仅仅是省掉一次
+    /// 用户明确要求的跳转。⇒ 一律回主页。
     @objc func showMainWindow() {
+        presentMainWindow(landing: .disks)
+    }
+
+    /// 把主窗口亮出来，并让它**停在 `landing` 那一页**。
+    ///
+    /// ## 为什么两个入口共用这一条，而不是各写各的
+    ///
+    /// 「亮窗口」那一套（建窗 / 反小化 / 前置 / 激活）有**四条**入口共用
+    /// （⌘O / 菜单栏面板 / Dock reopen / 引导面板的「打开设置」），而它们的落点**只有两种**：
+    /// 「打开主窗口」回外置磁盘、「设置…」回设置·通用。⇒ 亮法收敛成一处，
+    /// 落点作为**参数**传进来 —— 于是「某个入口忘了落点」这件事在类型上就不可能发生
+    /// （漏了参数编译不过），而不再是两行裸赋值里靠人眼盯着的隐式契约。
+    ///
+    /// ⚠️ **落点必须在 `orderFront` 之前落定**：窗口已经可见时，
+    /// 先上屏再改 `selection` 会让用户看到**旧页闪一下再跳到新页**。
+    /// ⚠️ 也**必须**在建窗之后 —— 建窗前 ``mainWindowContent`` 还是 `nil`，
+    /// 那时的赋值会被静默吃掉（这正是「打开设置却停在磁盘页」的老病根）。
+    ///
+    /// @param landing: 这一次的落点。见 ``MainWindowLanding``。
+    private func presentMainWindow(landing: MainWindowLanding) {
         if mainWindow == nil {
             setupMainWindow()
         }
+        // 落点必须**在建窗之后**（建窗前内容控制器还不存在），
+        // 且**在 `orderFront` 之前**（窗口已可见时，先上屏再改选中项会闪一下旧页）。
+        mainWindowContent?.applyLanding(landing)
         if mainWindow.isMiniaturized {
             mainWindow.deminiaturize(nil)
         }
@@ -2131,23 +2199,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - 设置
 
-    /// 打开设置：**显示主窗口 + 选中「设置 · 通用」**。
+    /// 打开设置：**显示主窗口 + 停在「设置 · 通用」**。
     ///
     /// ## v3 起设置不再是独立窗口
     ///
     /// 设计稿把主窗口与设置合并成「单侧栏导航 + 详情区」（`Design/ui/v3/`），
     /// 所以三个入口（内容区齿轮 / 主菜单 ⌘, / 菜单栏面板的「设置…」）落点完全一致：
-    /// 把主窗口亮出来，再把侧栏选中项拨到「设置 · 通用」。
+    /// 把主窗口亮出来，落在「设置 · 通用」。
     ///
-    /// ⚠️ **必须走 ``showMainWindow()`` 而不是自己 `makeKeyAndOrderFront`**：
-    /// 那条路里有「最小化态先 `deminiaturize`」——菜单栏模式下 App 没有 Dock 图标，
-    /// 窗口被 ⌘M 缩进 Dock 后用户没有任何办法点回来（同 ``showMainWindow()`` 的说明）。
-    /// 设置入口是仅次于 Dock 图标的那条恢复路径，不能是唯一的例外。
+    /// ## 为什么**不是**「先 `showMainWindow()` 再改选中项」
+    ///
+    /// 旧写法正是那句 `showMainWindow(); model.selection = .settings(.general)`。
+    /// 它把落点拆成了**两次** `@Published` 写入，而 ``presentMainWindow(landing:)``
+    /// 已经把「建窗 → 落点 → 上屏」定成那个顺序 —— 于是旧写法变成
+    /// 「落点先被写成外置磁盘（上屏前），再被改成设置·通用」，中间那一帧是可以观测到的
+    /// （窗口已可见时，用户会看到磁盘页一闪）。⇒ 落点一次写对，不靠后补。
+    ///
+    /// 顺带修掉了旧写法真正的脆处：它依赖「`showMainWindow()` 一定会建出窗口」这个前提，
+    /// 漏了就静默停在磁盘页（`mainWindowContent` 是 `nil`，赋值被吃掉），
+    /// 且**编译期与运行期都不会报**。现在落点是参数，漏不掉。
     ///
     /// `@objc` 是为了能被主菜单的「设置…」（⌘,）直接指定为 action。
     @objc func showSettings() {
-        showMainWindow()
-        mainWindowContent?.model.selection = .settings(.general)
+        presentMainWindow(landing: .settingsGeneral)
     }
 
     // MARK: - 关闭/退出

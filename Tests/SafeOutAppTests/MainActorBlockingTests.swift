@@ -385,6 +385,9 @@ struct MainActorBlockingTests {
         "LanguageLayoutGapTests.swift": "`NSHostingController` 装配（`NSApplication.shared` 也要）",
         "MainMenuTests.swift": "`MainMenu` / `AppDelegate` 主 actor；合成 `NSEvent`、读 `NSWindow`",
         "MainWindowDiskListTests.swift": "离屏渲染 `OffscreenRender.bitmap` / `boundingBox` + `ViewFixtures`",
+        "MainWindowLandingTests.swift":
+            "`ViewFixtures.stores`（主 actor）与 `MainWindowModel.selection`（主 actor 的 `@Published`）"
+            + " —— 实测摘掉立刻 6 处编译错（`ActorIsolatedCall` + `selection` 不能在非隔离上下文读写）",
         "MainWindowTests.swift": "`NSHostingController` 装配主窗口 + `ViewFixtures`",
         "MarkdownCopyTests.swift":
             "`NSHostingController` 是 main-actor 隔离的（非隔离上下文传 view 进去会 `SendingRisksDataRace`）",

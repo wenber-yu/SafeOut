@@ -60,6 +60,40 @@ enum MainNavItem: Hashable, Identifiable {
     }
 }
 
+// MARK: - 打开主窗口的落点
+
+/// 「打开主窗口」时侧栏应该停在哪一项。
+///
+/// ## 为什么要有这个类型，而不是在两个方法里各写一行赋值
+///
+/// v3 把设置合并进主窗口之后，「打开主窗口」这件事有了**两个语义不同的入口**：
+/// 菜单栏面板的「打开主窗口」与「设置…」（另加主菜单的 ⌘O / ⌘,）。
+/// 用户对它们的预期是对称的 —— **「打开」回应用主页，「设置」回设置首页** ——
+/// 而主页与设置首页恰好是这个枚举的两个 case。
+///
+/// 写成两行裸赋值（`showMainWindow()` 里一句 `.disks`、`showSettings()` 里一句
+/// `.settings(.general)`）看着更短，实则埋了一个**顺序耦合**：`showSettings()`
+/// 必须**先**建好窗口才能赋值（建窗前 ``MainWindowContentController`` 还不存在，
+/// 赋值被静默吃掉），于是「先 show 再赋值」成了一条没人守着的隐式契约 ——
+/// 与「漏了 `model.selection = .settings(.general)` 会静默停在磁盘页」是同一类病。
+/// 收敛成落点枚举之后，落点成为入口的**显式参数**，两条入口各自写死自己那一个 case。
+enum MainWindowLanding {
+
+    /// 「打开主窗口」：回**外置磁盘** —— 应用的主角，也是「打开主窗口」想干的第一件事。
+    case disks
+
+    /// 「设置…」：回**设置 · 通用** —— 设置区的首页。
+    case settingsGeneral
+
+    /// 落点对应的那个侧栏项。
+    var navItem: MainNavItem {
+        switch self {
+        case .disks: return .disks
+        case .settingsGeneral: return .settings(.general)
+        }
+    }
+}
+
 // MARK: - 导航状态
 
 /// 主窗口的导航状态：**侧栏与详情区共享的唯一一份**。

@@ -417,7 +417,26 @@ struct ProcessTerminatorTests {
 
 // MARK: - 跨线程只读快照
 
-@Suite("占用结论的跨线程只读快照")
+// ⚠️ **`.serialized` 不是「显得严谨」，是修一条真实的偶发红**（2026-10-10 发版前实测撞到）。
+//
+// `OccupancySnapshotStore` 是**进程级全局单例**（`enum` + `static var`，DA 回调线程要能读，
+// 不能是实例），而本 suite 与下面 ``OccupancyStoreSnapshotParityTests`` **共用它**。
+// 两条 suite 默认**并发**跑，各自调 `update()` 做**整体替换** —— 于是：
+//
+// ```
+// 写入之后能按挂载路径读到()               列表清空时UI与快照一起清空()
+//   update(["/Volumes/A": occupied])         update(["/Volumes/A": none])
+//   expect(/Volumes/B == .unknown) ←──┐       （另一条刚把整份字典换掉）
+//                    更新是整体替换…  └── 读到上一条留下的值 ⇒ 红
+// ```
+//
+// 实测干净树（**与本次改动无关**）连跑 4 次就红 1 次，`/Volumes/B` 时而是 `.unknown`
+// 时而带着别人的值 ⇒ 这不是「本机环境问题」，是**测试之间互相踩**。
+//
+// `.serialized` 让 suite 内部串行 ⇒ 同一时刻只有它在写这个单例。
+// ⛔ 别改成「给每条测试用不同的卷名」—— 那样**盖不住**：踩踏来自整体替换本身，
+// 与卷名无关（`/Volumes/A` 一样会被另一条覆盖掉）。
+@Suite("占用结论的跨线程只读快照", .serialized)
 struct OccupancySnapshotStoreTests {
 
     /// **读不到 ⇒ `.unknown`，绝不是 `.none`。**
@@ -457,7 +476,11 @@ struct OccupancySnapshotStoreTests {
 // MARK: - 单一写入点（UI 与快照不许分叉）
 
 @MainActor
-@Suite("占用结论的单一写入点")
+// ⚠️ **`.serialized` 的理由见上面 ``OccupancySnapshotStoreTests`` 的抬头**：
+// 本 suite 与它共用**同一个进程级单例** `OccupancySnapshotStore`，
+// 而 `.serialized` 只保证**本 suite 内部**串行 —— 跨 suite 的并发它管不到。
+// ⇒ **两个 suite 必须同时标注**，只标一个等于没标。
+@Suite("占用结论的单一写入点", .serialized)
 struct OccupancyStoreSnapshotParityTests {
 
     /// `OccupancyStore` 每轮结论变化之后，**快照与 `results` 必须逐键相同**。
