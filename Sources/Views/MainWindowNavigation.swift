@@ -274,58 +274,58 @@ struct MainSidebarView: View {
                 .foregroundStyle(isSelected ? Color.white : DesignTokens.Palette.foreground)
             Spacer(minLength: 0)
         }
-            .listRowInsets(
-                EdgeInsets(
-                    top: DesignTokens.Size.sidebarRowVerticalInset,
-                    leading: 0,
-                    bottom: DesignTokens.Size.sidebarRowVerticalInset,
-                    trailing: 0)
-            )
-            // ## 行底自绘（2026-10-22 用户反馈 + 本机 macOS 27 实测）
-            //
-            // 系统 sidebar 样式在 macOS 27 上画出的选中胶囊是**中性灰**（实测 #3A3A3E 一带），
-            // 与 `AppleAccentColor` 写什么都无关；同时行上没有 hover 底。
-            // 用户的要求是「hover 要看得出来、选中色必须等于强调色」——
-            // 这两条系统都给不了，只能自己画。
-            //
-            // 保留 `List(selection:)` 的意义：选中值、方向键导航、VoiceOver 的列表语义
-            // 仍由系统承担（我们只接管**这一层皮**）。
-            .listRowBackground(
-                RoundedRectangle(cornerRadius: DesignTokens.Radius.sm, style: .continuous)
-                    .fill(rowBackground(for: item, isSelected: isSelected))
-                    // ## 上下各留 2pt：让相邻两行的色块之间出现 4pt 空隙
-                    //
-                    // 用户 2026-10-28 反馈：「hover 和选中两个颜色之间没有间隔」。
-                    // 根因：`listRowBackground` 铺满的是**整行矩形**（含上下各
-                    // ``DesignTokens/Size/sidebarRowVerticalInset`` 的内距），而相邻两行的
-                    // 矩形首尾相接 ⇒ 灰 hover 块与蓝选中块直接贴死（实测像素 y=393/394
-                    // 零间隙，见用户截图 `通用` 与 `外观` 两行）。
-                    //
-                    // ⇒ 在**背景**上加内缩，不动 `listRowInsets`：
-                    // 后者会连行高、点击区、文字位置一起改（见本函数抬头的三次实验表），
-                    // 而这里只想把「色块」缩小一点。2pt 取 `Spacing.xs` 的一半，
-                    // 相邻两行各让一半 ⇒ 视觉上是 4pt 的缝。
-                    .padding(.vertical, DesignTokens.Spacing.xs / 2)
-                    // 左右各内缩 8pt：浮岛拿掉之后 `List` 是整面铺满的，色块会直接贴到
-                    // 窗口左缘与中间那条分隔线上（圆角被边缘切出「半块」的观感）。
-                    // 8pt 与设计稿 `.sside { padding: 52px 10px 12px }` 的横向内边距同量级，
-                    // 也是拿掉浮岛之前 `List` 那一层 `.padding` 的值。
-                    .padding(.horizontal, DesignTokens.Spacing.sm)
-            )
-            // 选中 = 强调色实底 + 白字；未选中 = 图标强调色 + 中性文字。
-            // ⚠️ 前景色在上面**逐元素**给了（见那段长注释），这里不要再整行上色 ——
-            // 整行 `.foregroundStyle` 只是环境默认值，会让「谁在跟随强调色」变得看不清，
-            // 也正是上一版图标退回系统强调色（粉色）的成因之一。
-            .onHover { inside in
-                if inside {
-                    hoveredItem = item
-                } else if hoveredItem == item {
-                    // ⚠️ 必须比对再清：悬停移出旧行时，指针可能已经进了新行并写好新值，
-                    // 无条件置 nil 会把新行的 hover 一起抹掉（快速划过时的闪烁）。
-                    hoveredItem = nil
-                }
+        .listRowInsets(
+            EdgeInsets(
+                top: DesignTokens.Size.sidebarRowVerticalInset,
+                leading: 0,
+                bottom: DesignTokens.Size.sidebarRowVerticalInset,
+                trailing: 0)
+        )
+        // ## 行底自绘（2026-10-22 用户反馈 + 本机 macOS 27 实测）
+        //
+        // 系统 sidebar 样式在 macOS 27 上画出的选中胶囊是**中性灰**（实测 #3A3A3E 一带），
+        // 与 `AppleAccentColor` 写什么都无关；同时行上没有 hover 底。
+        // 用户的要求是「hover 要看得出来、选中色必须等于强调色」——
+        // 这两条系统都给不了，只能自己画。
+        //
+        // 保留 `List(selection:)` 的意义：选中值、方向键导航、VoiceOver 的列表语义
+        // 仍由系统承担（我们只接管**这一层皮**）。
+        .listRowBackground(
+            RoundedRectangle(cornerRadius: DesignTokens.Radius.sm, style: .continuous)
+                .fill(rowBackground(for: item, isSelected: isSelected))
+                // ## 上下各留 2pt：让相邻两行的色块之间出现 4pt 空隙
+                //
+                // 用户 2026-10-28 反馈：「hover 和选中两个颜色之间没有间隔」。
+                // 根因：`listRowBackground` 铺满的是**整行矩形**（含上下各
+                // ``DesignTokens/Size/sidebarRowVerticalInset`` 的内距），而相邻两行的
+                // 矩形首尾相接 ⇒ 灰 hover 块与蓝选中块直接贴死（实测像素 y=393/394
+                // 零间隙，见用户截图 `通用` 与 `外观` 两行）。
+                //
+                // ⇒ 在**背景**上加内缩，不动 `listRowInsets`：
+                // 后者会连行高、点击区、文字位置一起改（见本函数抬头的三次实验表），
+                // 而这里只想把「色块」缩小一点。2pt 取 `Spacing.xs` 的一半，
+                // 相邻两行各让一半 ⇒ 视觉上是 4pt 的缝。
+                .padding(.vertical, DesignTokens.Spacing.xs / 2)
+                // 左右各内缩 8pt：浮岛拿掉之后 `List` 是整面铺满的，色块会直接贴到
+                // 窗口左缘与中间那条分隔线上（圆角被边缘切出「半块」的观感）。
+                // 8pt 与设计稿 `.sside { padding: 52px 10px 12px }` 的横向内边距同量级，
+                // 也是拿掉浮岛之前 `List` 那一层 `.padding` 的值。
+                .padding(.horizontal, DesignTokens.Spacing.sm)
+        )
+        // 选中 = 强调色实底 + 白字；未选中 = 图标强调色 + 中性文字。
+        // ⚠️ 前景色在上面**逐元素**给了（见那段长注释），这里不要再整行上色 ——
+        // 整行 `.foregroundStyle` 只是环境默认值，会让「谁在跟随强调色」变得看不清，
+        // 也正是上一版图标退回系统强调色（粉色）的成因之一。
+        .onHover { inside in
+            if inside {
+                hoveredItem = item
+            } else if hoveredItem == item {
+                // ⚠️ 必须比对再清：悬停移出旧行时，指针可能已经进了新行并写好新值，
+                // 无条件置 nil 会把新行的 hover 一起抹掉（快速划过时的闪烁）。
+                hoveredItem = nil
             }
-            .tag(item)
+        }
+        .tag(item)
     }
 
     /// 行底色：选中 > 悬停 > 透明。

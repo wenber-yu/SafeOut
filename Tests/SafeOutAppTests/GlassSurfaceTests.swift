@@ -180,7 +180,8 @@ struct GlassSurfaceTests {
         #expect(center.a == 255, "玻璃底必须是不透明的；alpha=0 说明这个视图根本没画背景")
         #expect(center.r >= 245, "浅色下应当叠上 --bg-glass（暖纸 252,250,245 .65），比裸材质更亮；实测 \(center)")
         // v3a：暖纸基色 252,250,245 —— R≠G≠B，不再是中性纯白，但差值应在 8 以内
-        #expect(abs(center.r - center.g) < 8 && abs(center.g - center.b) < 8,
+        #expect(
+            abs(center.r - center.g) < 8 && abs(center.g - center.b) < 8,
             "浅色玻璃是暖纸基调，三色差应 < 8；实测 \(center)")
     }
 
