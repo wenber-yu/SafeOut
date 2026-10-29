@@ -3,17 +3,23 @@
     <channel>
         <title>SafeOut</title>
         <item>
-            <title>2026.10.10.1</title>
-            <pubDate>Sat, 10 Oct 2026 22:45:37 +0800</pubDate>
+            <title>2026.10.29</title>
+            <pubDate>Thu, 29 Oct 2026 15:24:14 +0800</pubDate>
             <link>https://github.com/wenber-yu/SafeOut</link>
-            <sparkle:version>335</sparkle:version>
-            <sparkle:shortVersionString>2026.10.10.1</sparkle:shortVersionString>
+            <sparkle:version>339</sparkle:version>
+            <sparkle:shortVersionString>2026.10.29</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
             <description><![CDATA[<ul>
-<li><strong>关掉主窗口再打开，回到「外置磁盘」</strong>：以前你在设置里翻到某一页，关掉主窗口后再打开，窗口还停在那页。现在从菜单栏打开主窗口一律回到「外置磁盘」；点「设置…」则回到「通用」</li>
-</ul>]]></description>
-            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.10.10.1/SafeOut-2026.10.10.1.dmg" length="2837219" type="application/octet-stream" sparkle:edSignature="bbc00DF5UR96Qf61nNANO4bXUlcPiNYdHq3vRqD0jiMkyZpSHL9t7qLrXI/3DfzxNjThkiOuv9CE1lgZNV64AA=="/>
+<li><strong>主窗口和设置合成一扇窗</strong>：左边一列导航，上面是「外置磁盘」，下面五个设置分类；点哪一项，右边就换到那一页。窗口大小固定，不会再被内容挤变形</li>
+<li><strong>侧栏的选中色跟着你选的强调色走</strong>：以前侧栏选中底色永远是系统那套颜色；现在在设置 › 外观 里换颜色，侧栏的选中项和图标立刻一起变。鼠标划过也有高亮，行与行之间留出了间隔</li>
+<li><strong>没授权时，点「推出时提醒占用」开关会有引导</strong>：以前点了没有任何反应；现在会说明缺什么权限，并一键跳到系统设置的「完全磁盘访问权限」页</li>
+<li><strong>能看到 DMG 镜像和聚焦索引的占用</strong>：以前打开过 .dmg 里的游戏、盘被它和聚焦索引占着，应用却说「没有占用」；现在会列出具体是谁占着，「关闭并推出」会先把这些镜像卸掉再推出</li>
+<li><strong>应用彻底变成菜单栏应用</strong>：不再出现在 Dock 与 ⌘Tab 里；设置里的「在 Dock 中显示图标」开关也一并去掉</li>
+<li><strong>配色更新</strong>：换成暖纸底色，强调色四色（钴蓝 / 紫罗兰 / 橙 / 翡翠）更沉稳一档</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.10.29/SafeOut-2026.10.29.dmg" length="2856366" type="application/octet-stream" sparkle:edSignature="D0ON69WwXrro7nLd9aIH3sDF/cy0HfqftWd8BMENc3qvHrXIDMfdAIa3O6TXov0sRaHLfewv+hGBRLflu2KABg=="/>
         </item>
     </channel>
 </rss>
