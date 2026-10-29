@@ -293,19 +293,24 @@ struct MainSidebarView: View {
         .listRowBackground(
             RoundedRectangle(cornerRadius: DesignTokens.Radius.sm, style: .continuous)
                 .fill(rowBackground(for: item, isSelected: isSelected))
-                // ## 上下各留 2pt：让相邻两行的色块之间出现 4pt 空隙
+                // ## 上下留 2pt 缝 —— **但选中行必须留 0**
                 //
                 // 用户 2026-10-28 反馈：「hover 和选中两个颜色之间没有间隔」。
                 // 根因：`listRowBackground` 铺满的是**整行矩形**（含上下各
-                // ``DesignTokens/Size/sidebarRowVerticalInset`` 的内距），而相邻两行的
-                // 矩形首尾相接 ⇒ 灰 hover 块与蓝选中块直接贴死（实测像素 y=393/394
-                // 零间隙，见用户截图 `通用` 与 `外观` 两行）。
+                // ``DesignTokens/Size/sidebarRowVerticalInset`` 的内距），相邻两行首尾
+                // 相接 ⇒ 灰 hover 块与蓝选中块直接贴死（实测 y=393/394 零间隙）。
+                // ⇒ 背景上各让 2pt，两行合起来是 4pt 的缝。
                 //
-                // ⇒ 在**背景**上加内缩，不动 `listRowInsets`：
-                // 后者会连行高、点击区、文字位置一起改（见本函数抬头的三次实验表），
-                // 而这里只想把「色块」缩小一点。2pt 取 `Spacing.xs` 的一半，
-                // 相邻两行各让一半 ⇒ 视觉上是 4pt 的缝。
-                .padding(.vertical, DesignTokens.Spacing.xs / 2)
+                // ⚠️ 2026-10-29 用户反馈「选中状态下面还有一层红色背景」—— 那 2pt 缝
+                // 露出来的是**系统自己画的选中胶囊**：`List(selection:)` 在 macOS 27 上
+                // 仍会给选中行铺一层品红底（实测 RGB `149,61,150`，横向 `13..187pt`，
+                // **整行高**），我们的色块盖在它上面、只有缝处透出（实测 y=104..107 与
+                // 180..183 各 2pt）。横向它比我们窄 5pt（我们 8..192pt），所以只有上下露。
+                //
+                // ⇒ 选中行**不留竖向缝**（盖满整行高，把系统那层彻底压住）；
+                // 缝由相邻的 hover 行单方面让出 2pt —— 一行 2pt 的缝肉眼仍然分得开，
+                // 而「盖不住」会直接现出一条红边。别为了凑 4pt 把选中行改回 2pt。
+                .padding(.vertical, isSelected ? 0 : DesignTokens.Spacing.xs / 2)
                 // 左右各内缩 8pt：浮岛拿掉之后 `List` 是整面铺满的，色块会直接贴到
                 // 窗口左缘与中间那条分隔线上（圆角被边缘切出「半块」的观感）。
                 // 8pt 与设计稿 `.sside { padding: 52px 10px 12px }` 的横向内边距同量级，
