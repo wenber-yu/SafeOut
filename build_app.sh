@@ -54,7 +54,7 @@ PACKAGE_DIR="$SCRIPT_DIR"
 source "$SCRIPT_DIR/Scripts/lib/macos_link_version_args.sh" "$PACKAGE_DIR"
 
 APP_NAME="SafeOut"
-# 面向用户的中文显示名：Finder / Dock / 菜单栏 App 菜单 / 关于面板 / 系统设置里
+# 面向用户的中文显示名：Finder / 菜单栏 App 菜单 / 关于面板 / 系统设置里
 # 「完全磁盘访问」授权列表展示的都是它。与 APP_NAME 分开的原因——APP_NAME 同时是
 # .app 目录名、产物文件名（脚本路径、下载链接、CI 都依赖它），改中文会连带破坏这些。
 APP_DISPLAY_NAME="磁盘推出助手"
@@ -269,7 +269,7 @@ if [ -z "${SIGN_IDENTITY:-}" ]; then
         IDENTITY_KIND="developer-id"
         echo "   自动选用 Developer ID 证书: $SIGN_IDENTITY"
     else
-        # 优先级 2：钥匙串里**任意**其他有效代码签名身份（例如本机自签的
+        # 优先级 2：钥匙串里**任意**其他可用代码签名身份（例如本机自签的
         # "SafeOut Dev Signing"）。
         #
         # **为什么必须有这一档**：TCC（完全磁盘访问）授权绑定的是代码签名身份。
@@ -277,11 +277,17 @@ if [ -z "${SIGN_IDENTITY:-}" ]; then
         # → 用户刚在系统设置里授予的 FDA 立刻失效，横幅又冒出来。
         # 用带固定 Team ID（证书 OU 字段）的稳定身份签名后，TCC 按 TEAMID.bundle_id
         # 匹配，重建二进制也能保住授权。
-        # `-v` 输出格式：`  1) 4C8302... "SafeOut Dev Signing"`，
-        # 身份行以「空格+序号+)」开头，汇总行（"1 valid identities found"）不匹配此模式。
-        # certificate 名里有空格，取**最后一对引号**里的内容。
-        # `|| true` 同样必须放在管道外层（见上方 bash 优先级说明）。
-        AUTO_ID="$(security find-identity -p codesigning -v 2>/dev/null \
+        #
+        # ⚠️ **不能用 `-v`（2026-10-22 实测）**：`-v` 只列「受信」身份，而自签证书
+        # 永远带着 `CSSMERR_TP_NOT_TRUSTED` —— 加着 `-v` 这一档就是死代码
+        # （本机导入自签证书后 `find-identity -v` 依旧报 `0 valid identities found`，
+        # 但 codesign 实际可用）。TCC 绑定的是证书哈希，与「受信」无关；
+        # 不受信只影响公证/分发，而本档本来就不用于分发。
+        # 输出格式：`  1) 4C8302... "SafeOut Dev Signing" (CSSMERR_TP_NOT_TRUSTED)`，
+        # 身份行以「空格+序号+)」开头，汇总行（"1 identities found"）不匹配此模式。
+        # certificate 名里有空格，取**最后一对引号**里的内容（信任后缀不带引号，不影响提取）。
+        # `|| true` 必须放在管道外层（见上方 bash 优先级说明）。
+        AUTO_ID="$(security find-identity -p codesigning 2>/dev/null \
             | grep -E '^[[:space:]]+[0-9]+\)' \
             | grep -v 'Developer ID Application' \
             | head -1 \
@@ -461,6 +467,15 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 	</array>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <!-- 纯菜单栏应用：LSUIElement=true ⇒ 系统层面永不进 Dock、不进 ⌘Tab，
+         登录自启 / 双击 / open 任何入口都以代理类（accessory）启动。
+         代码侧另有 NSApp.setActivationPolicy(.accessory) 兜底（开发期直跑二进制
+         没有 Info.plist 的情形）。
+         ⚠️ 别再提供「在 Dock 中显示图标」开关：曾把 NSApp.applicationIconImage
+         覆盖成 template 风格的 SF Symbol，Dock 把它渲染成纯黑剪影
+         （2026-10-12 用户实测登录自启时图标是黑色），该开关与该覆盖已一并移除。 -->
+    <key>LSUIElement</key>
+    <true/>
     <!-- 声明不使用非豁免加密；本应用不涉及加密，必须显式声明 false，
          否则公证 / 上传时会被标记为「缺失合规信息」。 -->
     <key>ITSAppUsesNonExemptEncryption</key>

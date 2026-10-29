@@ -178,9 +178,28 @@ final class MainWindowContentController: NSSplitViewController {
         ])
     }
 
-    /// 侧栏：**一行外观代码都没有**（HANDOFF §3.3 / 红线 R1、R2、R7）。
-    /// 浮岛、圆角、玻璃、选中态胶囊全归系统；这里只装一个 `List(selection:)`。
+    /// 侧栏：**本控制器加的外观代码是零**，只装一个 `List(selection:)`。
+    ///
+    /// ## ⚠️ 「侧栏全是系统画的」这句只对**背景**成立（2026-10-28 两轮更正）
+    ///
+    /// 早先这里写的是「浮岛、圆角、玻璃、选中态胶囊全归系统」—— 那是 macOS 26 的观测
+    /// （HANDOFF §3.3 的 R1/R2/R7 红线）。在**本机 macOS 27.0.1（26A434）**上它不再成立：
+    ///
+    /// - **背景**：AppKit 只给「方角、贴左边缘、整面铺满」的侧栏材质，**不给**圆角浮岛。
+    ///   10-23 起我们在 SwiftUI 侧自绘了一块内缩 8 的圆角浮岛，**10-28 用户看过后明确
+    ///   不要**（原话：「把左侧菜单中的浮岛拿掉吧，不要了」）⇒ 那几行已删除，
+    ///   现在侧栏背景就是系统材质本身（见 ``MainSidebarView/body`` 的注释）。
+    /// - **选中胶囊**：系统源列表只认 per-app 的 `AppleAccentColor`，`.tint` 传不进去；
+    ///   且不带 hover 底（两条都是用户点名要的）。⇒ 行级皮仍由 SwiftUI 自绘。
+    ///
+    /// ⇒ 现在的分工是：**背景 + 行为**归系统（材质、选中值、方向键、VoiceOver 列表语义
+    /// 由 `List` 承担），**行级皮**归 SwiftUI（hover / 选中色 / 行间间隙）。
     private func makeSidebarController() -> NSViewController {
+        // ⚠️ 安全区**保持默认**（不要像详情区那样设 `safeAreaRegions = []`）：
+        // 侧栏顶部那条 52pt 的内缩正是「第一项落在红绿灯下方」的来源
+        // （设计稿 `.sside` 用 `padding-top: 52px` 模拟的同一件事）。
+        // 10-28 曾为了「让浮岛铺满整窗高度」关掉过，实测 `contentMargins(.top,)`
+        // 补不回那个内距，第一项直接压到红绿灯上 ⇒ 已回退。
         NSHostingController(rootView: MainSidebarView(model: model))
     }
 

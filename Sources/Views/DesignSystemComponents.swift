@@ -156,6 +156,19 @@ struct IconBadge: View {
 
     private func configuration() -> Config {
         let accentColor = accent.swiftUIColor
+        // ## 为什么「被占用」的磁盘徽标用**红**而不是琥珀（2026-10-27 用户明确要求）
+        //
+        // 用户原话：「菜单栏列表或者设置窗口中，硬盘被占用的时候，该硬盘项的硬盘 icon
+        // 调整为红色强调色」。这里**按用户要求破例**，与
+        // ``DesignTokens/Palette`` 的硬规则（琥珀 = 受阻且需用户介入；红 = 破坏性）
+        // 刻意不一致 —— 不是笔误，别"顺手改回琥珀"：
+        // - 磁盘被占用确实是「受阻」，按设计稿该用琥珀；
+        // - 但在这个产品里，「占用」是**推不出的直接原因**，用户要的是**一眼看到是哪块盘**
+        //   —— 行首那根琥珀色忙碌条 + 状态文案已经承担了「受阻」的语义，
+        //   徽标再是琥珀就融进背景、扫视时看不出来；
+        // - 红色在这里承担的是**指向（这块盘）**而不是「破坏性」——只染徽标本身，
+        //   行内**忙碌条、文案、按钮一律不动**（用户只要求 icon）。
+        // 破例范围严格限定在 `isBusy` 的三个行档位；其它任何地方仍按硬规则用琥珀。
         switch style {
         case .diskRow:
             return Config(
@@ -163,10 +176,10 @@ struct IconBadge: View {
                 iconSize: 22,
                 radius: DesignTokens.Radius.md,
                 background: isBusy
-                    ? DesignTokens.Palette.warningSoft : DesignTokens.Palette.accentSoft(accent),
-                foreground: isBusy ? DesignTokens.Palette.warning : accentColor,
+                    ? DesignTokens.Palette.errorSoft : DesignTokens.Palette.accentSoft(accent),
+                foreground: isBusy ? DesignTokens.Palette.error : accentColor,
                 border: isBusy
-                    ? DesignTokens.Palette.warningLine : DesignTokens.Palette.accentRing(accent)
+                    ? DesignTokens.Palette.errorLine : DesignTokens.Palette.accentRing(accent)
             )
         case .menuRow:
             // **与 `.diskRow` 不是同一档**（设计稿两条独立规则）：
@@ -180,8 +193,8 @@ struct IconBadge: View {
                 iconSize: DesignTokens.Size.menuIconSize,
                 radius: DesignTokens.Size.menuIconRadius,
                 background: isBusy
-                    ? DesignTokens.Palette.warningSoft : DesignTokens.Palette.accentSoft(accent),
-                foreground: isBusy ? DesignTokens.Palette.warning : accentColor,
+                    ? DesignTokens.Palette.errorSoft : DesignTokens.Palette.accentSoft(accent),
+                foreground: isBusy ? DesignTokens.Palette.error : accentColor,
                 border: .clear
             )
         case .compactRow:
@@ -190,10 +203,10 @@ struct IconBadge: View {
                 iconSize: 17,
                 radius: DesignTokens.Radius.sm + 2,
                 background: isBusy
-                    ? DesignTokens.Palette.warningSoft : DesignTokens.Palette.accentSoft(accent),
-                foreground: isBusy ? DesignTokens.Palette.warning : accentColor,
+                    ? DesignTokens.Palette.errorSoft : DesignTokens.Palette.accentSoft(accent),
+                foreground: isBusy ? DesignTokens.Palette.error : accentColor,
                 border: isBusy
-                    ? DesignTokens.Palette.warningLine : DesignTokens.Palette.accentRing(accent)
+                    ? DesignTokens.Palette.errorLine : DesignTokens.Palette.accentRing(accent)
             )
         case .emptyArt:
             return Config(
@@ -509,7 +522,10 @@ struct ActionButton: View {
         case .primary:
             core.buttonStyle(.borderedProminent).tint(accent.swiftUIColor)
         case .danger:
-            core.buttonStyle(.borderedProminent).tint(.red)
+            // v3a：从系统 `.red`（#FF3B30，旧配色）换成设计令牌的朱砂
+            // `DesignTokens.Palette.error`（浅色 #DC2626 / 深色 #EF4444），
+            // 否则这颗按钮会一直是旧配色的红，与新语义色脱节。
+            core.buttonStyle(.borderedProminent).tint(DesignTokens.Palette.error)
         case .outline, .neutral:
             core.buttonStyle(.bordered)
         case .ghost:
@@ -571,17 +587,35 @@ struct ProcessChip: View {
         )
         .help(tooltip)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(process.displayName)
+        .accessibilityLabel(accessibilityName)
+    }
+
+    /// 可访问性名称：磁盘映像前加种类前缀（VoiceOver 用户分不清「Game.dmg」
+    /// 是个应用还是别的什么）；普通进程就是显示名。
+    private var accessibilityName: String {
+        switch process.kind {
+        case .process:
+            return process.displayName
+        case .diskImage:
+            return "\(L10n.tr(.diskImageKindLabel)) \(process.displayName)"
+        }
     }
 
     /// 悬停提示：显示名与进程名一致时就是显示名；不一致时补上进程名。
     ///
     /// 这一行的价值是**让用户能自己验证**——磁盘明明是被 `Bunny` 占用的，
     /// 为什么在系统的进程列表里找不到 `Bunny`？因为它的可执行文件叫 `IMVIDEO`。
+    ///
+    /// **磁盘映像**：显示 backing 文件的完整路径——「是哪张映像在占」的唯一自证方式。
     private var tooltip: String {
-        guard process.displayName != process.processName else { return process.displayName }
-        return String(
-            format: L10n.tr(.processExecutableNameFormat), process.displayName, process.processName)
+        switch process.kind {
+        case .diskImage:
+            return process.path
+        case .process:
+            guard process.displayName != process.processName else { return process.displayName }
+            return String(
+                format: L10n.tr(.processExecutableNameFormat), process.displayName, process.processName)
+        }
     }
 
     /// 应用图标；取不到时回落成 SF Symbol `app`。

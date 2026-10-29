@@ -319,6 +319,60 @@ struct EjectFlowControllerTests {
         #expect(mockEject.ejectCalled)
     }
 
+    // MARK: 磁盘映像分离（DMG 占用）
+
+    /// 「关闭并推出」遇到磁盘映像占用时，必须**先 detach、再走信号清场与重试推出**。
+    ///
+    /// 为什么钉「detach 在系统推出重试之前」：detach 若排在重试之后，重试会撞上
+    /// 「backing 文件仍被 diskimagesiod 持有」而再次 `fBsyErr`——用户点了「关闭并推出」
+    /// 却推不掉，正是 2026-10-13 事故里用户遇到的行为。
+    /// （信号清场在两条记录之间，不直接观测——它由 `TerminatorDiskImageGuardTests`
+    /// 钉住「映像条目收不到信号」；这里钉的是编排顺序。）
+    @Test func terminateAndEject先分离映像再重试推出() async {
+        let disk = makeDisk()
+        let mockEject = MockEjectService()
+        mockEject.ejectResult = .success(())
+        let mockDetect = MockOccupancyDetector()
+        mockDetect.result = .none
+        var order: [String] = []
+        let controller = EjectFlowController(
+            ejectService: mockEject, occupancyDetector: mockDetect,
+            detachDiskImage: { device in order.append("detach:\(device)") })
+
+        let processes = [
+            OccupyingProcess(pid: 9_999_999, processName: "Ghost", path: ""),
+            OccupyingProcess.diskImage(
+                imagePath: "/Volumes/TEST/Games/GameA.dmg", device: "/dev/disk6"),
+        ]
+        let result = await controller.terminateAndEject(disk: disk, processes: processes)
+
+        guard case .ejected = result else {
+            Issue.record("期望 ejected，实际 \(result)")
+            return
+        }
+        #expect(order == ["detach:/dev/disk6"], "映像必须被 detach 一次且设备正确，实际 \(order)")
+        #expect(mockEject.ejectCalled, "detach 之后必须仍然重试系统推出")
+    }
+
+    /// **边界**：占用列表里没有磁盘映像时，一次 detach 都不许发生——
+    /// 分离映像等同于替用户关应用，普通清场绝不能顺手做。
+    @Test func terminateAndEject无映像时不分离() async {
+        let disk = makeDisk()
+        let mockEject = MockEjectService()
+        mockEject.ejectResult = .success(())
+        let mockDetect = MockOccupancyDetector()
+        mockDetect.result = .none
+        var detached: [String] = []
+        let controller = EjectFlowController(
+            ejectService: mockEject, occupancyDetector: mockDetect,
+            detachDiskImage: { device in detached.append(device) })
+
+        let processes = [OccupyingProcess(pid: 9_999_999, processName: "Ghost", path: "")]
+        _ = await controller.terminateAndEject(disk: disk, processes: processes)
+
+        #expect(detached.isEmpty, "没有映像占用时不许调 detach，实际 \(detached)")
+    }
+
     // MARK: busyMessage
 
     @Test func busyMessage带进程时返回引导句不含进程列表() {

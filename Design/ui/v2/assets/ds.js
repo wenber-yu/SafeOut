@@ -132,7 +132,7 @@
   //   · 换语言后可以**量测英文下的布局** —— 本地化最容易破的就是固定尺寸容器。
   //
   // 标注方式：
-  //   <div data-i18n="showDockIcon">在 Dock 中显示图标</div>
+  //   <div data-i18n="launchAtLogin">登录时启动</div>
   //   <button data-i18n-attr="aria-label:refresh,title:refresh">…</button>
   //   <button data-i18n-attr="aria-label:ejectDiskFormat" data-i18n-args="WD Blue">…</button>
   // 值里允许 HTML（<b> / <code> / <i data-i="gear">），回填后会重新水合图标。

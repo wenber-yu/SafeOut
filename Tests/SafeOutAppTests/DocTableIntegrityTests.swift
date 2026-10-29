@@ -89,6 +89,14 @@ import Testing
         "SPEC.md",
         "README.md",
         "Release-notes/README.md",
+        // DMG 占用检测修复（2026-10-23）的规格与任务清单——会被提交的 .md，必须在范围内。
+        "Specs/2026-10-23-dmg-occupancy/spec.md",
+        "Specs/2026-10-23-dmg-occupancy/tasks.md",
+        // 设置页两个缺陷修复（2026-10-22）的规格与任务清单——同上。
+        "Specs/2026-10-22-settings-switch-accent/spec.md",
+        "Specs/2026-10-22-settings-switch-accent/tasks.md",
+        // 设置窗口侧栏视觉改造（2026-10-23）的交接单——同上，会被提交的 .md。
+        "Specs/2026-10-23-sidebar-visual/HANDOFF.md",
     ]
 
     /// **会被 git 带进版本库的 `.md`**；拿不到输出返回 `nil`。
@@ -122,7 +130,7 @@ import Testing
                     "ls-files", "--cached", "--others", "--exclude-standard", "*.md",
                 ],
                 timeout: 15
-            ) { c.resume(returning: $0) }
+            ) { result in c.resume(returning: result?.output) }
             run.start()
         }
         guard let output else { return nil }

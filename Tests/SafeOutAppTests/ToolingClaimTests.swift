@@ -266,7 +266,7 @@ import Testing
                     "ls-files", "--cached", "--others", "--exclude-standard",
                 ] + patterns,
                 timeout: 15
-            ) { c.resume(returning: $0) }
+            ) { result in c.resume(returning: result?.output) }
             run.start()
         }
         guard let output else { return nil }
@@ -288,7 +288,7 @@ import Testing
                     "status", "--porcelain", "--untracked-files=all",
                 ],
                 timeout: 15
-            ) { c.resume(returning: $0) }
+            ) { result in c.resume(returning: result?.output) }
             run.start()
         }
         guard let output else { return nil }

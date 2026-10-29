@@ -32,6 +32,14 @@ enum ProcessTerminator {
     ///   - `ESRCH`（进程已不存在）**不计入** —— 它已经没了，对调用方等于成功；
     ///   - `EPERM`（无权终止，如系统进程）与其他失败**如实计入**，UI 会告知用户哪些关不掉；
     ///   - **自身 PID 不计信号、直接计入** —— 不自杀。否则会出现「本应用把自己杀掉」这种灾难。
+    ///
+    /// ⚠️ **双重防线（2026-10-23，DMG 占用检测引入）**：
+    /// 1. `kind != .process` 的条目（磁盘映像）**跳过**——它们没有可发信号的 pid，
+    ///    「关闭」动作是 `hdiutil detach`（``EjectFlowController`` 的清场第 0 步），
+    ///    这里既不发信号也**不计入**无法终止（那会把「已分离」误报成「关不掉」）；
+    /// 2. `pid <= 0` **跳过**——合成/占位 pid 若漏进 `kill()`，POSIX 语义是
+    ///    「信号发给**整个进程组**」（`kill(0)` 包括本进程自己）。这是本仓库最危险的一类
+    ///    误操作，哪怕第 1 条未来被改坏，这一条也必须兜住。
     nonisolated static func signal(
         _ processes: [OccupyingProcess],
         signal: Int32,
@@ -40,6 +48,10 @@ enum ProcessTerminator {
     ) -> [OccupyingProcess] {
         var unkillable: [OccupyingProcess] = []
         for process in processes {
+            // 防线 1 + 2：非进程条目与非法 pid 都不在信号语义内（见函数头注释）。
+            guard process.kind == .process, process.pid > 0 else {
+                continue
+            }
             guard process.pid != selfPid else {
                 unkillable.append(process)
                 continue
@@ -96,7 +108,12 @@ enum ProcessTerminator {
         sleep(termGrace)
 
         // 第 3 步：复检，仍活着的升级 SIGKILL。
+        //
+        // ⚠️ 与 ``signal(_:signal:selfPid:kill:)`` 同款防线：**只复查真进程**。
+        // 磁盘映像条目若进这里，`isAlive` 会对一个合成负 pid 调 `kill(pid, 0)`
+        // （进程组语义），判「活着」还会把它追加进「关不掉」清单——一句谎话。
         let escalated = processes.filter { process in
+            guard process.kind == .process, process.pid > 0 else { return false }
             guard process.pid != selfPid else { return false }
             if unkillableAfterTerm.contains(where: { $0.pid == process.pid }) { return true }
             return isAlive(process.pid)

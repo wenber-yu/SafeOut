@@ -1857,7 +1857,12 @@ struct DesignDraftIntegrityTests {
     /// 真要压这个数，只能把演示帧改成「一帧完整窗口 + 其余分类只画内容区片段」，
     /// 外加把第三态帧砍掉 —— 那会看不出两栏联动、也看不出第三态高度是否放得下，
     /// **不划算**，故如实同步基线。产品侧真正实现时这个数会**回落**（只会有一个面板）。
-    private static let hardcodedA11yBaseline = 86
+    ///
+    /// **2026-10-22 → 82**：「在 Dock 中显示图标」开关行随「纯菜单栏应用」决定
+    /// 从所有稿面移除（`05-settings.html` 2 处、`09-settings-split.html` 2 处，
+    /// 每处一个硬编码中文 `aria-label`），−4。这是**回落**那一向（产品形态变了），
+    /// 与上面的「新增」方向相反。
+    private static let hardcodedA11yBaseline = 82
 
     // MARK: 索引 ↔ 页面自身标题（§8.62）
 

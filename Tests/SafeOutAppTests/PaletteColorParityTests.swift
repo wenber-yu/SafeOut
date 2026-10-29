@@ -244,8 +244,10 @@ struct PaletteColorParityTests {
     }
 
     private func loadCSS() throws -> String {
+        // v3a 配色 Refresh 后，v3 ds.css 才是实现的唯一源头；
+        // v2 已冻结（设计规范 §0），禁止再改，测试切过来。
         try String(
-            contentsOf: repoRoot.appendingPathComponent("Design/ui/v2/assets/ds.css"),
+            contentsOf: repoRoot.appendingPathComponent("Design/ui/v3/assets/ds.css"),
             encoding: .utf8)
     }
 

@@ -668,13 +668,17 @@ struct TakeOverAvailabilityTests {
     /// v2 那一行是自绘的 `line(onTap: takeOverTapAction, …)`：闸门藏在
     /// «`takeOverTapAction` 条件返回 `nil`» 与「手补的 `accessibilityValue`」里。
     /// v3 把开关交还系统的 `Toggle`、并且**整行按可用性分流**（可用 = 系统开关行；
-    /// 不可用 = 只读行 + 「打开系统设置」按钮）⇒ 闸门现在是：
+    /// 不可用 = 可点开关（恒显示「关」、点击弹 FDA 引导）+ 「打开系统设置」按钮）⇒ 闸门现在是：
     ///
     /// | 闸门 | v3 的写法 |
     /// |---|---|
     /// | 可点性 | `if takeOverAvailability.isUsable {` 分流两支 |
     /// | 开关值 | `get: { takeOverOn }`（**生效值**，不是 `takeOverFinderEject` 意愿值） |
     /// | 说明文字 | `description: takeOverDescription`（随状态走） |
+    ///
+    /// ⚠️ **2026-10-22 形态变更**：不可用那一支的开关曾经是 `.disabled(true)` 的死控件
+    /// （用户报告「点 switch 没反应」），现在**保持可点**、点击上抛
+    /// `onTakeOverNeedsFDA`（宿主弹 FDA 引导），**不写偏好** —— 显示仍恒为「关」。
     ///
     /// ⚠️ v2 那条 `accessibilityValue: L10n.tr(takeOverOn ? .on : .off)` 断言**随之退休**：
     /// 那是给自绘开关补的（它当时 `accessibilityHidden`，不补就永远读不出开/关）。
@@ -705,8 +709,13 @@ struct TakeOverAvailabilityTests {
         // 未授权那一态画的那颗 `Toggle` 同样要取生效值（此时恒为假），
         // 否则「拨不动」与「看着是开的」会同时出现。
         #expect(
-            source.contains("Toggle(\"\", isOn: .constant(takeOverOn))"),
+            source.contains("isOn: Binding(\n                    get: { takeOverOn },"),
             "未授权那一态画的不是生效值 —— 它必须画 `takeOverOn`，否则会画成「开」")
+        // 且点击它必须有响应：上抛 FDA 引导（2026-10-22 用户报告「点 switch 没反应」），
+        // 绝不能写偏好 —— 写偏好的唯一路径是可用分支的 `setTakeOverFinderEject(_:)`。
+        #expect(
+            source.contains("onTakeOverNeedsFDA()"),
+            "未授权时点开关没有任何响应 —— 它必须上抛 `onTakeOverNeedsFDA`（弹 FDA 引导）")
 
         // ③ 说明文字随状态走。
         #expect(

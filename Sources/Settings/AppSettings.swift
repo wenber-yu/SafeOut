@@ -67,27 +67,45 @@ enum AccentColor: String, CaseIterable, Sendable {
     static let `default`: AccentColor = .blue
 
     /// 16 进制显示色（设计稿统一规范），供设置面板圆点、菜单栏 tint 使用。
+    ///
+    /// v3a 配色 Refresh：四色整体降饱和 / 深一档（与默认蓝 `#4F46E5` 同质感）：
+    /// blue = Indigo-600，purple = Violet-600，orange = Orange-600，green = Emerald-500。
     var hex: String {
         switch self {
-        case .blue: return "#0a84ff"
-        case .purple: return "#af52de"
-        case .orange: return "#ff9f0a"
-        case .green: return "#34c759"
+        case .blue: return "#4F46E5"
+        case .purple: return "#7C3AED"
+        case .orange: return "#EA580C"
+        case .green: return "#10B981"
         }
     }
 
-    /// 深色侧 16 进制基色（`ds.css` 的 `:root[data-theme="dark"] --accent`）。
-    ///
-    /// **为什么要单开一套**：深色下浅色那套基色铺在 `#1c1c1e` 上偏暗、不够醒目，
-    /// 设计稿四门都给了**更亮的**深色值。2026-09-21 之前两侧共用浅色基色、
-    /// 只靠 alpha 分档拉开（§8.113.7 曾把「基色明暗不分」当作已知事实钉住）；
-    /// 现在改成两侧各钉各的，那条守卫也一并翻过来（§8.113.11）。
+    /// 深色侧 16 进制基色。v3a：blue Indigo-500、purple/orange/green 各 Violet/Orange/Emerald-400。
     var hexDark: String {
         switch self {
-        case .blue: return "#409cff"
-        case .purple: return "#bf6ae8"
-        case .orange: return "#ffb340"
-        case .green: return "#4cd964"
+        case .blue: return "#6366F1"
+        case .purple: return "#A78BFA"
+        case .orange: return "#FB923C"
+        case .green: return "#34D399"
+        }
+    }
+
+    /// 系统强调色偏好键 `AppleAccentColor` 的取值（系统调色板编号）。
+    ///
+    /// **为什么需要它（2026-10-22 实证，macOS 27）**：侧栏选中胶囊、源列表图标等
+    /// **系统绘制**的主色元素只认这个键 —— SwiftUI `.tint` 与视图层注入都传不进
+    /// 源列表选中态（逐组对照实验：`AppleAccentColor=1` 时胶囊与图标变橙，
+    /// 与 App 内 `accentColor` 完全解耦）。⇒ 强调色偏好要同步一份到这里，
+    /// 见 ``AppSettings/syncAppleAccentColor()``。
+    ///
+    /// 编号口径：0 红 / 1 橙 / 2 黄 / 3 绿 / 5 蓝 / 6 紫 / 7 粉（4 空缺，-1 石墨）。
+    /// ⚠️ 它只能落到**色系**（系统蓝 ≠ 我们的钴蓝 `#4F46E5`），精确色仍由各界面
+    /// 读 ``swiftUIColor`` / ``appKitColor`` —— 两者并存，不是替代关系。
+    var appleAccentColorRawValue: Int {
+        switch self {
+        case .blue: return 5
+        case .purple: return 6
+        case .orange: return 1
+        case .green: return 3
         }
     }
 
@@ -153,7 +171,7 @@ extension NSColor {
 
 /// 偏好设置键与默认值的唯一声明处。
 ///
-/// 此前 `"accentColor"` / `"showDockIcon"` / `"visualStyle"` 这些字符串在源码里硬编码 6 处，
+/// 此前 `"accentColor"` / `"visualStyle"` 这些字符串在源码里硬编码多处，
 /// 其中 `AppDelegate` 用 `UserDefaults.standard.string(forKey:)` 读取、`SettingsView` 用
 /// `@AppStorage` 写入——两端靠字符串字面量对齐，改一处忘一处就会出现「设置改了但菜单栏没变」。
 enum AppSettings {
@@ -164,7 +182,6 @@ enum AppSettings {
     enum Key {
         static let visualStyle = "visualStyle"
         static let accentColor = "accentColor"
-        static let showDockIcon = "showDockIcon"
 
         /// 登录项偏好的键由 ``LaunchAtLoginManager`` 持有，此处仅作文档索引，不要另写字面量。
         static var launchAtLogin: String { LaunchAtLoginManager.defaultsKey }
@@ -313,6 +330,31 @@ enum AppSettings {
     /// 旧的 6 色枚举里的 `red`/`yellow` 会自动回退到 `blue`（``AccentColor/resolve(_:)``）。
     nonisolated static var accentColor: AccentColor {
         AccentColor.resolve(UserDefaults.standard.string(forKey: Key.accentColor))
+    }
+
+    /// 系统侧强调色的偏好键（**不是本应用的设置项**，是 AppKit 读取的保留键）。
+    ///
+    /// 与 ``Key/accentColor`` 是两个键：后者存用户在本应用里的选择（字符串），
+    /// 本键是它映射到系统调色板后的编号 —— 同步方向**永远**是前者 → 本键。
+    static let appleAccentColorDefaultsKey = "AppleAccentColor"
+
+    /// 把当前强调色同步进 `AppleAccentColor` 键，让系统绘制的主色元素
+    /// （侧栏选中胶囊、源列表图标等）跟随 App 内强调色。
+    ///
+    /// **调用时机**（两处，缺一不可）：
+    /// 1. 启动时（``AppDelegate/applicationDidFinishLaunching(_:)``）—— 恢复上次的选择；
+    /// 2. 设置页色板的写入点（``SettingsSectionPane/accentSwatches``）—— 用户点击即同步。
+    ///
+    /// ⚠️ **不要**改用 `UserDefaults.didChangeNotification` 驱动：实测（2026-10-22，
+    /// macOS 27）它对写入**不可靠送达** —— 外部 `defaults write` 与 SwiftUI 侧
+    /// `@AppStorage` 变更都能让界面换色，但该通知并不触发（键值纹丝不动）。
+    ///
+    /// ⚠️ **写前比对**：值相同就不动笔，避免无意义的首选项写盘。
+    static func syncAppleAccentColor() {
+        let target = accentColor.appleAccentColorRawValue
+        let defaults = UserDefaults.standard
+        guard defaults.object(forKey: appleAccentColorDefaultsKey) as? Int != target else { return }
+        defaults.set(target, forKey: appleAccentColorDefaultsKey)
     }
 
     /// 从 UserDefaults 读取当前视觉风格，无值或损坏值时回退默认。

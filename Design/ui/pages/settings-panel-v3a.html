@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置面板</title>
+    <style id="theme-vars">
+:root {
+  --disk-background: #ffffff;
+  --disk-foreground: #0f172a;
+  --disk-card: rgba(255, 255, 255, 0.72);
+  --disk-card-foreground: #0f172a;
+  --disk-popover: rgba(255, 255, 255, 0.86);
+  --disk-popover-foreground: #0f172a;
+  --disk-primary: #0a84ff;
+  --disk-primary-foreground: #ffffff;
+  --disk-muted: rgba(120, 129, 144, 0.14);
+  --disk-muted-foreground: #6b7280;
+  --disk-border: rgba(0, 0, 0, 0.08);
+  --disk-input: rgba(0, 0, 0, 0.06);
+  --disk-ring: #0a84ff;
+  --disk-radius-sm: 6px;
+  --disk-radius-md: 10px;
+  --disk-radius-lg: 16px;
+  --disk-success: #34c759;
+  --disk-warning: #ff9f0a;
+  --disk-error: #ff453a;
+  --disk-info: #0a84ff;
+  --disk-font-sans: Inter, "PingFang SC", "Noto Sans SC", "Hiragino Sans GB", system-ui, -apple-system, sans-serif;
+  --disk-font-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
+}
+
+.dark {
+  --disk-background: #0b0b0f;
+  --disk-foreground: #f8fafc;
+  --disk-card: rgba(28, 28, 36, 0.72);
+  --disk-card-foreground: #f8fafc;
+  --disk-popover: rgba(28, 28, 36, 0.86);
+  --disk-popover-foreground: #f8fafc;
+  --disk-primary: #409cff;
+  --disk-primary-foreground: #ffffff;
+  --disk-muted: rgba(255, 255, 255, 0.10);
+  --disk-muted-foreground: #9ca3af;
+  --disk-border: rgba(255, 255, 255, 0.10);
+  --disk-input: rgba(255, 255, 255, 0.08);
+  --disk-ring: #409cff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --disk-background: #0b0b0f;
+    --disk-foreground: #f8fafc;
+    --disk-card: rgba(28, 28, 36, 0.72);
+    --disk-card-foreground: #f8fafc;
+    --disk-popover: rgba(28, 28, 36, 0.86);
+    --disk-popover-foreground: #f8fafc;
+    --disk-primary: #409cff;
+    --disk-primary-foreground: #ffffff;
+    --disk-muted: rgba(255, 255, 255, 0.10);
+    --disk-muted-foreground: #9ca3af;
+    --disk-border: rgba(255, 255, 255, 0.10);
+    --disk-input: rgba(255, 255, 255, 0.08);
+    --disk-ring: #409cff;
+  }
+}
+
+    </style>
+    <!-- ============================================================
+       v3a 配色 Refresh — 只覆盖 --disk-* 色值，结构/类名/布局 100% 复用
+       方向同主窗口 v3a：Paper + Cobalt
+       ============================================================ -->
+    <style>
+      :root {
+        --disk-background: #FAFAF7;
+        --disk-foreground: #1A1822;
+        --disk-card: rgba(252, 250, 245, 0.72);
+        --disk-card-foreground: #1A1822;
+        --disk-popover: rgba(252, 250, 245, 0.86);
+        --disk-popover-foreground: #1A1822;
+        --disk-primary: #4F46E5;
+        --disk-primary-foreground: #ffffff;
+        --disk-muted: rgba(30, 25, 50, 0.08);
+        --disk-muted-foreground: rgba(26, 24, 34, 0.60);
+        --disk-border: rgba(30, 25, 50, 0.09);
+        --disk-input: rgba(30, 25, 50, 0.06);
+        --disk-ring: #4F46E5;
+        --disk-success: #0D9488;
+        --disk-warning: #D97706;
+        --disk-error: #DC2626;
+        --disk-info: #4F46E5;
+      }
+      /* 覆盖三层（.dark + prefers-color-scheme + 默认），
+         避免原 .dark / @media 块在深色模式下拿回旧值 */
+      .dark {
+        --disk-background: #141620;
+        --disk-foreground: #F0EEF6;
+        --disk-card: rgba(30, 33, 48, 0.72);
+        --disk-card-foreground: #F0EEF6;
+        --disk-popover: rgba(30, 33, 48, 0.86);
+        --disk-popover-foreground: #F0EEF6;
+        --disk-primary: #6366F1;
+        --disk-primary-foreground: #ffffff;
+        --disk-muted: rgba(255, 255, 255, 0.06);
+        --disk-muted-foreground: rgba(240, 238, 246, 0.62);
+        --disk-border: rgba(255, 255, 255, 0.08);
+        --disk-input: rgba(255, 255, 255, 0.06);
+        --disk-ring: #6366F1;
+        --disk-success: #14B8A6;
+        --disk-warning: #F59E0B;
+        --disk-error: #EF4444;
+        --disk-info: #6366F1;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not(.light) {
+          --disk-background: #141620;
+          --disk-foreground: #F0EEF6;
+          --disk-card: rgba(30, 33, 48, 0.72);
+          --disk-card-foreground: #F0EEF6;
+          --disk-popover: rgba(30, 33, 48, 0.86);
+          --disk-popover-foreground: #F0EEF6;
+          --disk-primary: #6366F1;
+          --disk-primary-foreground: #ffffff;
+          --disk-muted: rgba(255, 255, 255, 0.06);
+          --disk-muted-foreground: rgba(240, 238, 246, 0.62);
+          --disk-border: rgba(255, 255, 255, 0.08);
+          --disk-input: rgba(255, 255, 255, 0.06);
+          --disk-ring: #6366F1;
+          --disk-success: #14B8A6;
+          --disk-warning: #F59E0B;
+          --disk-error: #EF4444;
+          --disk-info: #6366F1;
+        }
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/Dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/Dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--disk-background);
+    --color-foreground: var(--disk-foreground);
+    --color-card: var(--disk-card);
+    --color-card-foreground: var(--disk-card-foreground);
+    --color-popover: var(--disk-popover);
+    --color-popover-foreground: var(--disk-popover-foreground);
+    --color-primary: var(--disk-primary);
+    --color-primary-foreground: var(--disk-primary-foreground);
+    --color-muted: var(--disk-muted);
+    --color-muted-foreground: var(--disk-muted-foreground);
+    --color-border: var(--disk-border);
+    --color-input: var(--disk-input);
+    --color-ring: var(--disk-ring);
+    --radius-sm: var(--disk-radius-sm);
+    --radius-md: var(--disk-radius-md);
+    --radius-lg: var(--disk-radius-lg);
+  }
+  @layer base {
+    body { background: var(--disk-background); color: var(--disk-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--disk-background); }
+      .text-background { color: var(--disk-background); }
+      .border-background { border-color: var(--disk-background); }
+      .ring-background { --tw-ring-color: var(--disk-background); }
+      .bg-foreground { background-color: var(--disk-foreground); }
+      .text-foreground { color: var(--disk-foreground); }
+      .border-foreground { border-color: var(--disk-foreground); }
+      .ring-foreground { --tw-ring-color: var(--disk-foreground); }
+      .bg-card { background-color: var(--disk-card); }
+      .text-card { color: var(--disk-card); }
+      .border-card { border-color: var(--disk-card); }
+      .ring-card { --tw-ring-color: var(--disk-card); }
+      .bg-card-foreground { background-color: var(--disk-card-foreground); }
+      .text-card-foreground { color: var(--disk-card-foreground); }
+      .border-card-foreground { border-color: var(--disk-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--disk-card-foreground); }
+      .bg-popover { background-color: var(--disk-popover); }
+      .text-popover { color: var(--disk-popover); }
+      .border-popover { border-color: var(--disk-popover); }
+      .ring-popover { --tw-ring-color: var(--disk-popover); }
+      .bg-popover-foreground { background-color: var(--disk-popover-foreground); }
+      .text-popover-foreground { color: var(--disk-popover-foreground); }
+      .border-popover-foreground { border-color: var(--disk-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--disk-popover-foreground); }
+      .bg-primary { background-color: var(--disk-primary); }
+      .text-primary { color: var(--disk-primary); }
+      .border-primary { border-color: var(--disk-primary); }
+      .ring-primary { --tw-ring-color: var(--disk-primary); }
+      .bg-primary-foreground { background-color: var(--disk-primary-foreground); }
+      .text-primary-foreground { color: var(--disk-primary-foreground); }
+      .border-primary-foreground { border-color: var(--disk-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--disk-primary-foreground); }
+      .bg-muted { background-color: var(--disk-muted); }
+      .text-muted { color: var(--disk-muted); }
+      .border-muted { border-color: var(--disk-muted); }
+      .ring-muted { --tw-ring-color: var(--disk-muted); }
+      .bg-muted-foreground { background-color: var(--disk-muted-foreground); }
+      .text-muted-foreground { color: var(--disk-muted-foreground); }
+      .border-muted-foreground { border-color: var(--disk-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--disk-muted-foreground); }
+      .bg-border { background-color: var(--disk-border); }
+      .text-border { color: var(--disk-border); }
+      .border-border { border-color: var(--disk-border); }
+      .ring-border { --tw-ring-color: var(--disk-border); }
+      .bg-input { background-color: var(--disk-input); }
+      .text-input { color: var(--disk-input); }
+      .border-input { border-color: var(--disk-input); }
+      .ring-input { --tw-ring-color: var(--disk-input); }
+      .bg-ring { background-color: var(--disk-ring); }
+      .text-ring { color: var(--disk-ring); }
+      .border-ring { border-color: var(--disk-ring); }
+      .ring-ring { --tw-ring-color: var(--disk-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="flex min-h-screen items-center justify-center p-6">
+      <style>
+        .disk-panel {
+          width: 440px;
+          max-width: 100%;
+          height: 520px;
+          max-height: 90vh;
+          background: var(--disk-card);
+          border: 1px solid var(--disk-border);
+          border-radius: var(--disk-radius-lg);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+        }
+        .disk-select {
+          appearance: none;
+          -webkit-appearance: none;
+          background: var(--disk-input);
+          border: 1px solid var(--disk-border);
+          border-radius: var(--disk-radius-md);
+          color: var(--disk-foreground);
+          padding: 6px 28px 6px 10px;
+          font-size: 13px;
+          line-height: 1.4;
+          cursor: pointer;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .disk-select:focus {
+          outline: none;
+          border-color: var(--disk-ring);
+          box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.18);
+        }
+        .disk-toggle {
+          appearance: none;
+          -webkit-appearance: none;
+          width: 38px;
+          height: 22px;
+          background: var(--disk-input);
+          border-radius: 9999px;
+          position: relative;
+          cursor: pointer;
+          transition: background 0.2s ease;
+          border: 1px solid var(--disk-border);
+        }
+        .disk-toggle::after {
+          content: "";
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: 16px;
+          height: 16px;
+          background: #ffffff;
+          border-radius: 50%;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+          transition: transform 0.2s ease;
+        }
+        .disk-toggle:checked {
+          background: var(--disk-primary);
+          border-color: var(--disk-primary);
+        }
+        .disk-toggle:checked::after {
+          transform: translateX(16px);
+        }
+        .disk-toggle:focus {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.18);
+        }
+        .disk-section + .disk-section {
+          border-top: 1px solid var(--disk-border);
+        }
+        .accent-option[aria-pressed="true"] {
+          border-color: var(--disk-primary);
+          background: rgba(10, 132, 255, 0.08);
+        }
+      </style>
+
+      <section class="disk-panel flex flex-col overflow-hidden" aria-label="SafeOut 设置面板">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-4">
+          <h1 class="text-lg font-semibold text-foreground">设置</h1>
+          <button type="button" data-dom-id="close-settings" class="text-sm font-medium text-primary hover:opacity-80 transition-opacity">
+            完成
+          </button>
+        </div>
+
+        <!-- Scrollable body -->
+        <div class="flex-1 overflow-y-auto px-5 pb-5 no-scrollbar">
+          <!-- 视觉效果 -->
+          <div class="disk-section py-4">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <h2 class="text-sm font-medium text-foreground">视觉效果</h2>
+                <p class="mt-1 text-xs text-muted-foreground">使用 Liquid Glass 毛玻璃效果，需 macOS 15+</p>
+              </div>
+              <div class="relative shrink-0">
+                <select class="disk-select" aria-label="视觉效果选择">
+                  <option selected>透明模式</option>
+                  <option>关闭透明效果</option>
+                </select>
+                <i data-lucide="chevron-down" class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- 强调色 -->
+          <div class="disk-section py-4">
+            <h2 class="text-sm font-medium text-foreground mb-3">强调色</h2>
+            <div class="grid grid-cols-4 gap-2" role="group" aria-label="强调色选择">
+              <button type="button" aria-pressed="true" class="accent-option flex flex-col items-center gap-1.5 rounded-md border border-border py-2 transition-colors hover:bg-muted">
+                <span class="w-4 h-4 rounded-full" style="background:#0a84ff"></span>
+                <span class="text-xs text-foreground">蓝色</span>
+              </button>
+              <button type="button" aria-pressed="false" class="accent-option flex flex-col items-center gap-1.5 rounded-md border border-border py-2 transition-colors hover:bg-muted">
+                <span class="w-4 h-4 rounded-full" style="background:#af52de"></span>
+                <span class="text-xs text-foreground">紫色</span>
+              </button>
+              <button type="button" aria-pressed="false" class="accent-option flex flex-col items-center gap-1.5 rounded-md border border-border py-2 transition-colors hover:bg-muted">
+                <span class="w-4 h-4 rounded-full" style="background:#ff9f0a"></span>
+                <span class="text-xs text-foreground">橙色</span>
+              </button>
+              <button type="button" aria-pressed="false" class="accent-option flex flex-col items-center gap-1.5 rounded-md border border-border py-2 transition-colors hover:bg-muted">
+                <span class="w-4 h-4 rounded-full" style="background:#34c759"></span>
+                <span class="text-xs text-foreground">绿色</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 开机启动 -->
+          <div class="disk-section py-4">
+            <div class="flex items-center justify-between gap-4">
+              <label for="launch-toggle" class="text-sm font-medium text-foreground cursor-pointer">登录时启动 SafeOut</label>
+              <input id="launch-toggle" type="checkbox" class="disk-toggle" />
+            </div>
+            <p class="mt-2 text-xs text-muted-foreground leading-relaxed">
+              若系统提示需要批准，请前往系统设置开启登录项。
+              <a href="#" data-dom-id="open-fda-settings" class="ml-1 text-primary hover:underline">打开系统设置</a>
+            </p>
+          </div>
+
+          <!-- 关于 -->
+          <div class="disk-section py-6">
+            <div class="flex flex-col items-center text-center">
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-sm">
+                <i data-lucide="hard-drive" class="w-7 h-7 text-primary-foreground"></i>
+              </div>
+              <h2 class="mt-3 text-base font-semibold text-foreground">SafeOut</h2>
+              <p class="mt-0.5 text-xs text-muted-foreground">版本 1.0.0</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">构建 42</p>
+            </div>
+          </div>
+
+          <!-- 更新 -->
+          <div class="disk-section py-4">
+            <p class="text-xs text-muted-foreground leading-relaxed">Developer ID 直发版：前往 Releases 页面下载最新版本。</p>
+            <button type="button" class="mt-3 inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity">
+              打开下载页
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -44,50 +44,65 @@
         「如果你使用 NSVisualEffectView 来显示边栏内的旧版材质，将会导致玻璃材质无法透过。
          你应该从视图层次中移除这些视觉效果视图。」
      ⇒ 这一格的正解是**什么都不放**。详见 ../DESIGN-SPEC.md 红线 R1 / **R7** + §12.2.1.1 ②。 */
-  --bg-canvas:      #e8ecf2;                                   /* 设计稿底板（模拟桌面） */
-  --bg-base:        #ffffff;                                   /* 窗口实体面 */
-  --bg-raised:      #ffffff;                                   /* 浮层 / 卡片 */
-  --bg-subtle:      rgba(120, 120, 128, 0.08);                 /* 静默填充 */
-  --bg-subtle-hi:   rgba(120, 120, 128, 0.14);                 /* 静默填充 · 悬停 */
-  --bg-sunken:      rgba(120, 120, 128, 0.055);                /* 凹陷区（证据区） */
-  --bg-glass:       rgba(255, 255, 255, 0.72);                 /* ⚠️ HTML 模拟 · 实现禁消费 */
-  --bg-glass-thick: rgba(255, 255, 255, 0.86);                 /* ⚠️ HTML 模拟 · 实现禁消费 */
+  /* v3a 配色 Refresh：Paper + Cobalt — base 从冷纯白换成暖纸白，
+     glass 也跟着从纯透明白换成暖基调的半透明，保持前后同温 */
+  --bg-canvas:      #E6E4DC;
+  --bg-base:        #FAFAF7;
+  --bg-raised:      #FFFFFF;
+  --bg-subtle:      rgba(30, 25, 50, 0.06);
+  --bg-subtle-hi:   rgba(30, 25, 50, 0.10);
+  --bg-sunken:      rgba(30, 25, 50, 0.04);
+  --bg-glass:       rgba(252, 250, 245, 0.65);
+  --bg-glass-thick: rgba(252, 250, 245, 0.82);
 
-  /* ---- 文字 Text ---- */
-  --text-1:         #1d1d1f;                                   /* 主文字 16.1:1 */
-  --text-2:         rgba(60, 60, 67, 0.62);                    /* 次文字 4.6:1 */
-  --text-2-strong:  rgba(60, 60, 67, 0.74);                    /* 小号标题 6.3:1 */
-  --text-3:         rgba(60, 60, 67, 0.38);                    /* 三级 / 装饰 2.2:1 */
+  /* ---- 文字 Text ----
+     v3a：基色从 `#1d1d1f`（苹果系统纯黑）换成带紫调的深 `#1A1822`，
+     与新 accent（深钴蓝 `#4F46E5`）一脉相承，避免「冷黑配深紫蓝」的割裂感。
+     透明度从 0.62 / 0.74 / 0.38 微调为 0.60 / 0.72 / 0.36 ——
+     深基色 + 稍低透明度 = 实际对比度与旧值保持一致（4.6 / 6.3 / 2.2）。 */
+  --text-1:         #1A1822;
+  --text-2:         rgba(26, 24, 34, 0.60);
+  --text-2-strong:  rgba(26, 24, 34, 0.72);
+  --text-3:         rgba(26, 24, 34, 0.36);
 
-  /* ---- 描边 Borders ---- */
-  --border:         rgba(60, 60, 67, 0.10);
-  --border-strong:  rgba(60, 60, 67, 0.18);
-  --hairline:       rgba(60, 60, 67, 0.08);
+  /* ---- 描边 Borders ----
+     v3a：基色从 `rgba(60,60,67,α)` 换成 `rgba(30,25,50,α)` ——
+     文字已经换了基色，描边跟着换才能保持同一色系。
+     透明度 0.10 / 0.18 / 0.09 微调为 0.09 / 0.16 / 0.07，
+     因为深基色下同样的 α 视觉上更重。 */
+  --border:         rgba(30, 25, 50, 0.09);
+  --border-strong:  rgba(30, 25, 50, 0.16);
+  --hairline:       rgba(30, 25, 50, 0.07);
 
-  /* ---- 强调色 Accent（默认蓝，设置中可切换 4 色） ---- */
-  --accent:         #0a84ff;
-  --accent-hover:   #0071e3;
-  --accent-soft:    rgba(10, 132, 255, 0.10);
-  --accent-ring:    rgba(10, 132, 255, 0.35);
+  /* ---- 强调色 Accent（默认蓝，设置中可切换 4 色） ----
+     v3a 默认蓝换深钴蓝 `#4F46E5`（Indigo-600），替代通用 Apple 蓝 `#0A84FF`。
+     hover / soft / ring 同步按新基色重算。 */
+  --accent:         #4F46E5;
+  --accent-hover:   #4338CA;
+  --accent-soft:    rgba(79, 70, 229, 0.10);
+  --accent-ring:    rgba(79, 70, 229, 0.30);
   --on-accent:      #ffffff;
 
-  /* ---- 语义色 Semantic ---- */
-  /* 琥珀 = 「有事发生，但不是错误」（磁盘被占用）。红色只留给破坏性动作。 */
-  --warn:           #ff9500;
-  --warn-text:      #b25000;   /* 4.65:1 on warn-soft over white — WCAG AA ✓ */
-  --warn-soft:      rgba(255, 149, 0, 0.12);
-  --warn-line:      rgba(255, 149, 0, 0.30);
+  /* ---- 语义色 Semantic ----
+     v3a：全部降饱和 —— 琥珀从 `#FF9500`（苹果饱和橙）降成 `#D97706`
+     （琥珀-600），绿从 `#34C759` 换成青瓷 `#0D9488`（Teal-600），
+     红从 `#FF3B30` 换成朱砂 `#DC2626`（Red-600）。
+     soft / line 的基色跟着换，透明度档位保持不变。 */
+  --warn:           #D97706;
+  --warn-text:      #8B4513;
+  --warn-soft:      rgba(217, 119, 6, 0.12);
+  --warn-line:      rgba(217, 119, 6, 0.30);
 
-  --danger:         #ff3b30;
-  --danger-hover:   #e02d23;
-  --danger-text:    #c1190f;   /* 5.1:1 on danger-soft over white — WCAG AA ✓ */
-  --danger-soft:    rgba(255, 59, 48, 0.10);
-  --danger-line:    rgba(255, 59, 48, 0.26);
+  --danger:         #DC2626;
+  --danger-hover:   #B91C1C;
+  --danger-text:    #991B1B;
+  --danger-soft:    rgba(220, 38, 38, 0.10);
+  --danger-line:    rgba(220, 38, 38, 0.26);
 
-  --ok:             #34c759;
-  --ok-text:        #1e7a38;   /* 4.94:1 on ok-soft over white — WCAG AA ✓ */
-  --ok-soft:        rgba(52, 199, 89, 0.12);
-  --ok-line:        rgba(52, 199, 89, 0.26);
+  --ok:             #0D9488;
+  --ok-text:        #0F766E;
+  --ok-soft:        rgba(13, 148, 136, 0.12);
+  --ok-line:        rgba(13, 148, 136, 0.28);
 
   /* ---- 圆角 Radius ----
      ⚠️ 代际归属 = **L1 系统层**，且**是本项目最容易做错的一处**。
@@ -148,66 +163,77 @@
   --sz-chip-icon: 20px;
 }
 
-/* ---- 深色模式 ---- */
+/* ---- 深色模式 ----
+   v3a：从平黑 `#1C1C1E` 换成蓝紫深海 `#141620`，raise 从 `#2C2C2E`
+   换成 `#1E2130`（蓝紫卡），与浅色的暖纸白 + 钴蓝形成日夜呼应。
+   文字从纯冷白 `#F5F5F7` 换成带紫调的 `#F0EEF6`。
+   accent 从 `#409CFF`（Apple 蓝）提亮到 `#6366F1`（Indigo-500）。
+   语义色同步：琥珀 `#F59E0B`、青瓷 `#14B8A6`、朱砂 `#EF4444` ——
+   全部 Tailwind-500 档，明暗各一套，深浅交替不割裂。 */
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg-canvas:      #16171b;
-  --bg-base:        #1c1c1e;
-  --bg-raised:      #2c2c2e;
-  --bg-subtle:      rgba(255, 255, 255, 0.08);
-  --bg-subtle-hi:   rgba(255, 255, 255, 0.14);
-  --bg-sunken:      rgba(255, 255, 255, 0.05);
-  --bg-glass:       rgba(38, 38, 42, 0.74);
-  --bg-glass-thick: rgba(44, 44, 48, 0.86);
+  --bg-canvas:      #0B0D14;
+  --bg-base:        #141620;
+  --bg-raised:      #1E2130;
+  --bg-subtle:      rgba(255, 255, 255, 0.06);
+  --bg-subtle-hi:   rgba(255, 255, 255, 0.10);
+  --bg-sunken:      rgba(0, 0, 0, 0.25);
+  --bg-glass:       rgba(30, 33, 48, 0.70);
+  --bg-glass-thick: rgba(30, 33, 48, 0.85);
 
-  --text-1:         #f5f5f7;
-  --text-2:         rgba(235, 235, 245, 0.62);
-  --text-2-strong:  rgba(235, 235, 245, 0.74);
-  --text-3:         rgba(235, 235, 245, 0.36);
+  --text-1:         #F0EEF6;
+  --text-2:         rgba(240, 238, 246, 0.62);
+  --text-2-strong:  rgba(240, 238, 246, 0.74);
+  --text-3:         rgba(240, 238, 246, 0.34);
 
-  --border:         rgba(255, 255, 255, 0.10);
-  --border-strong:  rgba(255, 255, 255, 0.18);
-  --hairline:       rgba(255, 255, 255, 0.08);
+  --border:         rgba(255, 255, 255, 0.08);
+  --border-strong:  rgba(255, 255, 255, 0.15);
+  --hairline:       rgba(255, 255, 255, 0.07);
 
-  --accent:         #409cff;
-  --accent-hover:   #5aa9ff;
-  --accent-soft:    rgba(64, 156, 255, 0.16);
-  --accent-ring:    rgba(64, 156, 255, 0.40);
+  --accent:         #6366F1;
+  --accent-hover:   #818CF8;
+  --accent-soft:    rgba(99, 102, 241, 0.18);
+  --accent-ring:    rgba(99, 102, 241, 0.38);
 
-  --warn:           #ff9f0a;
-  --warn-text:      #ffb340;
-  --warn-soft:      rgba(255, 159, 10, 0.16);
-  --warn-line:      rgba(255, 159, 10, 0.30);
+  --warn:           #F59E0B;
+  --warn-text:      #FCD34D;
+  --warn-soft:      rgba(245, 158, 11, 0.16);
+  --warn-line:      rgba(245, 158, 11, 0.32);
 
-  --danger:         #ff453a;
-  --danger-hover:   #ff5f55;
-  --danger-text:    #ff8078;
-  --danger-soft:    rgba(255, 69, 58, 0.16);
-  --danger-line:    rgba(255, 69, 58, 0.30);
+  --danger:         #EF4444;
+  --danger-hover:   #F87171;
+  --danger-text:    #FCA5A5;
+  --danger-soft:    rgba(239, 68, 68, 0.16);
+  --danger-line:    rgba(239, 68, 68, 0.32);
 
-  --ok:             #30d158;
-  --ok-text:        #5cdb7c;
-  --ok-soft:        rgba(48, 209, 88, 0.16);
-  --ok-line:        rgba(48, 209, 88, 0.30);
+  --ok:             #14B8A6;
+  --ok-text:        #5EEAD4;
+  --ok-soft:        rgba(20, 184, 166, 0.16);
+  --ok-line:        rgba(20, 184, 166, 0.32);
 
   --e1: 0 1px 2px rgba(0, 0, 0, 0.40), 0 0 0 0.5px rgba(255, 255, 255, 0.06);
   --e2: 0 2px 10px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.30);
   --e3: 0 20px 56px rgba(0, 0, 0, 0.62), 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
-/* 强调色主题（由设置驱动） */
+/* 强调色主题（由设置驱动）
+   v3a：四色整体降饱和 / 深一档 —— 与默认蓝（深钴 `#4F46E5`）同质感：
+   · blue = Indigo-600  `#4F46E5` / dark Indigo-500 `#6366F1`（已在上面声明）
+   · purple = Violet-600 `#7C3AED` / dark Violet-400 `#A78BFA`
+   · orange = Orange-600 `#EA580C` / dark Orange-400 `#FB923C`
+   · green  = Emerald-500 `#10B981` / dark Emerald-400 `#34D399` */
 :root[data-accent="purple"] {
-  --accent: #af52de; --accent-hover: #9a3fc9;
-  --accent-soft: rgba(175, 82, 222, 0.12); --accent-ring: rgba(175, 82, 222, 0.35);
+  --accent: #7C3AED; --accent-hover: #6D28D9;
+  --accent-soft: rgba(124, 58, 237, 0.12); --accent-ring: rgba(124, 58, 237, 0.35);
 }
 :root[data-accent="orange"] {
-  --accent: #ff9f0a; --accent-hover: #e88c00;
-  --accent-soft: rgba(255, 159, 10, 0.12); --accent-ring: rgba(255, 159, 10, 0.35);
+  --accent: #EA580C; --accent-hover: #C2410C;
+  --accent-soft: rgba(234, 88, 12, 0.12); --accent-ring: rgba(234, 88, 12, 0.35);
 }
 :root[data-accent="green"] {
-  --accent: #34c759; --accent-hover: #28a745;
-  --accent-soft: rgba(52, 199, 89, 0.12); --accent-ring: rgba(52, 199, 89, 0.35);
+  --accent: #10B981; --accent-hover: #059669;
+  --accent-soft: rgba(16, 185, 129, 0.12); --accent-ring: rgba(16, 185, 129, 0.35);
 }
 /* ⚠️ 下面三行**必须连 `--accent-soft` / `--accent-ring` 一起声明**（2026-09-21 补）：
    原先只覆盖了 `--accent` / `--accent-hover`，于是深色 + 紫/橙/绿时，
@@ -215,9 +241,9 @@
    （rgba(64,156,255,…)）⇒ 文字/图标是紫色、而浅底与描边是蓝色。
    透明度档位取实现侧已有的分档（`DesignTokens.Palette.accentSoft/accentRing`）：
    蓝 0.16 / 0.40，其余 0.12 / 0.35 —— 深色下蓝要更重，否则那块底在 #1c1c1e 上看不出来。 */
-:root[data-theme="dark"][data-accent="purple"] { --accent: #bf6ae8; --accent-hover: #cd85f0; --accent-soft: rgba(191, 106, 232, 0.12); --accent-ring: rgba(191, 106, 232, 0.35); }
-:root[data-theme="dark"][data-accent="orange"] { --accent: #ffb340; --accent-hover: #ffc163; --accent-soft: rgba(255, 179, 64, 0.12); --accent-ring: rgba(255, 179, 64, 0.35); }
-:root[data-theme="dark"][data-accent="green"]  { --accent: #4cd964; --accent-hover: #6ee083; --accent-soft: rgba(76, 217, 100, 0.12); --accent-ring: rgba(76, 217, 100, 0.35); }
+:root[data-theme="dark"][data-accent="purple"] { --accent: #A78BFA; --accent-hover: #C4B5FD; --accent-soft: rgba(167, 139, 250, 0.14); --accent-ring: rgba(167, 139, 250, 0.35); }
+:root[data-theme="dark"][data-accent="orange"] { --accent: #FB923C; --accent-hover: #FDBA74; --accent-soft: rgba(251, 146, 60, 0.14); --accent-ring: rgba(251, 146, 60, 0.35); }
+:root[data-theme="dark"][data-accent="green"]  { --accent: #34D399; --accent-hover: #6EE7B7; --accent-soft: rgba(52, 211, 153, 0.14); --accent-ring: rgba(52, 211, 153, 0.35); }
 
 /* ============================================================================
    2. 基础排版 Base

@@ -185,7 +185,7 @@ enum DesignTokens {
         static let mainSidebarWidth: CGFloat = 200
 
         /// v3 侧栏导航项的**额外垂直内距**（`listRowInsets` 的 top / bottom）：
-        /// 每行在系统内距之上再加这么多，行高 **32 → 43.5pt**。
+        /// 每行在系统内距之上再加这么多，行高 **32 → 39.5pt**。
         ///
         /// ## 为什么破例给了一个「行内度量」（用户 2026-10-01 反馈）
         ///
@@ -207,15 +207,29 @@ enum DesignTokens {
         /// | `listRowInsets` 垂直值 | 行高 | 底部空白 | 占比 |
         /// |---|---|---|---|
         /// | 0（系统原值） | 32pt | 235pt | 47% |
-        /// | **14（本值）** | **43.5pt** | **157pt** | **31%** |
+        /// | **12（本值）** | **39.5pt（推算）** | **181pt（推算）** | **36%（推算）** |
+        /// | 14（上一版） | 43.5pt | 157pt | 31% |
         ///
-        /// ⇒ 本值取 **14**：把占比从 47% 压到 31%（与「系统设置」同量级），
-        /// 同时行高仍在「像一个 macOS 侧栏」的范围里。再往上加会开始像
-        /// 「触摸优化列表」而不是桌面侧栏。
+        /// ## 为什么从 14 降到 12（用户 2026-10-27 反馈）
+        ///
+        /// 用户原话：「设置窗口左侧的菜单项目的 hover 高度低一些」。
+        /// 14 那一档虽然把底部空白压到 31%，但**行块（含 hover 底色）明显比系统侧栏厚**，
+        /// 鼠标划过时像「大按钮」而不是列表项。12 是「往回收一档」：
+        /// 行高 43.5 → **39.5pt**，仍高于系统 32pt、仍能把底部空白压在 ~36%，
+        /// 保住了当初破例要解决的「六项挤顶上」问题，同时 hover 块回到更像桌面侧栏的厚度。
+        ///
+        /// ⚠️ **39.5 / 181 / 36% 是算出来的，不是重新量的**：
+        /// 实测锚点只有上表那两个（0 → 32 / 235 / 47%，14 → 43.5 / 157 / 31%），
+        /// 12 一档按「行高 = 内容自然高 + 2 × inset」的模型线性外推
+        /// （`15.5 + 2 × 12 = 39.5`，底部空白 = 157 + 6 × 4 = 181）。
+        /// 下次真机出图请顺手把这一行改成实测值。
         ///
         /// ⚠️ **行高是「内容高 + 上下内距」算出来的，不是一个能直接设的数**：
         /// 本机量到 `Label` 的自然高 ≈ 15.5pt ⇒ `15.5 + 2 × 14 ≈ 43.5`。
         /// 字号 / 图标尺寸一变，这个值要跟着重算（改完必须真机重量）。
+        ///
+        /// ⚠️ **不能无限往下压**：低于 ~8 时行高会跌破系统的 32pt 定值（内容被挤），
+        /// 且 hover 底色会贴住文字墨迹 —— 12 是当前仍「看着不像被压扁」的安全档。
         ///
         /// ⚠️ **这是产品口味值，不是系统偏差**。它与「行高归系统」那条定调
         /// **是有冲突的**——本轮按用户反馈明确选择破例；想再调先改这张表并真机出图复核。
@@ -233,7 +247,7 @@ enum DesignTokens {
         /// `environment(\.defaultMinListRowHeight,)` 对 sidebar 样式的行**都完全无效**，
         /// 只有 `listRowInsets` 生效（三次真机实验的记录在
         /// ``MainSidebarView/row(_:)`` 的文档注释里）。
-        static let sidebarRowVerticalInset: CGFloat = 14
+        static let sidebarRowVerticalInset: CGFloat = 12
 
         /// 「设置」分组标题上方的**额外**间距（在系统分组间距之上再加）。
         ///
@@ -650,32 +664,27 @@ enum DesignTokens {
                 alpha: 1)
         }
 
-        /// 半透明灰（`rgba(60,60,67,α)` 浅色 / `rgba(235,235,245,α)` 深色）。
+        /// 半透明灰（v3a 基色：`rgba(26,24,34,α)` 浅色 / `rgba(240,238,246,α)` 深色）。
+        ///
+        /// ⚠️ **浅深两套基色不同，各自对齐 ds.css**（v3a 的 --text-* 族）。
         private static func ink(_ alpha: CGFloat) -> Color { ink(light: alpha, dark: alpha) }
 
         /// 明暗**透明度不同**的半透明灰。
-        ///
-        /// **为什么需要这个重载**：设计稿有一处两边不一样 —— `--text-3` 浅色
-        /// `rgba(60,60,67,.38)`、深色 `rgba(235,235,245,.36)`。用同一个 α 时
-        /// 总有一边偏 0.02，单看无感，但它会让「本文件与 `ds.css` 逐值一致」
-        /// 这句话不成立 —— 下次核对的人得重新判断一次哪个才是对的。
+        /// 唯一一处 alpha 不同的令牌：`--text-3` 浅 0.36 / 深 0.34。
         private static func ink(light: CGFloat, dark: CGFloat) -> Color {
             adaptive(
-                light: NSColor(srgbRed: 60 / 255, green: 60 / 255, blue: 67 / 255, alpha: light),
-                dark: NSColor(srgbRed: 235 / 255, green: 235 / 255, blue: 245 / 255, alpha: dark))
+                light: NSColor(srgbRed: 26 / 255, green: 24 / 255, blue: 34 / 255, alpha: light),
+                dark: NSColor(srgbRed: 240 / 255, green: 238 / 255, blue: 246 / 255, alpha: dark))
         }
 
-        /// 分隔 / 描边用的「墨色线」：浅色 `rgba(60,60,67,α)`、深色 **`rgba(255,255,255,α)`**。
-        ///
-        /// ⚠️ **别拿 ``ink(_:)`` 来画描边**（§8.77 实扫出来的）：`ink` 的深色基色是
-        /// `rgba(235,235,245,·)` —— 那是 **`--text-*` 文字族**的基色；而设计稿里
-        /// `--border` / `--border-strong` / `--hairline` 的深色基色是**纯白** `rgba(255,255,255,·)`。
-        /// 两者差 20/255，单看无感，但会让本文件头上那句「与 `ds.css` 逐值一致」不成立。
-        /// **描边与文字是两族、基色不同，helper 也必须分开。**
-        private static func edge(_ alpha: CGFloat) -> Color {
+        /// 描边用的「墨色线」基色：浅色 `rgba(30,25,50,α)`，深色**纯白** ——
+        /// 与文字族（ink）是两族、基色不同。
+        private static func edge(_ alpha: CGFloat) -> Color { edge(light: alpha, dark: alpha) }
+        /// 明暗**alpha 不同**的描边 —— v3a text-* / border* 都是。
+        private static func edge(light: CGFloat, dark: CGFloat) -> Color {
             adaptive(
-                light: NSColor(srgbRed: 60 / 255, green: 60 / 255, blue: 67 / 255, alpha: alpha),
-                dark: NSColor(white: 1, alpha: alpha))
+                light: NSColor(srgbRed: 30 / 255, green: 25 / 255, blue: 50 / 255, alpha: light),
+                dark: NSColor(white: 1, alpha: dark))
         }
 
         // MARK: 表面
@@ -686,157 +695,130 @@ enum DesignTokens {
         // 而实扫发现调用点是 0 —— 理由被证伪，令牌即死代码。
 
         /// 浮层、设置卡片、进程芯片。
-        static var raised: Color { adaptive(light: hex(0xFFFFFF), dark: hex(0x2C2C2E)) }
+        /// v3a：浅色保持 `#FFFFFF`（与 base `#FAFAF7` 形成冷暖对比），
+        /// 深色从 `#2C2C2E` 换成蓝紫卡 `#1E2130`，与 base `#141620` 同色系。
+        static var raised: Color { adaptive(light: hex(0xFFFFFF), dark: hex(0x1E2130)) }
+
         /// 悬停底、分段控件槽、徽标。
+        /// v3a：基色从 `rgba(120,120,128,α)` 换成 `rgba(30,25,50,α)` ——
+        /// 与 ink 同族。
         static var subtle: Color {
             adaptive(
-                light: NSColor(srgbRed: 120 / 255, green: 120 / 255, blue: 128 / 255, alpha: 0.08),
-                dark: NSColor(white: 1, alpha: 0.08))
+                light: NSColor(srgbRed: 30 / 255, green: 25 / 255, blue: 50 / 255, alpha: 0.06),
+                dark: NSColor(white: 1, alpha: 0.06))
         }
         // ⚠️ **v3 退役：`subtleHighlight`（2026-09-30）** —— 「悬停加深一档」
         // 只被自绘按钮的 hover 底用（`--bg-subtle-hi`），交还系统样式后零消费者。
+
         /// 证据区、弹窗底栏。
         static var sunken: Color {
             adaptive(
-                light: NSColor(srgbRed: 120 / 255, green: 120 / 255, blue: 128 / 255, alpha: 0.055),
-                dark: NSColor(white: 1, alpha: 0.05))
+                light: NSColor(srgbRed: 30 / 255, green: 25 / 255, blue: 50 / 255, alpha: 0.04),
+                dark: NSColor.black.withAlphaComponent(0.25))
         }
+
         /// 毛玻璃面 —— 设计稿 `--bg-glass`。**主窗口、菜单面板、设置面板共用这一个**。
         ///
         /// `.win` 的三个变体（`--main` / `--popover` / `--settings`）在 `ds.css` 里
-        /// 只差宽高与圆角，底色一律是 `--bg-glass`：
-        /// 浅色 `rgba(255,255,255,.72)`、深色 `rgba(38,38,42,.74)`。
+        /// 只差宽高与圆角，底色一律是 `--bg-glass`。
         ///
-        /// **这不是「卡片底色」**：旧名字 `cardBackground` 让人以为它只用于卡片，
-        /// 于是菜单面板一直没接上它（靠 `NSPopover` 的系统材质），
-        /// 结果同一个设计稿里的两块玻璃色温不一样。
+        /// v3a：浅色从 `rgba(255,255,255,.72)` 换成暖纸基调
+        /// `rgba(252,250,245,.65)`；深色从 `rgba(38,38,42,.74)` 换成蓝紫基调
+        /// `rgba(30,33,48,.70)` —— 让玻璃也跟着换色系，不再是「白/灰透出来」。
         static func windowGlass(for scheme: ColorScheme) -> Color {
             scheme == .dark
-                ? Color(red: 38 / 255, green: 38 / 255, blue: 42 / 255).opacity(0.74)
-                : Color.white.opacity(0.72)
+                ? Color(red: 30 / 255, green: 33 / 255, blue: 48 / 255).opacity(0.70)
+                : Color(red: 252 / 255, green: 250 / 255, blue: 245 / 255).opacity(0.65)
         }
 
         /// 旧名，等价于 ``windowGlass(for:)``。保留以免调用点大改。
         static func cardBackground(for scheme: ColorScheme) -> Color { windowGlass(for: scheme) }
 
-        /// **色调模式**的窗口实体面 —— 设计稿 `bg-base`（浅色 `#FFFFFF`、深色 `#1C1C1E`）。
-        ///
-        /// 规格出自 `05-settings.html` 里「视觉效果」那一行的说明：
-        /// 「透明模式使用系统毛玻璃；**色调模式使用固定的浅色背景**」。
-        /// 设计稿没有画色调模式的样例屏，但 `ds.css` 里 `bg-base` 的用途栏写的就是
-        /// 「窗口实体面（色调模式）」—— 与 `bg-glass`（毛玻璃窗口）是**同一层的两个选项**。
-        ///
-        /// 与 ``windowGlass(for:)`` 的关键区别：它是**不透明**的（没有 `.opacity`），
-        /// 铺上之后桌面透不出来，也就不再需要底下那层系统材质。
+        /// **色调模式**的窗口实体面 —— 设计稿 `bg-base`。
+        /// v3a：浅色从 `#FFFFFF` 换成暖纸白 `#FAFAF7`，
+        /// 深色从 `#1C1C1E` 换成蓝紫深海 `#141620`。
         static func windowBase(for scheme: ColorScheme) -> Color {
             scheme == .dark
-                ? Color(red: 28 / 255, green: 28 / 255, blue: 30 / 255)
-                : Color.white
+                ? Color(red: 20 / 255, green: 22 / 255, blue: 32 / 255)
+                : Color(red: 250 / 255, green: 250 / 255, blue: 247 / 255)
         }
 
         /// 弹窗（更不透明）—— 设计稿 `--bg-glass-thick`。
-        ///
-        /// **只有 `.alert` 用它**：弹窗浮在窗口之上，需要更强的遮挡才读得清正文。
-        /// 设置面板**不是**弹窗（它在 `ds.css` 里就是 `.win`，底色仍是 `--bg-glass`），
-        /// 曾经误用它，导致设置面板比设计稿白一档。
+        /// v3a 同步换暖纸/蓝紫基调，透明度从 0.86 略调到 0.82/0.85。
         static func popoverBackground(for scheme: ColorScheme) -> Color {
             scheme == .dark
-                ? Color(red: 44 / 255, green: 44 / 255, blue: 48 / 255).opacity(0.86)
-                : Color.white.opacity(0.86)
+                ? Color(red: 30 / 255, green: 33 / 255, blue: 48 / 255).opacity(0.85)
+                : Color(red: 252 / 255, green: 250 / 255, blue: 245 / 255).opacity(0.82)
         }
-        /// 卡片、分隔、芯片描边 —— 设计稿 `--border`（深色基色是**纯白**，见 ``edge(_:)``）。
-        static var border: Color { edge(0.10) }
-        /// 略重的描边（outline 按钮、徽标、面板外框）。
-        ///
-        /// 设计稿 `--border-strong` 两套都是 **0.18**（浅色 `rgba(60,60,67,.18)`、
-        /// 深色 `rgba(255,255,255,.18)`）。曾经写 0.16 —— 描边淡一档，
-        /// 在毛玻璃上尤其看不出来（这也是「outline 按钮像没有边框」的原因）。
-        ///
-        /// ⚠️ 深色那一句「`rgba(255,255,255,.18)`」与代码**曾经不一致**（§8.77）：
-        /// 当时用的是 `ink(0.18)`，深色产出 `rgba(235,235,245,.18)`。已改用 ``edge(_:)``。
-        static var borderStrong: Color { edge(0.18) }
-        /// 分隔线（比 `border` 更淡）—— 设计稿 `--hairline`（深色基色是**纯白**）。
-        static var hairline: Color { edge(0.08) }
+
+        /// 卡片、分隔、芯片描边（`--border`）。v3a α 浅 0.09 / 深 0.08。
+        static var border: Color { edge(light: 0.09, dark: 0.08) }
+
+        /// 略重的描边（`--border-strong`）。v3a α 浅 0.16 / 深 0.15。
+        static var borderStrong: Color { edge(light: 0.16, dark: 0.15) }
+
+        /// 分隔线（`--hairline`）。v3a α 浅 0.07 / 深 0.07。
+        static var hairline: Color { edge(0.07) }
 
         // MARK: 文字
 
-        /// 主文字 —— 浅色 `#1D1D1F`，16.1:1。
-        static var foreground: Color { adaptive(light: hex(0x1D1D1F), dark: hex(0xF5F5F7)) }
-        /// 小号加粗标题（分组名、小节名）—— 6.3:1。
-        ///
-        /// **存在的理由**：旧实现这类文字用 `Color.secondary` 派生的 2.2:1 灰，
-        /// 在 WCAG AA 下不达标。设计稿为它单独立了一个令牌。
-        static var textStrong: Color { ink(0.74) }
-        /// 说明、容量、次要标签 —— 4.6:1。
-        static var mutedForeground: Color { ink(0.62) }
-        /// **仅装饰**，不承载信息 —— 2.2:1。禁止用于任何用户需要读的内容。
-        ///
-        /// 设计稿 `--text-3`：浅色 `rgba(60,60,67,.38)`、深色 `rgba(235,235,245,.36)`
-        /// —— 明暗两套**透明度不同**（这是全设计稿唯一一处）。曾经写成单值 `ink(0.38)`，
-        /// 深色下比设计稿重 0.02。
-        static var textDecorative: Color { ink(light: 0.38, dark: 0.36) }
+        /// 主文字 —— v3a 浅 `#1A1822` / 深 `#F0EEF6`。
+        static var foreground: Color { adaptive(light: hex(0x1A1822), dark: hex(0xF0EEF6)) }
+
+        /// 小号加粗标题（`--text-2-strong`）。v3a α 浅 0.72 / 深 0.74。
+        static var textStrong: Color { ink(light: 0.72, dark: 0.74) }
+
+        /// 说明、容量、次要标签（`--text-2`）。v3a α 浅 0.60 / 深 0.62。
+        static var mutedForeground: Color { ink(light: 0.60, dark: 0.62) }
+
+        /// **仅装饰**（`--text-3`）。v3a α 浅 0.36 / 深 0.34。
+        static var textDecorative: Color { ink(light: 0.36, dark: 0.34) }
 
         // MARK: 语义色
 
-        /// **受阻**：琥珀。判据三条见 ``Palette`` 抬头（受阻 / 不会自愈 / 恢复在用户手上）。
-        ///
-        /// 本应用里它的实例不少：左侧色条、证据区、占用文字、容量条高用量、
-        /// FDA 未授权横幅、登录项等待批准行。
-        /// ⚠️ 旧文写的是「**唯一用途**是左侧色条、证据区、占用文字」——那句话在
-        /// 2026-09-29 语义澄清之前就已经不准确了（上面几个实例早就在用），一并更正。
-        static var warning: Color { adaptive(light: hex(0xFF9500), dark: hex(0xFF9F0A)) }
-        /// 琥珀底上的文字（浅色需压暗才够对比度）。
-        static var warningText: Color { adaptive(light: hex(0xB25000), dark: hex(0xFFB340)) }
-        /// 琥珀浅底。
+        /// **受阻**：琥珀。v3a 从 `#FF9500`（Apple 饱和橙）降成 `#D97706`（琥珀-600），
+        /// 深色从 `#FF9F0A` 换成 `#F59E0B`。
+        static var warning: Color { adaptive(light: hex(0xD97706), dark: hex(0xF59E0B)) }
+        static var warningText: Color { adaptive(light: hex(0x8B4513), dark: hex(0xFCD34D)) }
         static var warningSoft: Color {
             adaptive(
-                light: NSColor(srgbRed: 255 / 255, green: 149 / 255, blue: 0, alpha: 0.12),
-                dark: NSColor(srgbRed: 255 / 255, green: 159 / 255, blue: 10 / 255, alpha: 0.16))
+                light: NSColor(srgbRed: 217 / 255, green: 119 / 255, blue: 6 / 255, alpha: 0.12),
+                dark: NSColor(srgbRed: 245 / 255, green: 158 / 255, blue: 11 / 255, alpha: 0.16))
         }
-        /// 琥珀内描边。
         static var warningLine: Color {
             adaptive(
-                light: NSColor(srgbRed: 255 / 255, green: 149 / 255, blue: 0, alpha: 0.30),
-                dark: NSColor(srgbRed: 255 / 255, green: 159 / 255, blue: 10 / 255, alpha: 0.30))
+                light: NSColor(srgbRed: 217 / 255, green: 119 / 255, blue: 6 / 255, alpha: 0.30),
+                dark: NSColor(srgbRed: 245 / 255, green: 158 / 255, blue: 11 / 255, alpha: 0.32))
         }
 
-        /// 破坏性：红色。**唯一用途**是「关闭并推出」与失败弹窗。
-        static var error: Color { adaptive(light: hex(0xFF3B30), dark: hex(0xFF453A)) }
-        /// 红底上的文字。深色 `#ff8078`（设计稿 `--danger-text`）。
-        static var errorText: Color { adaptive(light: hex(0xC1190F), dark: hex(0xFF8078)) }
-        /// 红色浅底。
+        /// 破坏性：红色。v3a 从 `#FF3B30`（Apple 饱和红）换成 `#DC2626`（朱砂-600），
+        /// 深色从 `#FF453A` 换成 `#EF4444`。
+        static var error: Color { adaptive(light: hex(0xDC2626), dark: hex(0xEF4444)) }
+        static var errorText: Color { adaptive(light: hex(0x991B1B), dark: hex(0xFCA5A5)) }
         static var errorSoft: Color {
             adaptive(
-                light: NSColor(srgbRed: 255 / 255, green: 59 / 255, blue: 48 / 255, alpha: 0.10),
-                dark: NSColor(srgbRed: 255 / 255, green: 69 / 255, blue: 58 / 255, alpha: 0.16))
+                light: NSColor(srgbRed: 220 / 255, green: 38 / 255, blue: 38 / 255, alpha: 0.10),
+                dark: NSColor(srgbRed: 239 / 255, green: 68 / 255, blue: 68 / 255, alpha: 0.16))
         }
-        /// 红色内描边（设计稿 `--danger-line: rgba(255,59,48,0.26)`）。
-        ///
-        /// **为什么警示块必须有描边**：它只靠 10% 的红底与卡片区分，
-        /// 在浅色毛玻璃上边界几乎不可见；0.5px 的红描边把「这是一个警告块」
-        /// 从「一段红色文字」里立出来。琥珀有对应的 ``warningLine``。
         static var errorLine: Color {
             adaptive(
-                light: NSColor(srgbRed: 255 / 255, green: 59 / 255, blue: 48 / 255, alpha: 0.26),
-                dark: NSColor(srgbRed: 255 / 255, green: 69 / 255, blue: 58 / 255, alpha: 0.30))
+                light: NSColor(srgbRed: 220 / 255, green: 38 / 255, blue: 38 / 255, alpha: 0.26),
+                dark: NSColor(srgbRed: 239 / 255, green: 68 / 255, blue: 68 / 255, alpha: 0.32))
         }
 
-        /// 可安全操作：绿色。**唯一用途**是 ✓ 结论行与授权成功横幅。
-        static var success: Color { adaptive(light: hex(0x34C759), dark: hex(0x30D158)) }
-        /// 绿底上的文字。深色 `#5cdb7c`（设计稿 `--ok-text`）。
-        static var successText: Color { adaptive(light: hex(0x1E7A38), dark: hex(0x5CDB7C)) }
-        /// 绿色浅底。
+        /// 可安全操作：绿。v3a 从 `#34C759` 换成青瓷 `#0D9488`（Teal-600），
+        /// 深色从 `#30D158` 换成 `#14B8A6`。
+        static var success: Color { adaptive(light: hex(0x0D9488), dark: hex(0x14B8A6)) }
+        static var successText: Color { adaptive(light: hex(0x0F766E), dark: hex(0x5EEAD4)) }
         static var successSoft: Color {
             adaptive(
-                light: NSColor(srgbRed: 52 / 255, green: 199 / 255, blue: 89 / 255, alpha: 0.12),
-                dark: NSColor(srgbRed: 48 / 255, green: 209 / 255, blue: 88 / 255, alpha: 0.16))
+                light: NSColor(srgbRed: 13 / 255, green: 148 / 255, blue: 136 / 255, alpha: 0.12),
+                dark: NSColor(srgbRed: 20 / 255, green: 184 / 255, blue: 166 / 255, alpha: 0.16))
         }
-        /// 绿色描边（设计稿 `--ok-line`）。授权成功横幅是一圈完整描边，
-        /// 不像琥珀横幅那样只在上下各一条 —— 这是设计稿里两种横幅的区别之一。
         static var successLine: Color {
             adaptive(
-                light: NSColor(srgbRed: 52 / 255, green: 199 / 255, blue: 89 / 255, alpha: 0.26),
-                dark: NSColor(srgbRed: 48 / 255, green: 209 / 255, blue: 88 / 255, alpha: 0.30))
+                light: NSColor(srgbRed: 13 / 255, green: 148 / 255, blue: 136 / 255, alpha: 0.28),
+                dark: NSColor(srgbRed: 20 / 255, green: 184 / 255, blue: 166 / 255, alpha: 0.32))
         }
 
         // MARK: 强调色的浅底
@@ -865,17 +847,14 @@ enum DesignTokens {
         /// 上几乎看不出是「一块强调色底」，图标容器就退化成一个没有底的图标。
         static func accentSoft(_ accent: AccentColor) -> Color {
             let isBlue = accent == .blue
-            return accentTint(accent, light: isBlue ? 0.10 : 0.12, dark: isBlue ? 0.16 : 0.12)
+            // v3a ds.css 分档：blue 浅 0.10 / 深 0.18；其余 浅 0.12 / 深 0.14
+            return accentTint(accent, light: isBlue ? 0.10 : 0.12, dark: isBlue ? 0.18 : 0.14)
         }
 
-        /// 强调色内描边（图标容器、信息提示块）。设计稿 `--accent-ring`：
-        /// 浅色 **0.35**；深色 蓝 0.40 / 紫橙绿 0.35。
-        ///
-        /// 曾经写死 0.24 —— 描边比设计稿淡三成，图标容器与信息提示块的边界
-        /// 在浅色毛玻璃上几乎看不见（而这条 0.5px 描边正是它们与背景唯一的界限）。
+        /// 强调色内描边。v3a 分档：blue 浅 0.30 / 深 0.38；其余 浅 0.35 / 深 0.35。
         static func accentRing(_ accent: AccentColor) -> Color {
             let isBlue = accent == .blue
-            return accentTint(accent, light: 0.35, dark: isBlue ? 0.40 : 0.35)
+            return accentTint(accent, light: isBlue ? 0.30 : 0.35, dark: isBlue ? 0.38 : 0.35)
         }
     }
 

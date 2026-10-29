@@ -177,7 +177,7 @@ import Testing
                 executableURL: URL(fileURLWithPath: "/usr/bin/git"),
                 arguments: args,
                 timeout: 30
-            ) { c.resume(returning: $0) }
+            ) { result in c.resume(returning: result?.output) }
             run.start()
         }
         guard let output else { return nil }

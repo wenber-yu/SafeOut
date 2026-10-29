@@ -137,8 +137,13 @@ enum ProcessAppResolver {
     /// 补齐单个进程的应用身份（`displayName` / `appBundlePath` / `executablePath`）。
     ///
     /// **必须在主 actor 上执行**：`NSWorkspace` / `NSRunningApplication` 是主 actor 隔离类型。
+    ///
+    /// **非进程条目（磁盘映像）原样跳过**：它没有 pid 可查、`displayName` 在构造时
+    /// 已是 backing 文件名（``OccupyingProcess/diskImage(imagePath:device:)``），
+    /// 过一遍解析只会把合成负 pid 送进 `proc_pidpath` 白白失败一次。
     @MainActor
     static func enrich(_ process: OccupyingProcess) -> OccupyingProcess {
+        guard process.kind == .process else { return process }
         var enriched = process
         let executablePath = Self.executablePath(forPid: process.pid)
         let directApp = NSRunningApplication(processIdentifier: process.pid)
@@ -189,8 +194,17 @@ enum ProcessAppResolver {
     ///
     /// 缓存按路径做：进程列表每 15s 重新检测一次，但涉及的 app 路径集合几乎不变，
     /// 缓存后视图刷新不必反复走 `NSWorkspace`。
+    ///
+    /// **磁盘映像条目**：取 backing 文件（`.dmg`）自身的系统图标——访达里那张
+    /// 「磁盘映像」白盒图标，用户一眼能认出「这是个映像不是应用」。
     @MainActor
     static func icon(for process: OccupyingProcess) -> NSImage? {
+        if case .diskImage = process.kind {
+            if let cached = iconCache[process.path] { return cached }
+            let icon = NSWorkspace.shared.icon(forFile: process.path)
+            iconCache[process.path] = icon
+            return icon
+        }
         guard let path = process.appBundlePath ?? process.executablePath else { return nil }
         if let cached = iconCache[path] { return cached }
         let icon = NSWorkspace.shared.icon(forFile: path)

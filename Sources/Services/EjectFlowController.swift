@@ -55,6 +55,17 @@ final class EjectFlowController {
     /// （那是真机、真硬件的事），注入替身才能单测「报错 + 盘已消失 ⇒ 算成功」这条兜底。
     private let volumeMounted: (String) -> Bool
 
+    /// 分离一张磁盘映像（`hdiutil detach <device>`）。
+    ///
+    /// **为什么做成可注入的闭包**：「关闭并推出」的第 0 步会 detach 占用列表里的
+    /// 磁盘映像（DMG 不是进程，发信号无效且危险，见 ``ProcessTerminator`` 的防线）。
+    /// 测试注入记录型替身即可断言「detach 在 SIGTERM 之前、device 正确」，
+    /// 而不必真去附着/分离映像。
+    ///
+    /// 成败不在此处判定：清场复检（``OccupancyDetector/detect(mountPath:)``，含 hdiutil）
+    /// 是「映像还在不在」的权威；分离失败的映像会自然回到 `.busy` 链路交回 UI。
+    private let detachDiskImage: (String) async -> Void
+
     /// 可注入初始化（生产一律用 `shared`；测试传入 mock 子类）。
     init(
         ejectService: EjectService = .shared,
@@ -62,12 +73,16 @@ final class EjectFlowController {
         log: @escaping (String?, String) -> Void = { disk, message in
             LogService.shared.log(disk: disk, message: message)
         },
-        volumeMounted: @escaping (String) -> Bool = { EjectFlowController.volumeStillMounted($0) }
+        volumeMounted: @escaping (String) -> Bool = { EjectFlowController.volumeStillMounted($0) },
+        detachDiskImage: @escaping (String) async -> Void = { device in
+            await DiskImageOccupancyProvider.detach(device: device)
+        }
     ) {
         self.ejectService = ejectService
         self.occupancyDetector = occupancyDetector
         self.log = log
         self.volumeMounted = volumeMounted
+        self.detachDiskImage = detachDiskImage
     }
 
     /// 挂载点是否仍在系统挂载列表里。
@@ -210,6 +225,22 @@ final class EjectFlowController {
     ) async -> EjectOutcome {
         activeEjectionCount += 1
         defer { endEjection() }
+
+        // 第 0 步：分离磁盘映像（DMG 占用）。
+        //
+        // **为什么在最前面**：映像不是进程——`diskimagesiod` 持有 backing 文件，
+        // 对它发信号既无效（EPERM）又危险（``ProcessTerminator`` 的防线正是防这个），
+        // 正确的「关闭」动作是 `hdiutil detach`。先 detach 再清场，后面的复检
+        // （``OccupancyDetector/detect(mountPath:)``，含 hdiutil）就能把「映像已分离」
+        // 如实反映成「占用消失」；分离失败的映像也会自然回到 `.busy` 链路。
+        //
+        // **边界**：只有这条「关闭并推出」路径会 detach —— 分离映像等同于替用户关应用，
+        // 普通 ``eject(disk:)`` 绝不做（用户没表过这个态）。
+        for process in processes {
+            if case .diskImage(let device) = process.kind {
+                await detachDiskImage(device)
+            }
+        }
 
         // 第 1 步：SIGTERM 礼貌退出。
         let unkillableAfterTerm = terminate(processes, signal: SIGTERM)

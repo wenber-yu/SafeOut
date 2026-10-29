@@ -48,7 +48,8 @@ final class NotificationStatusBox: @unchecked Sendable {
 /// 它成为 key window 后把 `presentAttentionPanel` 刚打开的菜单面板**顶掉** ——
 /// 用户最终只看到主窗口，而「关闭并推出」在面板上。
 ///
-/// 有待处理提醒时优先面板，对「点 Dock 图标」同样是合理行为：提醒比常规入口更要紧。
+/// 有待处理提醒时优先面板，对任何「重新打开」入口都是合理行为：提醒比常规入口更要紧。
+/// （本应用是纯菜单栏 App，`LSUIElement=true`；reopen 仍可能由通知点击 / `open` 命令触发。）
 enum AppReopenPolicy {
 
     /// 「重新打开」时该亮哪个窗口。
@@ -106,14 +107,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingHosting: NSHostingController<OnboardingView>?
 
     private var ejectingDiskId: String?
-
-    /// 上一次观测的偏好值，用于判断 UserDefaults 变更后是否需要真正响应。
-    ///
-    /// ⚠️ **这里只留「Dock 图标」一项**。此前还有一个平行的 `lastVisualStyleRaw`，
-    /// 但 `handleDefaultsChange()` 里对应的分支体是**空的** —— 视觉风格由
-    /// `ContentView` 的 `@AppStorage` 自动响应，不需要 AppDelegate 再记一份副本。
-    /// 留着一个只被读、比较、赋值却不产生任何效果的变量，会让后来者以为那里有逻辑。
-    private var lastShowDockIcon: Bool?
 
     /// popover 显示状态监听，关闭时按钮恢复未选中态。
     private var popoverEventMonitor: Any?
@@ -594,16 +587,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if let appIcon = NSImage(systemSymbolName: "externaldrive.fill", accessibilityDescription: L10n.tr(.appName)) {
-            NSApp.applicationIconImage = appIcon
-        }
-
-        lastShowDockIcon = UserDefaults.standard.bool(forKey: AppSettings.Key.showDockIcon)
-        updateDockIconVisibility()
+        // 本应用是**纯菜单栏应用**：永远不进 Dock、不进 ⌘Tab。
+        //
+        // 双保险，缺一不可：
+        //   1. Info.plist 的 `LSUIElement=true`（build_app.sh 写入）—— 系统层面的声明，
+        //      登录自启 / 双击 / `open` 任何入口都以代理类启动，Dock 根本不会给它留位。
+        //   2. 这里显式 `.accessory` —— 覆盖**开发期直接跑二进制**（没有 Info.plist）的情形。
+        //
+        // ⚠️ 历史上这里有两处 Dock 相关代码，均已随「纯菜单栏」决定移除：
+        //   - 「在 Dock 中显示图标」开关（`.regular` ↔ `.accessory` 切换）；
+        //   - `NSApp.applicationIconImage = NSImage(systemSymbolName: "externaldrive.fill")`
+        //     —— 它是 **template 图像**，Dock 会把 template 渲染成纯黑剪影
+        //     （2026-10-12 用户实测：登录自启时 Dock 图标是黑色而非配置的 AppIcon）。
+        NSApp.setActivationPolicy(.accessory)
 
         LaunchAtLoginManager.syncAtLaunch()
 
-        setupDefaultsObservation()
+        // **强调色同步系统侧**：侧栏选中胶囊等系统绘制元素只认 `AppleAccentColor`
+        // 键（2026-10-22 macOS 27 实证）。启动先同步一次；
+        // 之后的变更在设置页色板的写入点显式同步（``SettingsSectionPane/accentSwatches``）——
+        // 不要改成挂 `UserDefaults.didChangeNotification`：实测它对写入不可靠送达。
+        AppSettings.syncAppleAccentColor()
+
         setupStatusItem()
         setupMainWindow()
 
@@ -1858,92 +1863,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         eject(disk)
     }
 
-    // MARK: - 偏好变更
-
-    private func setupDefaultsObservation() {
-        NotificationCenter.default.addObserver(
-            forName: UserDefaults.didChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.handleDefaultsChange() }
-        }
-    }
-
-    private func handleDefaultsChange() {
-        let showDockIcon = UserDefaults.standard.bool(forKey: AppSettings.Key.showDockIcon)
-        if showDockIcon != lastShowDockIcon {
-            lastShowDockIcon = showDockIcon
-            updateDockIconVisibility()
-        }
-
-        // ⚠️ **强调色变化刻意不响应到菜单栏图标**（2026-10-01 用户报告后移除）：
-        // 曾经在强调色变化时给状态栏按钮设 `contentTintColor`（tint 成强调色），
-        // 但 template 图标一旦染色就被**锁定渲染色、退出系统自适应**——macOS 会按
-        // **壁纸在菜单栏区域的亮度**把未染色的 template 图标自动渲染成黑/白，
-        // 染色后这个行为消失：别的图标都随壁纸反色，本 app 图标永远停在强调色
-        // （浅壁纸上对比度差时看起来就是「颜色错了」）。启动时本就不染色，
-        // 所以症状是「有时对有时错」——改过强调色的那个会话内才错。
-        // 内容区（磁盘行/容量条/按钮）走 `@AppStorage` 自动响应，不需要这里接线。
-        //
-        // ⚠️ **视觉风格（`visualStyle`）同样不在这里接线**（2026-10-08 清理）：
-        // 主窗口背景由 `ContentView` 的 `@AppStorage` 自动响应。此前这里有一份
-        // `lastVisualStyleRaw` 副本加一个**分支体为空**的 if —— 只读、比较、赋值，
-        // 不产生任何效果，属于「看起来有逻辑、实际是空转」，现已连同那个变量一并删除。
-        // 若将来视觉风格真的需要 AppDelegate 介入（例如要重建窗口背景材质），
-        // 届时再加回来，并在这里写明**为什么 `@AppStorage` 不够**。
-    }
-
-    /// 依据「显示 Dock 图标」偏好切换激活策略，并在切换后把界面重新拉回前台。
-    ///
-    /// **关于「开关打开再关闭 → 主窗口界面闪退」的实测结论（2026-09-12，不要凭猜测改写）**：
-    /// 用户报告切到菜单栏模式后主窗口界面消失。为此做了多轮真机对照实验（带设置 sheet、
-    /// 切换前强制前台、CGWindowList 判在屏、A/B 两组各一），**均未能复现窗口消失**：
-    /// - `setActivationPolicy(.accessory)` 前后 `NSWindow.isVisible` 恒为 true，窗口始终在
-    ///   CGWindowList 的层 0 列表中，`NSApp.isActive` 也维持 true；负向对照（跳过下面这段收尾）
-    ///   结果完全相同 —— 说明「策略切换把 App 踢到后台 / 把窗口挤走」在本系统上**不成立**。
-    /// - 也没有任何 SafeOut 的崩溃报告，进程始终存活。
-    ///
-    /// 保留这段收尾的理由是**它修复的是一个真实存在、且后果不可逆的状态**：
-    /// 菜单栏模式下 App 既无 Dock 图标、也不在 ⌘Tab 列表里，一旦窗口因为任何原因
-    /// （切策略、⌘M 最小化、被其它全屏 App 遮盖）离开视野，用户就**没有任何入口把它找回来**——
-    /// 这正是「界面闪退」这一体验的不可恢复之处。切换后统一重新激活并前置窗口，让这种状态无法停留。
-    private func updateDockIconVisibility() {
-        let showDockIcon = UserDefaults.standard.bool(forKey: AppSettings.Key.showDockIcon)
-        let target: NSApplication.ActivationPolicy = showDockIcon ? .regular : .accessory
-        guard NSApp.activationPolicy() != target else { return }
-        NSApp.setActivationPolicy(target)
-        restoreVisibleWindows()
-    }
-
-    /// 把仍然打开的窗口重新置于前台，避免激活策略切换把界面「丢」到别的应用后面。
-    private func restoreVisibleWindows() {
-        // **应用本来就活跃、且已经有一个可见的 key window —— 什么都不做。**
-        //
-        // 这一段是 2026-09-17 用户报「打开『在 Dock 中显示图标』时，主窗口和设置窗口
-        // 都会闪一下」的根因：旧的写法无条件 `activateApp()` + 全体 `orderFrontRegardless()`
-        // + `visible.first?.makeKey()`。用户在**设置窗口**里拨开关，而 `NSApp.windows` 里
-        // 排在前面的往往是主窗口 —— 于是 key 被从设置窗抢走，两个窗口一起经历
-        // 「失焦 → 重新排序 → 重新激活」，看起来就是闪一下。
-        //
-        // 上面那段注释里真正要防的是另一种情况：**窗口被策略切换挤走了**（没有 key window）。
-        // 有 key window 就说明什么都没丢，此时再抢一次焦点纯属制造闪烁。
-        //
-        // 判据只看「有没有可见的 key window」，**不看 `NSApp.isActive`**：
-        // 切激活策略的那一瞬间 `isActive` 可能短暂为 false，但窗口并没有丢 ——
-        // 以它为准会把「其实没丢」也当成「丢了」，于是又去抢一次焦点、又闪一下。
-        if let key = NSApp.keyWindow, key.isVisible { return }
-
-        // `canBecomeMain` 过滤掉 NSPopover 面板、状态栏窗口等附属窗口，只处理真正的应用窗口。
-        let visible = NSApp.windows.filter { $0.isVisible && $0.canBecomeMain }
-        guard !visible.isEmpty else { return }
-        activateApp()
-        for window in visible {
-            window.orderFrontRegardless()
-        }
-        visible.first?.makeKey()
-    }
-
     /// 激活本应用。
     ///
     /// macOS 14 起 `NSApplication.activate(ignoringOtherApps:)` 的参数已被标记为不再生效，
@@ -1960,18 +1879,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// ⌘H / 应用菜单里的「隐藏 SafeOut」。
     ///
     /// 标准语义是 `NSApp.hide(_:)`，但 macOS 规定**代理类（accessory）App 无法被隐藏**：
-    /// 真机实测菜单栏模式下调用后 `NSApp.isHidden` 仍为 false —— ⌘H 等于一个死键。
-    /// 因此按当前激活策略分流：
-    /// - 常规模式（有 Dock 图标）→ 走系统 `hide:`，行为与所有 macOS App 一致；
-    /// - 菜单栏模式 → 退化为「把窗口收起来」。窗口可用菜单栏图标 →「打开主窗口」找回，
-    ///   让 ⌘H 在两种模式下都有确切、可预期的行为，而不是按下去没反应。
+    /// 真机实测调用后 `NSApp.isHidden` 仍为 false —— ⌘H 等于一个死键。
+    /// 本应用已固定为纯菜单栏（accessory），所以「隐藏」统一退化为「把窗口收起来」：
+    /// 窗口可用菜单栏图标 →「打开主窗口」找回，⌘H 有确切、可预期的行为。
     @objc func hideApp(_ sender: Any?) {
-        if NSApp.activationPolicy() == .accessory {
-            for window in NSApp.windows where window.isVisible && window.canBecomeMain {
-                window.orderOut(sender)
-            }
-        } else {
-            NSApp.hide(sender)
+        for window in NSApp.windows where window.isVisible && window.canBecomeMain {
+            window.orderOut(sender)
         }
     }
 
@@ -2121,9 +2034,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// 显示主窗口。菜单栏弹窗的「打开主窗口」、菜单里的「显示主窗口」（⌘O）与
-    /// Dock 图标点击（reopen）都走这里。
+    /// reopen（通知点击 / `open` 命令）都走这里。
     ///
-    /// 必须处理**最小化态**：菜单栏模式下 App 没有 Dock 图标，⌘M 把窗口缩进 Dock 后
+    /// 必须处理**最小化态**：本应用是纯菜单栏 App、没有 Dock 图标，⌘M 把窗口缩进 Dock 后
     /// 用户**没有任何办法点回来**（Dock 上根本没有这个 App），是一个真正的死路。
     /// 这里先 `deminiaturize` 再前置，保证这条恢复路径对「关掉」和「缩掉」两种状态都有效。
     ///
@@ -2143,7 +2056,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// ## 为什么两个入口共用这一条，而不是各写各的
     ///
     /// 「亮窗口」那一套（建窗 / 反小化 / 前置 / 激活）有**四条**入口共用
-    /// （⌘O / 菜单栏面板 / Dock reopen / 引导面板的「打开设置」），而它们的落点**只有两种**：
+    /// （⌘O / 菜单栏面板 / reopen / 引导面板的「打开设置」），而它们的落点**只有两种**：
     /// 「打开主窗口」回外置磁盘、「设置…」回设置·通用。⇒ 亮法收敛成一处，
     /// 落点作为**参数**传进来 —— 于是「某个入口忘了落点」这件事在类型上就不可能发生
     /// （漏了参数编译不过），而不再是两行裸赋值里靠人眼盯着的隐式契约。

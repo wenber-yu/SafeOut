@@ -158,6 +158,29 @@ struct MainSidebarView: View {
 
     @ObservedObject var model: MainWindowModel
 
+    /// App 内强调色（设置 › 外观）。
+    ///
+    /// ## 侧栏选中胶囊的颜色从哪里来（2026-10-22 实证，macOS 27）
+    ///
+    /// 选中胶囊与行图标由 **AppKit 源列表**绘制，只认 per-app 的
+    /// `AppleAccentColor` 偏好键 —— 下面这句 `.tint` **传不进去**（逐组对照实验：
+    /// `.tint` 在、胶囊仍系统蓝；写入 `AppleAccentColor=1`，胶囊与图标即变橙）。
+    /// 系统侧那份由 ``AppSettings/syncAppleAccentColor()`` 在启动与偏好变更时同步，
+    /// 本视图**不需要也不应该**再为胶囊做任何事。
+    ///
+    /// 这句 `.tint` 保留只是兜底 macOS 14–15（那边胶囊跟 tint 走，见旧注释），
+    /// 以及侧栏内将来可能出现的其它 SwiftUI 控件。
+    @AppStorage(AppSettings.Key.accentColor) private var accentColorRaw = AccentColor.default.rawValue
+
+    /// 当前指针悬停的导航项（行级 hover 底的唯一状态）。
+    ///
+    /// 与 ``ToggleRowHover`` 同一条纪律：**逐行一份状态**，不能挂在侧栏外层 ——
+    /// 否则悬停一行会让所有行一起亮。这里用「单个可选值 + 相等判断」表达，
+    /// 因为任意时刻只可能有一行在指针下。
+    @State private var hoveredItem: MainNavItem?
+
+    private var accent: AccentColor { AccentColor(rawValue: accentColorRaw) ?? .default }
+
     var body: some View {
         List(selection: model.listSelection) {
             Section {
@@ -177,6 +200,16 @@ struct MainSidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        // ## 侧栏背景交还系统（2026-10-28 用户要求「把浮岛拿掉」）
+        //
+        // 2026-10-23 ~ 10-28 期间这里自绘过一块「四边内缩 8 + 圆角 10」的浮岛
+        // （`.scrollContentBackground(.hidden)` + `.background` + `.clipShape` + `.padding`）。
+        // 用户看过实物后明确不要浮岛 ⇒ 那四行**全部删除**，`List` 恢复默认的侧栏材质：
+        // 方角、贴边、整面铺满 —— 与 Finder / 系统设置的侧栏同代。
+        //
+        // ⚠️ 别再把它们加回来：`.scrollContentBackground(.hidden)` 会关掉系统材质，
+        // 而 `.background` + `.clipShape` + `.padding(8)` 会重新切出那块内缩浮岛。
+        .tint(accent.swiftUIColor)
     }
 
     /// 一行导航项。
@@ -192,7 +225,7 @@ struct MainSidebarView: View {
     /// |---|---|
     /// | 行内容 `.padding(.vertical, 4)`（单独用） | ❌ **无效**，六个行距仍是 32pt |
     /// | `List.environment(\.defaultMinListRowHeight, 40)`（单独用） | ❌ **无效**，同上 |
-    /// | **本行的 `.listRowInsets`** | ✅ 生效：行高 32 → **43.5pt**，点击区与选中胶囊**跟着一起长** |
+    /// | **本行的 `.listRowInsets`** | ✅ 生效：行高 32 → **39.5pt**（本值 12），点击区与选中胶囊**跟着一起长** |
     ///
     /// ⇒ 前两条别再单独试。**根因**（第二、三次实验交叉验证出来的模型）：
     /// 没有 `listRowInsets` 时，sidebar 行高是 AppKit 按样式压死的 **32pt 定值**
@@ -201,6 +234,8 @@ struct MainSidebarView: View {
     /// 才重新有意义（第三次实验：`.padding(4)` + `insets(10)` ⇒ 43.5，
     /// 第四次实验：只留 `insets(10)` ⇒ 35.5，差值 8 = 2 × 4，模型吻合）。
     /// ⇒ **行高要调就调 `sidebarRowVerticalInset` 这一个数**，别去叠内容 padding。
+    /// ⚠️ 行高 39.5 是「`15.5 + 2 × 12`」算出来的（14 那档实测是 43.5）；
+    /// 用户 2026-10-27 反馈「hover 高度低一些」，所以从 14 收到 12（理由见令牌注释）。
     ///
     /// ## ⚠️ `leading` / `trailing` 必须显式写 **0**，不是可省的
     ///
@@ -211,7 +246,34 @@ struct MainSidebarView: View {
     ///
     /// 选中态胶囊、hover、圆角、焦点环**仍然全部由系统画** —— 这里只把行撑高。
     private func row(_ item: MainNavItem) -> some View {
-        Label(item.title, systemImage: item.systemImage)
+        let isSelected = model.selection == item
+        // ## 为什么图标要**显式上色**，而不是交给 `Label`（2026-10-27 用户反馈）
+        //
+        // 用户原话：「强调色 bug，切换颜色后，设置窗口左侧菜单 icon 是粉色」。
+        //
+        // 根因：sidebar 样式的 `List` 里，**符号图标的颜色由 AppKit 源列表自己上**
+        // ——它认的是 **per-app 的 `AppleAccentColor`**（系统偏好里那个「强调色」，
+        // macOS 允许选粉色），不认 SwiftUI 的 `.tint`（本视图 body 末尾那句 `.tint` 的
+        // 说明已实证）。于是：
+        // - 我们的选中胶囊用 `accent.swiftUIColor` 自绘，跟随应用内选择；
+        // - 图标却跟着**系统强调色**走 ⇒ 用户把系统强调色设成粉、应用内选蓝，
+        //   就会看到「蓝胶囊 + 粉图标」的裂开状态（即用户报的「icon 是粉色」）。
+        //
+        // 修法：把 `Label` 拆成 `Image` + `Text`，**图标显式用 `accent.swiftUIColor`**。
+        // `accent` 读的是 `@AppStorage(AppSettings.Key.accentColor)` 投影 ⇒ 用户点色板
+        // 写入 `AppSettings.Key.accentColor` 的同一帧，本视图就会重算（不是靠重启生效）。
+        // 文字仍用中性前景色（图标是强调点，正文不需要跟着变色，与设计稿一致）。
+        //
+        // ⚠️ 别改回 `Label(...)` + 整行 `.foregroundStyle`：那样虽然也「跟随」，
+        // 但会把**正文**一起染色（设计稿里正文是中性色），而且一旦哪天有人把整行
+        // 前景色删掉，图标又会退回系统强调色 —— 这个 bug 会静默复发。
+        return HStack(spacing: DesignTokens.Spacing.xs) {
+            Image(systemName: item.systemImage)
+                .foregroundStyle(isSelected ? Color.white : accent.swiftUIColor)
+            Text(item.title)
+                .foregroundStyle(isSelected ? Color.white : DesignTokens.Palette.foreground)
+            Spacer(minLength: 0)
+        }
             .listRowInsets(
                 EdgeInsets(
                     top: DesignTokens.Size.sidebarRowVerticalInset,
@@ -219,7 +281,61 @@ struct MainSidebarView: View {
                     bottom: DesignTokens.Size.sidebarRowVerticalInset,
                     trailing: 0)
             )
+            // ## 行底自绘（2026-10-22 用户反馈 + 本机 macOS 27 实测）
+            //
+            // 系统 sidebar 样式在 macOS 27 上画出的选中胶囊是**中性灰**（实测 #3A3A3E 一带），
+            // 与 `AppleAccentColor` 写什么都无关；同时行上没有 hover 底。
+            // 用户的要求是「hover 要看得出来、选中色必须等于强调色」——
+            // 这两条系统都给不了，只能自己画。
+            //
+            // 保留 `List(selection:)` 的意义：选中值、方向键导航、VoiceOver 的列表语义
+            // 仍由系统承担（我们只接管**这一层皮**）。
+            .listRowBackground(
+                RoundedRectangle(cornerRadius: DesignTokens.Radius.sm, style: .continuous)
+                    .fill(rowBackground(for: item, isSelected: isSelected))
+                    // ## 上下各留 2pt：让相邻两行的色块之间出现 4pt 空隙
+                    //
+                    // 用户 2026-10-28 反馈：「hover 和选中两个颜色之间没有间隔」。
+                    // 根因：`listRowBackground` 铺满的是**整行矩形**（含上下各
+                    // ``DesignTokens/Size/sidebarRowVerticalInset`` 的内距），而相邻两行的
+                    // 矩形首尾相接 ⇒ 灰 hover 块与蓝选中块直接贴死（实测像素 y=393/394
+                    // 零间隙，见用户截图 `通用` 与 `外观` 两行）。
+                    //
+                    // ⇒ 在**背景**上加内缩，不动 `listRowInsets`：
+                    // 后者会连行高、点击区、文字位置一起改（见本函数抬头的三次实验表），
+                    // 而这里只想把「色块」缩小一点。2pt 取 `Spacing.xs` 的一半，
+                    // 相邻两行各让一半 ⇒ 视觉上是 4pt 的缝。
+                    .padding(.vertical, DesignTokens.Spacing.xs / 2)
+                    // 左右各内缩 8pt：浮岛拿掉之后 `List` 是整面铺满的，色块会直接贴到
+                    // 窗口左缘与中间那条分隔线上（圆角被边缘切出「半块」的观感）。
+                    // 8pt 与设计稿 `.sside { padding: 52px 10px 12px }` 的横向内边距同量级，
+                    // 也是拿掉浮岛之前 `List` 那一层 `.padding` 的值。
+                    .padding(.horizontal, DesignTokens.Spacing.sm)
+            )
+            // 选中 = 强调色实底 + 白字；未选中 = 图标强调色 + 中性文字。
+            // ⚠️ 前景色在上面**逐元素**给了（见那段长注释），这里不要再整行上色 ——
+            // 整行 `.foregroundStyle` 只是环境默认值，会让「谁在跟随强调色」变得看不清，
+            // 也正是上一版图标退回系统强调色（粉色）的成因之一。
+            .onHover { inside in
+                if inside {
+                    hoveredItem = item
+                } else if hoveredItem == item {
+                    // ⚠️ 必须比对再清：悬停移出旧行时，指针可能已经进了新行并写好新值，
+                    // 无条件置 nil 会把新行的 hover 一起抹掉（快速划过时的闪烁）。
+                    hoveredItem = nil
+                }
+            }
             .tag(item)
+    }
+
+    /// 行底色：选中 > 悬停 > 透明。
+    ///
+    /// 悬停底用 ``DesignTokens/Palette/subtle``（设计稿 `.sside__item:hover` 的 `--bg-subtle`），
+    /// 与设置页开关行的行级 hover 同源。
+    private func rowBackground(for item: MainNavItem, isSelected: Bool) -> Color {
+        if isSelected { return accent.swiftUIColor }
+        if hoveredItem == item { return DesignTokens.Palette.subtle }
+        return .clear
     }
 }
 
@@ -303,7 +419,8 @@ struct MainDetailView: View {
                 section: section,
                 takeOverAvailabilityOverride: takeOverAvailabilityOverride,
                 onLaunchAtLoginError: { error in prompt = SettingsPrompt.launchAtLogin(error) },
-                onTakeOverEnabled: { prompt = SettingsPrompt.accessibilityOnboarding() })
+                onTakeOverEnabled: { prompt = SettingsPrompt.accessibilityOnboarding() },
+                onTakeOverNeedsFDA: { prompt = SettingsPrompt.takeOverNeedsFDA() })
         }
     }
 }
@@ -365,9 +482,10 @@ struct SettingsDetailPage: View {
     var takeOverAvailabilityOverride: AppSettings.TakeOverAvailability?
     var launchAtLoginStateOverride: LaunchAtLoginState?
 
-    /// 登录项失败 / 辅助功能引导的上抛落点（弹窗状态在 ``MainDetailView`` 上）。
+    /// 登录项失败 / 辅助功能引导 / FDA 引导的上抛落点（弹窗状态在 ``MainDetailView`` 上）。
     var onLaunchAtLoginError: (LaunchAtLoginError) -> Void = { _ in }
     var onTakeOverEnabled: () -> Void = {}
+    var onTakeOverNeedsFDA: () -> Void = {}
 
     var body: some View {
         ScrollView {
@@ -378,7 +496,8 @@ struct SettingsDetailPage: View {
                 takeOverAvailabilityOverride: takeOverAvailabilityOverride,
                 launchAtLoginStateOverride: launchAtLoginStateOverride,
                 onLaunchAtLoginError: onLaunchAtLoginError,
-                onTakeOverEnabled: onTakeOverEnabled
+                onTakeOverEnabled: onTakeOverEnabled,
+                onTakeOverNeedsFDA: onTakeOverNeedsFDA
             )
         }
         .scrollContentBackground(.hidden)

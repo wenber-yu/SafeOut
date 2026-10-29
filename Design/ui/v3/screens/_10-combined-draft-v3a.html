@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light" data-accent="blue">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v3 探索稿 · 主窗口与设置合一 · SafeOut UI v3</title>
+<!-- 样式：v3 自己的副本（v2 已冻结，禁止再改 v2）→ 见 ../assets/ds.css 抬头 -->
+<link rel="stylesheet" href="../assets/ds.css">
+<!-- ============================================================
+   v3a 配色 Refresh — 只覆盖色值，结构/类名/布局 100% 复用 v3 稿
+   方向：Refined Tech — Paper + Cobalt
+   · 浅色：暖纸白 base (#FAFAF7) + 深钴蓝 accent (#4F46E5)
+           + 降饱和琥珀/青瓷/朱砂
+   · 深色：蓝紫深海 base (#141620) + Indigo accent (#6366F1)
+   ============================================================ -->
+<style>
+  :root {
+    --bg-canvas:      #E6E4DC;
+    --bg-base:        #FAFAF7;
+    --bg-raised:      #FFFFFF;
+    --bg-subtle:      rgba(30, 25, 50, 0.06);
+    --bg-subtle-hi:   rgba(30, 25, 50, 0.10);
+    --bg-sunken:      rgba(30, 25, 50, 0.04);
+    --bg-glass:       rgba(252, 250, 245, 0.65);
+    --bg-glass-thick: rgba(252, 250, 245, 0.82);
+
+    --text-1:         #1A1822;
+    --text-2:         rgba(26, 24, 34, 0.60);
+    --text-2-strong:  rgba(26, 24, 34, 0.72);
+    --text-3:         rgba(26, 24, 34, 0.36);
+
+    --border:         rgba(30, 25, 50, 0.09);
+    --border-strong:  rgba(30, 25, 50, 0.16);
+    --hairline:       rgba(30, 25, 50, 0.07);
+
+    --accent:         #4F46E5;
+    --accent-hover:   #4338CA;
+    --accent-soft:    rgba(79, 70, 229, 0.10);
+    --accent-ring:    rgba(79, 70, 229, 0.30);
+
+    --warn:           #D97706;
+    --warn-text:      #8B4513;
+    --warn-soft:      rgba(217, 119, 6, 0.12);
+    --warn-line:      rgba(217, 119, 6, 0.30);
+
+    --danger:         #DC2626;
+    --danger-hover:   #B91C1C;
+    --danger-text:    #991B1B;
+    --danger-soft:    rgba(220, 38, 38, 0.10);
+    --danger-line:    rgba(220, 38, 38, 0.26);
+
+    --ok:             #0D9488;
+    --ok-text:        #0F766E;
+    --ok-soft:        rgba(13, 148, 136, 0.12);
+    --ok-line:        rgba(13, 148, 136, 0.28);
+  }
+
+  :root[data-theme="dark"] {
+    --bg-canvas:      #0B0D14;
+    --bg-base:        #141620;
+    --bg-raised:      #1E2130;
+    --bg-subtle:      rgba(255, 255, 255, 0.06);
+    --bg-subtle-hi:   rgba(255, 255, 255, 0.10);
+    --bg-sunken:      rgba(0, 0, 0, 0.25);
+    --bg-glass:       rgba(30, 33, 48, 0.70);
+    --bg-glass-thick: rgba(30, 33, 48, 0.85);
+
+    --text-1:         #F0EEF6;
+    --text-2:         rgba(240, 238, 246, 0.62);
+    --text-2-strong:  rgba(240, 238, 246, 0.74);
+    --text-3:         rgba(240, 238, 246, 0.34);
+
+    --border:         rgba(255, 255, 255, 0.08);
+    --border-strong:  rgba(255, 255, 255, 0.15);
+    --hairline:       rgba(255, 255, 255, 0.07);
+
+    --accent:         #6366F1;
+    --accent-hover:   #818CF8;
+    --accent-soft:    rgba(99, 102, 241, 0.18);
+    --accent-ring:    rgba(99, 102, 241, 0.38);
+
+    --warn:           #F59E0B;
+    --warn-text:      #FCD34D;
+    --warn-soft:      rgba(245, 158, 11, 0.16);
+    --warn-line:      rgba(245, 158, 11, 0.32);
+
+    --danger:         #EF4444;
+    --danger-hover:   #F87171;
+    --danger-text:    #FCA5A5;
+    --danger-soft:    rgba(239, 68, 68, 0.16);
+    --danger-line:    rgba(239, 68, 68, 0.32);
+
+    --ok:             #14B8A6;
+    --ok-text:        #5EEAD4;
+    --ok-soft:        rgba(20, 184, 166, 0.16);
+    --ok-line:        rgba(20, 184, 166, 0.32);
+  }
+</style>
+<style>
+  /* ==========================================================================
+     v3 探索稿（_ 前缀 = 未采纳草稿，不进页面索引、不被 v2 守卫扫描）
+     形态：单侧栏导航窗口 —— 「外置磁盘」是第一项（应用主角），
+           其下「设置」分组放五个分类；右栏按选中项切换内容。
+     组件零新增令牌：行 / 卡片 / 按钮 / 开关全部复用 v2 ds.css 既有类；
+     本 <style> 只写形态类（窗口尺寸、侧栏分组标题、磁盘页的内边距）。
+     ========================================================================== */
+
+  /* ==========================================================================
+     ⚠️⚠️ 代际归属声明（2026-09-30）—— 实现前必读，全文见 ../DESIGN-SPEC.md
+     ==========================================================================
+     本稿的视觉语言是 **Sequoia 一代**（自绘材质近似 + 强调色实底选中态 +
+     白卡描边）。运行环境可能是 **macOS 26（Tahoe, Liquid Glass）**。
+
+     ⇒ 本稿的定位是「**布局规格 + 结构规格 + 语义规格**」；
+       **像素规格只管 L2 自绘内容层**，L0/L1 的颜色与控件度量一律「归系统」，
+       看得到数值不代表实现要照抄——照抄就会出现「26 上看起来旧」或「与系统割裂」。
+
+     ── 四层归属（速查）────────────────────────────────────────────────
+      L0 材质/结构：窗口底、侧栏底（**含 26 的「浮岛」内缩与圆角**）、popover 底、
+                    工具栏、滚动边缘
+                    → 系统渲染。走 NSVisualEffectView / NSToolbar /
+                      `NSSplitViewItem(sidebarWithViewController:)`。**禁止自绘背景色。**
+      L1 系统控件：**工具栏项**、侧栏选择态、**按钮**、**开关**、圆角、焦点环
+                    → 系统渲染（**全部已交还**）。稿子只给**语义**（「列表选中」「主按钮」）
+                      + **颜色**；度量一律不给。**禁止硬编码度量。**
+      L2 自绘内容：版面尺寸、间距、字号、**语义色（琥珀/红/绿）**、**品牌强调色**、
+                    磁盘行结构、容量条、自有图标
+                    → 我们决定。给精确值。**26 与 14–15 同一个数，不随代际变。**
+
+     ── ✅ 定案（2026-09-30，用户先后三轮拍板）──────────────────────────────
+      1. **左栏交还系统**：`List(selection:)` + `.listStyle(.sidebar)`。
+         稿子把选中态画成**系统侧栏的样子（灰胶囊）**；颜色值仍是模拟值。
+      2. **头部走真系统工具栏**（第 10 轮），但**标题归右侧内容区顶部**（第 11 轮修正）：
+         `NSToolbar` 里只剩刷新一个 item（项序 `[.flexibleSpace, .refresh]`），
+         标题 / 副标走 `.sdetail__head`（内容区自己的头部）。
+         ⇒ 实测：那条水平带高 52pt，红绿灯 / 刷新 / 标题**三者垂直中心一致（= 26pt）**。
+      3. **侧栏宽按内容适应后锁定**：`minimumThickness = maximumThickness = 200`。
+         ✅ 第 10 轮遗留的「设 200、渲染 208」第 11 轮**查清：不是 bug** ——
+            系统把 200 当作**面板本体**宽度，再整体内缩 8pt ⇒ 视觉占位 8→208pt。
+            「渲染 208」量的正是含内缩的外沿。**实现侧照写 200 即可。**
+      4. **按钮交还系统**（第 10 轮改判，推翻第 9 轮的「保留自绘」）：
+         `.borderedProminent` + `.tint(品牌色)` / `.bordered` / `.borderless`。
+         ⇒ **颜色是唯一由我们给的东西**；形状 / 尺寸 / 玻璃全交系统。
+         ⇒ ⚠️ 高度会变小：30→28（large）、26→24（regular）。
+      5. **开关交还** `Toggle` + `.toggleStyle(.switch)`；把行内容做成 label 以**保住「整行可点」**。
+      6. **左栏画成 macOS 26 的悬浮玻璃形态**（第 11 轮）：四边内缩 8pt + 圆角 ≈10pt。
+         ❗ 实现侧**零工作**：`NSSplitViewItem(sidebarWithViewController:)` 在 26 上自动就是这样。
+      7. **折叠钮删除**（第 11 轮）：`toggleSidebar` / `sidebarTrackingSeparator` /
+         `canCollapse` 整体退役；原帧 3（折叠态）一并删除。
+      8. **侧栏行距撑开**（第 13 轮，2026-10-01，用户反馈「左栏选择项分布不均、
+         下边空了一大块」）：行高 **32 → 43.5pt**、分组间距 **18.5 → 约 28pt**。
+         ⇒ 逐像素实测：侧栏面板 504pt 高，而六项内容只占 209.5pt
+            ⇒ **底部空白 235pt = 47%**（「六项挤在顶上、下面一大片」）。
+         ⇒ 改后底部空白 157pt = **31%**，与「系统设置」同量级。
+         ⚠️ 这条**破例**于「行高整体交还系统」那条定调（用户知情并选择破例）；
+            稿子因此把 ds.css 的 `.sside__item` 高度从 28 覆盖成 44。
+         ⛔ 另外两条路已探明走不通、不要再试：①「收窗口高度」被三盘契约挡死
+            （预算 520−52−28 = 440 是死线，矮 1pt 就出滚动条）；
+            ②「把「关于」沉到底部」只是把空白从底端挪到中段，总空白一点没少。
+         实现口径：`listRowInsets`（⚠️ 内容 `.padding` 与环境键 `defaultMinListRowHeight`
+            对 sidebar 行**都无效**），见 `Sources/Views/DesignTokens.swift`。
+      对照图：.workbuddy/verify/v3-float-spike-{a,b}.png（浮岛形态 A/B 两派实测）
+              .workbuddy/verify/v3-system-buttons-{light,dark}.png（系统按钮五变体）
+              .workbuddy/verify/v3-sidebar-before-after.png（侧栏改前改后）
+
+     ── 禁止消费清单（实现侧红线，详见 DESIGN-SPEC.md §3）────────────────
+      R1 禁止用 --bg-glass / --bg-glass-thick 自绘窗口或面板底色
+         （官方："custom backgrounds … might overlay or interfere with Liquid Glass"）
+      R2 禁止给侧栏选中态写死颜色（见下方「左栏 = 系统侧栏」块；26 实测为灰胶囊）
+      R3 禁止给系统控件写死尺寸/圆角/内边距（"don't hard-code their layout metrics"）
+      R4 禁止自绘仿 Liquid Glass；需要玻璃按钮用系统 `glass` / `glassProminent`
+      R5 禁止写 `if #available(macOS 26)` 视觉分支
+
+     ── 定量参照（本机 macOS 26 实测，图均在 .workbuddy/verify/）─────────────
+      行高   侧栏 28pt / 分组卡片 44pt  ← 与本稿 .sside__item:28 .sline:44 **完全一致**
+             ⇒ 尺度层 26 与 14–15 通用，本稿尺寸一个字不用改
+      选中态 #dddcdb 中性灰胶囊（**不是**强调色）       ← 本稿已改画为灰胶囊（模拟值）
+      卡片底 #f7f7f7 浅灰、无描边、卡间 10pt 白间隙     ← 本稿画的是白底+描边（模拟值）
+      浮岛   侧栏面板四边各内缩 **8pt**、本体宽 **200pt**、圆角目视 **≈10pt**；
+             内容区左缘 **208pt**；**只有侧栏是浮岛，内容区贴边**
+             （`sidebar_float_spike` 实测：给内容区涂半透明色后，蓝色一直顶到窗口右缘）
+             图：.workbuddy/verify/v3-float-spike-{a,b}.png
+      参照图：.workbuddy/verify/syssettings-tahoe-real.png（真机，浮岛与灰胶囊同框）
+
+     ⇒ **几何能画，材质画不了**：浮岛的内缩 / 圆角 / 两块板的位置关系**可以**精确画
+       进稿子（已画，见下方 `.sside`）；但 Liquid Glass 的 vibrancy / 动态高光 /
+       滚动边缘是静态 HTML 表达不了的 —— 硬画只会诱导实现侧自绘，故一律不画，
+       一律以真机截图为参照。
+     ========================================================================== */
+
+  /* 窗口：沿用主窗口 800×520。
+     ⚠️⚠️ **第 11 轮结构再改**（用户 2026-09-30 三条反馈）：
+        ① 左栏画成 **macOS 26 的悬浮玻璃面板**（四边内缩 + 圆角 + 独立底），
+           不再是与内容区共享一条边、靠 0.5px 线分割的「贴边侧栏」；
+        ② 标题从工具栏**搬回右侧内容区顶部**（用户原话：「它应该显示在右侧区域的顶部」）；
+        ③ **折叠钮删除**（用户原话：「不需要了」）⇒ 工具栏里只剩红绿灯 + 刷新按钮。
+     实测依据（本轮新增 spike，可重跑）：`.build/probe/sidebar_float_spike/`
+        图：`.workbuddy/verify/v3-float-spike-{a,b}.png`
+        · 侧栏面板**四边各内缩 8pt**、本体宽 **200pt**；
+        · **内容区左缘 = 208pt**（= 8 内缩 + 200 面板）⇒ 面板右缘紧邻内容区，无额外缝隙；
+        · **只有侧栏是浮岛，内容区贴边**（内容区涂半透明色实测：一直顶到窗口右缘）；
+        · `allowsFullHeightLayout = true` ⇒ 面板**延伸进标题栏区域、红绿灯浮在面板上**
+          = 「系统设置」的同形（本稿取此派，即 spike 图 b）。 */
+  /* ---- 窗口本体：圆角按**本机实测**画 -----------------------------------
+     macOS 26 实测（alpha 通道量窗口轮廓，脚本 `.build/probe/window_radius_spike/`）：
+       · 普通标题栏窗口          = **17.5pt**
+       · 统一工具栏 unified 窗口 = **31.5pt**   ← 本稿画的是这一档（本产品用 unified 工具栏）
+     ❗**同机、同尺寸、只差工具栏配置，窗口圆角就差 14pt** ⇒ 窗口圆角不是常数，
+        连同一系统版本内都随配置变 ⇒ 更**绝不能写死**。真机由系统画，实现侧**读不到**。
+        完整口径见 ../assets/ds.css 末尾 §Z。 */
+  .win--v3 {
+    width: 800px; height: 520px; flex-direction: row;
+    border-radius: 31.5px;
+  }
+
+  /* ---- 红绿灯：浮在侧栏面板上（B 派实测位置）---- */
+  .win--v3 .traffic--float { left: 20px; top: 20px; }
+
+  /* ---- 左栏 = macOS 26 悬浮玻璃面板 -------------------------------------
+     ❗实现侧**不需要画任何一块**：`NSSplitViewItem(sidebarWithViewController:)`
+       在建 sidebar behavior 的 split item 时**自动**给这个形态（内缩 + 圆角 + 玻璃），
+       14–15 上自动是老形态；官方原文见 ../assets/ds.css 末尾 §Z.1 / §Z.2.1。
+       ⚠️ 官方同一段还明确：**不要在侧栏里放 NSVisualEffectView**（会把玻璃挡住，应移除）。
+     ⚠️ **面板圆角也不是常数**：本档（统一工具栏 + 全高）17.5pt；仅标题栏那一档只有 **6.5pt**；
+        `allowsFullHeightLayout = false` 直接变 **0pt**（浮岛消失）。同机同尺寸差 11pt
+        ⇒ 更**绝不能写死**。见 ../assets/ds.css 末尾 §Z.2.2。
+     ⇒ 本段是 **HTML 模拟值**，只为让稿子与真机同形；实现侧**禁消费**（R1 / R3 / R6）。 */
+  .win--v3 .sside {
+    flex: none;
+    width: 200px;
+    margin: 8px 0 8px 8px;        /* 左/上/底内缩 8pt（与真机系统设置实测一致：左 7.5~8 / 上 8） */
+    border-radius: 17.5px;        /* 本机实测 **17.5pt**，两条独立路径一致：
+                                     ① 真机「系统设置」2x 截图，逐行追面板左缘：35px@2x = 17.5pt
+                                     ② 自建 unified+FSCV+全高 spike：Rv=17.5 / Rh=17.0pt（两法吻合）
+                                     （上一轮写的 16.5pt 来自另一套阈值读法，低 1pt，已订正。）
+                                     ⚠️ 它**不等于**「窗口圆角 − 内距」：31.5 − 8 = 23.5 ≠ 17.5；
+                                        仅标题栏那一档 17.5 − 8 = 9.5 ≠ 6.5 —— **两档都不成立**。
+                                        浮岛圆角是系统自己的样式，**别反推、别「修正」**。
+                                     实现侧零成本（系统画），此处仅为出图同形。 */
+    padding: 44px 10px 12px;      /* 顶 44 ⇒ 第一项从窗口 y=52pt 起。
+                                     ⚠️ 第 13 轮订正：原写 34（⇒ y=42），于**第 10 轮把工具栏
+                                     装回窗口之后就成了 stale 值** —— 实测首项落在 y=52
+                                     （= 工具栏那条 52pt 安全带的底边），故改为 44 与真机同形。 */
+    background: var(--bg-sunken); /* 模拟值：真机面板为不透明 #f7f7f7 */
+    box-shadow: none;             /* 退役 v2 的「右侧 0.5px 分隔线」——浮岛不靠线分割 */
+  }
+
+  /* ---- 右栏：内容区（贴边，非浮岛）------------------------------------- */
+  .win--v3 .sdetail { padding: 0; }
+  /* 标题回到内容区顶部（用户第 2 条）。head 高取 52pt ⇒ 标题垂直中心 = 26pt，
+     **与红绿灯、右上刷新按钮在同一条水平基线上**（三者 centerY 一致，实测）。 */
+  .win--v3 .sdetail__head {
+    height: 52px;
+    padding: 0 12px 0 20px;
+    gap: 8px;
+    box-shadow: none;             /* 26 上这条硬线由系统 scroll edge effect 承担，稿里不画 */
+  }
+  .win--v3 .sdetail__title { flex: 0 0 auto; font-size: var(--fs-15); }
+  .win--v3 .sdetail__sub {
+    flex: 0 0 auto;
+    font-size: var(--fs-12); color: var(--text-2);
+    white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- 刷新按钮：工具栏（透明）尾端，浮在内容区右上角 ------------------- */
+  .win--v3 .v3refresh { position: absolute; right: 12px; top: 12px; z-index: 3; }
+
+  /* ---- 头部：本轮**不再有工具栏带** ------------------------------------------
+     ✅ 定案（第 11 轮，用户第 2 条）：标题回到**右侧内容区顶部**（见上方 `.sdetail__head`）。
+     ⇒ 窗口顶部那条水平带只剩两个元素，**都不需要我们排**：
+        · 左：红绿灯（系统画，浮在侧栏面板上）
+        · 右：刷新按钮（`NSToolbar` 的尾端 item）
+     实现侧仍走真 `NSToolbar`（第 10 轮定案不变），但工具栏里**只有刷新一个 item**
+     ⇒ 项序退化为 `[.flexibleSpace, .refresh]`。
+
+     ⚠️ **折叠钮已删除**（用户第 3 条「不需要了」）⇒ 随之整体退役的还有：
+        `NSToolbarItem.Identifier.toggleSidebar`、`.sidebarTrackingSeparator`、
+        `NSSplitViewItem.canCollapse`，以及第 10 轮实测出来的那张「钮位项序表」。
+        ⇒ 若日后仍想给用户留一条折叠路径：系统菜单 View ▸ 隐藏侧栏（⌃⌘S）
+          是 AppKit 自带的，不需要我们写任何一行代码。 */
+
+  /* 侧栏分组小标题（「设置」）：v2 的 .sside 是平铺的，v3 加分组语义。
+     第 13 轮：上间距 14 → **24**，与「行高 44」配套把导航块纵向撑开（理由见下方定案 8）。 */
+  .sside__group {
+    margin: 24px 8px 2px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+    color: var(--text-3); white-space: nowrap;
+  }
+
+  /* ⚠️ `.sdetail__head` / `.sdetail__title` / `.sdetail__sub` 三件套：
+     第 10 轮曾随「头部上真工具栏」整体退役，**第 11 轮随用户第 2 条恢复**
+     —— 标题归位到右侧内容区顶部。head / title 的原始定义本就在 ds.css 里
+     （head 52pt、title 15px），上面只覆盖了 v3 需要改的几处度量。 */
+
+  /* 磁盘页内容区：内边距对齐 v2 主窗口列表（上 12 / 左右 16 / 下 16），可滚动 */
+  .v3body--disks { padding: 12px 16px 16px; overflow-y: auto; }
+
+  /* 设置页内容区沿用 .sdetail__body 默认（20 / 20 / 16） */
+
+  /* ---- 设置行 hover（v2 稿漏了这一态） ----
+     行整行可点 ⇒ 必须有 hover 反馈（与 .row:hover 同语汇：--bg-subtle）。
+     .scard 自带 overflow:hidden ⇒ 行方角底被卡片圆角自然裁掉，零圆角处理。
+     ⚠️ 分隔线在 .sline + .sline 的 inset 阴影里，hover 底盖住 hairline 不算瑕疵
+     —— 系统设置的行高亮同样盖住分隔线。 */
+  .sline:hover { background: var(--bg-subtle); }
+
+  /* ==========================================================================
+     左栏 = 系统侧栏（✅ 2026-09-30 定案：**交还系统**）
+     ==========================================================================
+     实现侧走 `List(selection:)` + `.listStyle(.sidebar)`（或 AppKit source list 样式）。
+
+     ⇒ 行高 / 行距 / 圆角 / 选中色 / hover / 方向键 / 无障碍语义 **全部由系统给**：
+        · macOS 26 ：中性灰胶囊（实测 #dddcdb）+ 深色字
+        · macOS 14–15：用户强调色实底 + 白字
+        同一份代码，系统自己切 ⇒ 天然满足 R2 / R5，且**自动尊重用户的「强调色」偏好**
+        （用户可把系统强调色改成紫/橙/绿甚至石墨色，自绘版做不到）。
+     ⇒ 我们自绘版"一条都没做全"的：方向键导航、VoiceOver 选中语义、减动效适配。
+
+     ⚠️ 本稿把选中态**画成系统侧栏的样子（灰胶囊）**，只为让稿子与真机同形、
+        不让工程师照着一代前的视觉去实现；**颜色值仍是 HTML 模拟值，实现禁消费**。
+     ⚠️ 交还系统的代价（已接受）：左栏「顶部 52pt 对齐 / 1pt 行距 / 强调色选中」
+        三项自定义规格作废，改由系统决定；分组标题「设置」走系统 Section header。
+     ⚠️ `.sside` 自身底色（--bg-sunken）同属 L0 系统（侧栏材质），勿照抄。 */
+  .win--v3 { --side-sel: #dddcdb; --side-sel-hi: #d3d2d1; }
+  :root[data-theme="dark"] .win--v3 {
+    --side-sel: rgba(255, 255, 255, 0.12); --side-sel-hi: rgba(255, 255, 255, 0.18);
+  }
+  .win--v3 .sside__item { border-radius: var(--r-full); height: 44px; }  /* 系统：胶囊，非 6pt 方角 */
+  /* ⚠️ 第 13 轮：行高由 ds.css 的 28 覆盖为 **44**。
+     28 是「系统设置」那台机器的值，而**我们自己的侧栏在 26 上实测是 32pt**
+     —— 稿子与实现早就差了 4pt 而没人发现。第 13 轮按用户反馈（「左栏选择项分布不均、
+     下边空了一大块」）把行高撑到 44pt：底部空白占面板 **47% → 31%**。
+     实现侧不是设一个 height，而是 `listRowInsets(垂直 14)`（行高 = 内容 ≈15.5 + 2×14
+     ≈ 43.5pt）；稿子这边直接写 44 与真机同形。来龙去脉见
+     `Sources/Views/DesignTokens.swift` 的 `sidebarRowVerticalInset`。 */
+  .win--v3 .sside__item[aria-selected="true"] {
+    background: var(--side-sel); color: var(--text-1); font-weight: 500;
+  }
+  .win--v3 .sside__item[aria-selected="true"] svg { color: var(--text-1); }
+  .win--v3 .sside__item[aria-selected="true"]:hover { background: var(--side-sel-hi); }
+
+  /* ---- 卡片底（.scard，定义在 ds.css）：⚠️ 归属 L1，现值是 HTML 模拟 ----
+     白底 + 0.5px 描边 + 阴影。macOS 26 实测系统分组卡片 = #f7f7f7 浅灰、无描边、
+     卡与卡之间 10pt 白间隙 ⇒ 实现侧走「系统分组样式」，**勿照抄白底+描边**。 */
+
+  /* ---- 按钮（.btn / .iconbtn，定义在 ds.css）：✅ 第 10 轮改判——**交还系统** ----
+     用户 2026-09-30 第 4 条：「除了颜色这些，其他的最好都是使用适配的 macOS 系统
+     对应的组件风格来定义」⇒ **推翻第 9 轮「保留自绘」的结论**。
+
+     实现侧映射（五变体 → 系统样式 + 颜色注入，图 .workbuddy/verify/v3-system-buttons-light.png）：
+       primary          → `.buttonStyle(.borderedProminent)` + `.tint(品牌强调色)`
+       danger           → `.buttonStyle(.borderedProminent)` + `.tint(.red)`
+       outline          → `.buttonStyle(.bordered)`
+       neutral          → `.buttonStyle(.bordered)`
+       ghost            → `.buttonStyle(.borderless)`
+     ⇒ **颜色是唯一由我们给的东西**（正好对上用户那句「除了颜色」）——
+       强调色走 `AccentColor` 用户偏好，danger 走语义红，其余交给系统。
+     ⇒ 形状 / 圆角 / 玻璃 / hover / 按下反馈 / 焦点环 **全部由系统给**：
+        macOS 26 = 全胶囊 + Liquid Glass；14–15 = 传统圆角矩形。同一份代码系统自己切。
+
+     ⚠️ **尺寸会变小**（实测量 `NSHostingView.fittingSize`）：
+        我们的 medium 高 **30** → `.controlSize(.large)` 高 **28**
+        我们的 small  高 **26** → `.controlSize(.regular)` 高 **24**
+        ⇒ 磁盘行内按钮的高度、行高预算要**重量**，别沿用 `DesignTokens.Size` 里的旧值。
+
+     ❗ 仍**禁止**用 26-only API 手工追玻璃：`glassEffect` / `.buttonStyle(.glass)` /
+        `NSGlassEffectView` 全是 macOS 26.0+，本包最低 14 ⇒ 必然 if #available ⇒ 违反 R5。
+        **要两代都对，唯一的路是「用系统控件」。** */
+  .win--v3 .btn { border-radius: var(--r-full); }
+
+  /* ---- 圆角：⚠️ 归属 L1。ds.css 的 --r-* 是静态 px 常量，
+     官方要求 "rounded shapes that are concentric to their containers"。
+     ⇒ 实现侧**不要**把 `--r-sm: 6px` 之类直接写进代码，用同心圆角推导：
+         **子圆角 = 父容器圆角 − 子到父边缘的间距**（`ConcentricRectangle`）
+         · 嵌在卡片里的控件 ⇒ 父 = 卡片圆角
+         · 独立成行 / 浮在内容里的控件 ⇒ 父 = 窗口圆角
+     26 上窗口圆角变大 ⇒ 由公式自动跟随；写死常量就跟不上（R3）。
+     ⚠️ 自绘按钮同样走这条：这不是"追系统"，是让我们自己的件在窗口圆角变化时
+        保持同心的视觉秩序。 */
+
+  /* ---- 侧栏折叠按钮：❌ **第 11 轮删除**（用户 2026-09-30：「不需要了」）--------
+     删除范围（不是藏起来，是整体退役）：
+       · `NSToolbarItem.Identifier.toggleSidebar` 这个标准项
+       · `NSToolbarItem.Identifier.sidebarTrackingSeparator`（它的唯一用途就是让钮跟随侧栏）
+       · `NSSplitViewItem.canCollapse`
+       · 第 10 轮实测出来的「钮位项序表」与折叠态帧（原帧 3）—— 一并作废，不留在稿里当参考，
+         因为留着会让人以为"折叠是产品的一部分"，而实际形态测试证明：
+         钮在折叠后会跑到右上角（系统行为），这是当初最难自圆其说的一处。
+     ⇒ 侧栏宽度仍按用户第 2 条**锁定**（`minimumThickness = maximumThickness = 200`），
+       但「锁定」与「可折叠」是两件事：不折叠时锁定宽度更简单。
+     ⇒ AppKit 自带的 View ▸ 隐藏侧栏（⌃⌘S）仍在，零代码；要不要暴露给用户是后话。 */
+
+</style>
+</head>
+<body class="ds">
+<div class="wallpaper">
+<div class="doc">
+
+  <div class="artboard" style="gap:64px">
+
+    <!-- ============ 帧 1：磁盘页（默认选中「外置磁盘」） ============ -->
+    <div class="frame">
+      <div class="frame__label">v3 · 800 × 520 · 左栏导航 + 右栏磁盘列表（外置磁盘选中）</div>
+
+      <div class="win win--v3" role="img" aria-label="SafeOut v3 主窗口：左栏为磁盘与设置分类导航，右栏列出三块外置磁盘">
+        <!-- 红绿灯：浮在侧栏浮岛上（系统画，位置由系统给） -->
+        <div class="traffic traffic--float"><i></i><i></i><i></i></div>
+        <!-- 刷新：工具栏（透明）尾端 item —— 折叠钮已删，工具栏里现在只剩它一个 -->
+        <button class="iconbtn v3refresh" title="刷新磁盘列表" aria-label="刷新磁盘列表" data-i18n-attr="title:refreshDisks,aria-label:refreshDisks"><i data-i="refresh"></i></button>
+
+        <!-- 左：导航侧栏（macOS 26：四边内缩 8pt 的悬浮玻璃面板） -->
+        <div class="sside" role="listbox" aria-label="磁盘与设置导航">
+          <button class="sside__item" role="option" aria-selected="true"><i data-i="drive"></i><span data-i18n="externalDisksTitle">外置磁盘</span></button>
+          <div class="sside__group">设置</div>
+          <button class="sside__item" role="option" aria-selected="false"><i data-i="gear"></i><span data-i18n="settingsGroupGeneral">通用</span></button>
+          <button class="sside__item" role="option" aria-selected="false"><i data-i="sun"></i><span data-i18n="settingsGroupAppearance">外观</span></button>
+          <button class="sside__item" role="option" aria-selected="false"><i data-i="down"></i><span data-i18n="settingsGroupUpdates">更新</span></button>
+          <button class="sside__item" role="option" aria-selected="false"><i data-i="doc"></i><span data-i18n="settingsGroupDiagnostics">诊断</span></button>
+          <button class="sside__item" role="option" aria-selected="false"><i data-i="info"></i><span data-i18n="settingsGroupAbout">关于</span></button>
+        </div>
+
+        <!-- 右：磁盘列表（标题回到内容区顶部 —— 用户第 2 条） -->
+        <div class="sdetail">
+          <div class="sdetail__head">
+            <div class="sdetail__title" data-i18n="externalDisksTitle">外置磁盘</div>
+            <span class="sdetail__sub" data-i18n="ds.titlebar.disks3">3 块</span>
+          </div>
+          <div class="sdetail__body v3body--disks">
+            <div class="disklist">
+
+              <!-- ① 有占用（证据展开） -->
+              <div class="row row--busy" data-expandable>
+                <div class="row__icon">
+                  <div class="diskicon diskicon--busy"><i data-i="drive"></i></div>
+                </div>
+                <div class="row__main">
+                  <div class="row__head">
+                    <div class="row__id">
+                      <div class="row__nameline">
+                        <span class="row__name">Samsung T7</span>
+                        <span class="row__fs">1 TB</span>
+                      </div>
+                      <div class="row__meta" data-i18n="ds.sample.cap.usedFreeA">已用 <b>300 GB</b> · 剩余 <b>700 GB</b></div>
+                    </div>
+                    <div class="row__act">
+                      <button class="btn btn--danger btn--sm">
+                        <i data-i="eject"></i><span data-i18n="closeAndEject">关闭并推出</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="meter">
+                    <div class="meter__track"><div class="meter__fill" style="width:30%"></div></div>
+                    <span class="meter__pct">30%</span>
+                  </div>
+                  <div class="row__evid">
+                    <div class="evid evid--busy">
+                      <div class="evid__head">
+                        <i data-i="warn"></i>
+                        <span class="evid__count" data-i18n="ds.occ.appsUsingA">2 个程序正在占用</span>
+                        <button class="evid__hint" data-toggle-evid aria-expanded="true"
+                                style="border:0;background:transparent;font:inherit;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:3px;">
+                          <span data-i18n="collapseList">收起清单</span><i data-i="chevronDown"></i>
+                        </button>
+                      </div>
+                      <div class="evid__chips">
+                        <span class="chip"><span class="appicon appicon--finder"><i data-i="folder"></i></span><span class="chip__name">Finder</span></span>
+                        <span class="chip"><span class="appicon appicon--photo"><i data-i="photo"></i></span><span class="chip__name" data-i18n="ds.app.imageCapture">图像捕捉</span></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ② 可安全推出 -->
+              <div class="row">
+                <div class="row__icon">
+                  <div class="diskicon"><i data-i="drive"></i></div>
+                </div>
+                <div class="row__main">
+                  <div class="row__head">
+                    <div class="row__id">
+                      <div class="row__nameline">
+                        <span class="row__name">WD Blue</span>
+                        <span class="row__fs">500 GB</span>
+                      </div>
+                      <div class="row__meta" data-i18n="ds.sample.cap.usedFreeB">已用 <b>120 GB</b> · 剩余 <b>380 GB</b></div>
+                    </div>
+                    <div class="row__act">
+                      <button class="btn btn--primary btn--sm"><i data-i="eject"></i><span data-i18n="eject">推出</span></button>
+                    </div>
+                  </div>
+                  <div class="meter">
+                    <div class="meter__track"><div class="meter__fill" style="width:24%"></div></div>
+                    <span class="meter__pct">24%</span>
+                  </div>
+                  <div class="row__evid">
+                    <div class="evid evid--safe">
+                      <span class="statusline"><i data-i="check"></i><span data-i18n="safeToEjectConclusion">没有程序占用，可以安全推出</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ③ 可安全推出 -->
+              <div class="row">
+                <div class="row__icon">
+                  <div class="diskicon"><i data-i="drive"></i></div>
+                </div>
+                <div class="row__main">
+                  <div class="row__head">
+                    <div class="row__id">
+                      <div class="row__nameline">
+                        <span class="row__name">Backup SSD</span>
+                        <span class="row__fs">2 TB</span>
+                      </div>
+                      <div class="row__meta" data-i18n="ds.sample.cap.usedFreeC">已用 <b>1.4 TB</b> · 剩余 <b>600 GB</b></div>
+                    </div>
+                    <div class="row__act">
+                      <button class="btn btn--primary btn--sm"><i data-i="eject"></i><span data-i18n="eject">推出</span></button>
+                    </div>
+                  </div>
+                  <div class="meter">
+                    <div class="meter__track"><div class="meter__fill" style="width:70%"></div></div>
+                    <span class="meter__pct">70%</span>
+                  </div>
+                  <div class="row__evid">
+                    <div class="evid evid--safe">
+                      <span class="statusline"><i data-i="check"></i><span data-i18n="safeToEjectConclusion">没有程序占用，可以安全推出</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 帧 2：设置页（选中「通用」） ============ -->
+    <div class="frame">
+      <div class="frame__label">v3 · 800 × 520 · 右栏切换为设置内容（通用选中）</div>
+
+      <div class="win win--v3" role="img" aria-label="SafeOut v3 主窗口：左栏选中通用，右栏显示通用设置">
+        <!-- 红绿灯：浮在侧栏浮岛上 -->
+        <div class="traffic traffic--float"><i></i><i></i><i></i></div>
+
+        <!-- 左：导航侧栏（macOS 26：四边内缩 8pt 的悬浮玻璃面板） -->
+        <div class="sside" role="listbox" aria-label="磁盘与设置导航">
+          <button class="sside__item" role="option" aria-selected="false"><i data-i="drive"></i><span data-i18n="externalDisksTitle">外置磁盘</span></button>
+          <div class="sside__group">设置</div>
+          <button class="sside__item" role="option" aria-selected="true"><i data-i="gear"></i><span data-i18n="settingsGroupGeneral">通用</span></button>
+          <button class="sside__item" role="option" aria-selected="false"><i data-i="sun"></i><span data-i18n="settingsGroupAppearance">外观</span></button>
+          <button class="sside__item" role="option" aria-selected="false"><i data-i="down"></i><span data-i18n="settingsGroupUpdates">更新</span></button>
+          <button class="sside__item" role="option" aria-selected="false"><i data-i="doc"></i><span data-i18n="settingsGroupDiagnostics">诊断</span></button>
+          <button class="sside__item" role="option" aria-selected="false"><i data-i="info"></i><span data-i18n="settingsGroupAbout">关于</span></button>
+        </div>
+
+        <div class="sdetail">
+          <div class="sdetail__head">
+            <div class="sdetail__title" data-i18n="settingsGroupGeneral">通用</div>
+          </div>
+          <div class="sdetail__body">
+            <div class="scard">
+              <div class="sline">
+                <div class="sline__text">
+                  <div class="sline__label" data-i18n="appLanguage">语言</div>
+                  <div class="sline__desc" data-i18n="ds.language.followSystemHint">跟随系统语言（当前：简体中文）</div>
+                </div>
+                <div class="sline__control">
+                  <span class="popup" role="button" aria-haspopup="listbox" aria-expanded="false" aria-label="语言" data-i18n-attr="aria-label:appLanguage">
+                    <span data-i18n="followSystemLanguage">跟随系统</span>
+                    <i data-i="chevronDown"></i>
+                  </span>
+                </div>
+              </div>
+
+              <div class="sline" style="background:var(--bg-subtle)">
+                <div class="sline__text">
+                  <div class="sline__label" data-i18n="launchAtLogin">登录时启动</div>
+                  <div class="sline__desc" data-i18n="launchAtLoginFootnote">开机后自动驻留菜单栏，插盘即可用。</div>
+                </div>
+                <div class="sline__control">
+                  <button class="switch" role="switch" aria-checked="true" aria-label="登录时启动" data-i18n-attr="aria-label:launchAtLogin"></button>
+                </div>
+              </div>
+              <!-- ↑ 该行内联底色 = hover 态模拟（探索稿用静态图展示交互态）；
+                   真实效果由上方 `.sline:hover` 规则承载 -->
+
+              <div class="sline">
+                <div class="sline__text">
+                  <div class="sline__label" data-i18n="takeOverFinderEject">推出时提醒占用</div>
+                  <div class="sline__desc" data-i18n="takeOverFinderEjectFootnote">在访达中点推出、但磁盘正被占用时，在菜单栏提醒你谁在占用，可一键关闭并推出。</div>
+                </div>
+                <div class="sline__control">
+                  <button class="switch" role="switch" aria-checked="false" aria-label="推出时提醒占用" data-i18n-attr="aria-label:takeOverFinderEject"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</div>
+<!-- 运行时：v3 自己的副本（与 v2 逐字节相同，仅抬头改为 v3） -->
+<script src="../assets/ds.js"></script>
+<!-- 语言包：**单源引用 v2**。i18n.js 是 Tools/build_i18n.py 的生成物，
+     生成器路径写死 v2 ⇒ 复制到 v3 必然静默过期（且其指纹守卫只盯 v2）。
+     共享数据不做版本分叉，见 ../DESIGN-SPEC.md §12 资源处置表。 -->
+<script src="../../v2/assets/i18n.js"></script>
+</body>
+</html>

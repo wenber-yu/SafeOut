@@ -38,8 +38,16 @@ enum OccupancyResult: Sendable, Equatable {
 class OccupancyDetector: @unchecked Sendable {
     static let shared = OccupancyDetector()
 
+    /// 磁盘映像（DMG）占用来源。`lsof` 看不到的「访达挂载的 DMG」由它补上
+    /// （`hdiutil info` 无需完全磁盘访问，见 ``DiskImageOccupancyProvider``）。
+    ///
+    /// 开放测试注入：替身返回 `nil`（获取失败）时行为与引入本属性**之前**逐字一致。
+    let diskImageProvider: DiskImageOccupancyProvider
+
     /// 开放给测试注入 mock 子类；生产环境一律使用 `shared`。
-    init() {}
+    init(diskImageProvider: DiskImageOccupancyProvider = .shared) {
+        self.diskImageProvider = diskImageProvider
+    }
 
     private static let logger = Logger(subsystem: "com.safeout.app", category: "Occupancy")
 
@@ -119,22 +127,63 @@ class OccupancyDetector: @unchecked Sendable {
         let authorized = Self.isFullDiskAccessAuthorized()
 
         guard let output = await Self.lsofOutput(mountPath: mountPath) else {
-            // 子进程启动失败/超时：按授权状态保守兜底，不把失败当「安全」。
-            return authorized ? .none : .needsFullDiskAccess
+            // lsof「没跑成」（启动失败 / 超时 / **stderr 非空**）：**绝不能**落成 `.none`。
+            //
+            // 这里曾经返回 `.none`（旁边注释还写着「不把失败当安全」，实现却与注释相反）
+            // ⇒ 只要 lsof 没跑成，`DiskRowState(.none)` 就把行渲染成「可安全推出」。
+            // 这正是用户报的「拷贝进行中，两块盘都显示可安全推出」：拷贝期间 lsof 偶发
+            // 拿不到结果（路径瞬时失效、或子进程被杀），于是失败被静默读成了安全。
+            //
+            // ⚠️ 上一版又把判据收得太紧（「退出码非 0 ⇒ 没跑成」），于是**合法卷但无匹配**
+            // （退出码同样是 1、stderr 0 字节）也被当成失败 ⇒ 用户报「为什么现在有的硬盘
+            // 会显示占用未知」。现在的判据是 stderr 是否为空，实测依据见
+            // ``lsofResult(_:)`` —— 那条路不会走到这里（stderr 为空时返回空字符串）。
+            //
+            // 走到这里时按授权状态区分兜底，两条**都不返回 `.none`**：
+            // - 已授权 ⇒ `.unknown`：环境/工具层面的失败，用户无从下手，只能显式说「不知道」；
+            // - 未授权 ⇒ `.needsFullDiskAccess`：用户可补救的权限缺口，引导去系统设置授权。
+            return authorized ? .unknown : .needsFullDiskAccess
         }
 
         let processes = Self.parseLsof(output)
-        if !processes.isEmpty {
-            // 能列出进程即证明已授权，直接返回占用列表（核心价值）。
+        // 合并磁盘映像占用：`lsof` 看不到 `diskimagesiod`（uid `_diskimagesiod`，无 FDA 时
+        // 跨 uid 不可见），但 `hdiutil info` 无需授权就能列出「backing 文件在本卷上」的映像。
+        // 这正是「访达挂载的 DMG 挡推出、应用却显示无占用」（2026-10-13 事故）的修复点。
+        let images = await diskImageProvider.images() ?? []
+        let merged = Self.merging(lsof: processes, diskImages: images, mountPath: mountPath)
+        if !merged.isEmpty {
+            // 能列出占用者即证明已授权（或占用来自 hdiutil，无需授权），直接返回（核心价值）。
             //
             // 这里必须补一步「应用身份解析」：lsof 的 `c` 字段只是可执行名（`IMVIDEO`），
             // 用户在 Dock 里看到的是应用显示名（`Bunny`）。解析放在检测阶段（每轮一次）
             // 而不是视图渲染阶段，既避免每帧重复解析，也让下游（含纯函数文案层）拿到的
             // 就是可直接展示的完整模型。详见 ``ProcessAppResolver``。
-            return .occupied(await ProcessAppResolver.enrich(processes))
+            // （磁盘映像条目在 enrich 里被原样跳过，见 ``ProcessAppResolver/enrich(_:)``。）
+            return .occupied(await ProcessAppResolver.enrich(merged))
         }
-        // lsof 空行：已授权 → 确实无占用（可安全推出）；未授权 → 提示授权。
+        // lsof 空行且卷上无 DMG：已授权 → 确实无占用（可安全推出）；未授权 → 提示授权。
         return authorized ? .none : .needsFullDiskAccess
+    }
+
+    /// 把 lsof 进程列表与磁盘映像列表合并成统一的占用者列表（纯函数，单测靶子）。
+    ///
+    /// 规则：
+    /// 1. 映像先按「backing 文件在本卷上」过滤（``DiskImageInfoParser/backing(under:of:)``）；
+    /// 2. 卷上有映像时，剔除 lsof 结果里的 `diskimagesiod` —— 它只是系统 holder 进程，
+    ///    用户无权终止它（EPERM），列出来只会误导；映像条目才是「可关闭」的那个；
+    /// 3. 进程在前、映像在后（用户认知里「程序」优先）。
+    static func merging(
+        lsof processes: [OccupyingProcess],
+        diskImages images: [AttachedDiskImage],
+        mountPath: String
+    ) -> [OccupyingProcess] {
+        let imagesOnVolume = DiskImageInfoParser.backing(under: mountPath, of: images)
+        guard !imagesOnVolume.isEmpty else { return processes }
+        let imageEntries = imagesOnVolume.map {
+            OccupyingProcess.diskImage(imagePath: $0.imagePath, device: $0.device)
+        }
+        let realProcesses = processes.filter { $0.processName != "diskimagesiod" }
+        return realProcesses + imageEntries
     }
 
     /// 同步版本，仅供 `--diagnostics` 一次性自检使用。
@@ -154,13 +203,48 @@ class OccupancyDetector: @unchecked Sendable {
         }
         let authorized = Self.isFullDiskAccessAuthorized()
         guard let output = Self.lsofOutputSync(mountPath: mountPath) else {
-            return authorized ? .none : .needsFullDiskAccess
+            // 与异步 ``detect(mountPath:)`` 同款语义：lsof 没跑成绝不落 `.none`（见那里的长注释）。
+            return authorized ? .unknown : .needsFullDiskAccess
         }
         let processes = Self.parseLsof(output)
-        if !processes.isEmpty {
-            return .occupied(ProcessAppResolver.enrich(processes))
+        // 与异步 ``detect(mountPath:)`` 同款合并（见那里的注释）。
+        let images = diskImageProvider.imagesSync() ?? []
+        let merged = Self.merging(lsof: processes, diskImages: images, mountPath: mountPath)
+        if !merged.isEmpty {
+            return .occupied(ProcessAppResolver.enrich(merged))
         }
         return authorized ? .none : .needsFullDiskAccess
+    }
+
+    /// 把一次 lsof 子进程的收尾结果归约成「有没有跑成」（纯函数，单测靶子）。
+    ///
+    /// - 返回 `nil` ⇒ **没跑成**（启动失败 / 超时 / lsof 往 stderr 报了错）；
+    /// - 返回字符串 ⇒ 跑成了，值就是 stdout。**空字符串是有效结果**（= 没有匹配，即「无占用」）。
+    ///
+    /// ## 判据是「stderr 是否为空」，**不是退出码**（2026-10-27 实测更正）
+    ///
+    /// 上一版把「退出码非 0」一律判成「没跑成」，结果是**任何 lsof 列不出东西的盘都显示
+    /// 「占用未知」**（用户报「为什么现在有的硬盘会显示占用未知」）。实测证据如下：
+    ///
+    /// | 场景 | 退出码 | stdout | stderr |
+    /// |---|---|---|---|
+    /// | 失效路径 `/Volumes/NoSuchVol` | 1 | 0 字节 | **539 字节**（`lsof: status error on …: No such file or directory` + usage） |
+    /// | 合法卷但无匹配 `/Volumes/wenbo-data`（已挂载 HFS+） | 1 | 0 字节 | **0 字节** |
+    /// | 合法子目录无匹配 `/Volumes/wenbo-data/Applications` | 1 | 0 字节 | **0 字节** |
+    /// | 正常有占用 `/Volumes/拍摄项目资料1` | 0 | 1496 字节 | 0 字节 |
+    /// | 正常有占用 `/` | 0 | 2568063 字节 | 0 字节 |
+    ///
+    /// ⇒ **`lsof` 的退出码 1 是二义的**：它既表示「没有列出任何文件」（正常结束），
+    /// 也表示真错误。**唯一可靠的区分信号是 stderr 是否为空**：
+    /// - stderr 非空 ⇒ lsof 自己说了有问题，按「没跑成」处理（上层按授权状态兜底，
+    ///   绝不落成「无占用」—— 那样 UI 会显示「可安全推出」）；
+    /// - stderr 为空 ⇒ lsof 正常跑完了，stdout 为空只是「没有匹配」。
+    ///
+    /// 退出码仍然保留在 ``SubprocessResult`` 里（排查与测试要用），但**不参与判定**。
+    static func lsofResult(_ result: SubprocessResult?) -> String? {
+        guard let result else { return nil }
+        guard result.errorOutput.isEmpty else { return nil }
+        return result.output
     }
 
     /// 同步执行 lsof 并读取全部输出（diagnostics 使用）。
@@ -183,14 +267,17 @@ class OccupancyDetector: @unchecked Sendable {
         while !run.isFinished, Date() < deadline {
             RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.05))
         }
-        return run.output
+        // 判据看 stderr 而不是退出码（见 ``lsofResult(_:)``）：合法卷无匹配时退出码也是 1，
+        // 但 stderr 为 0 字节 —— 那是「正常跑完、没有占用」，不能落成「没跑成」。
+        return Self.lsofResult(run.result)
     }
 
     // MARK: - lsof
 
     /// 执行 lsof 并取回输出。
     ///
-    /// - Returns: lsof 的原始输出；`nil` = 没拿到（启动失败或超时）。
+    /// - Returns: lsof 的原始 stdout；`nil` = **没跑成**（启动失败 / 超时 / stderr 非空）。
+    ///   空字符串是有效结果（= 正常跑完且无匹配，即「确实无占用」）。
     nonisolated private static func lsofOutput(mountPath: String) async -> String? {
         await withCheckedContinuation { (continuation: CheckedContinuation<String?, Never>) in
             // `-Fpcn0`：机器可读输出（p=PID、c=命令名、n=路径），记录以 NUL 分隔。
@@ -200,14 +287,16 @@ class OccupancyDetector: @unchecked Sendable {
             // 而不带 `-X` 时**会**列出「mmap 之后已 close 掉 fd」的进程（2026-09-09 实测）。
             // 那正是最隐蔽的一类占用者 ⇒ 加 `-X` 等于把它们从结果里抹掉。
             //
-            // `run` 不需要调用方持有：``SubprocessOutput/start()`` 里的两个闭包
-            // （readabilityHandler 与超时块）都强引用 self，实例会活到收尾为止。
+            // `run` 不需要调用方持有：``SubprocessOutput/start()`` 里的闭包
+            // （两个 readabilityHandler 与超时块）都强引用 self，实例会活到收尾为止。
             let run = SubprocessOutput(
                 executableURL: URL(fileURLWithPath: "/usr/sbin/lsof"),
                 arguments: ["-Fpcn0", mountPath],
                 timeout: lsofTimeout
-            ) { output in
-                continuation.resume(returning: output)
+            ) { result in
+                // stdout 与 stderr 一起交给纯函数归约（见 ``lsofResult(_:)``）：
+                // 空 stdout 的歧义由 stderr 是否为空来消解，**退出码不参与判定**。
+                continuation.resume(returning: Self.lsofResult(result))
             }
             run.start()
         }
@@ -285,7 +374,28 @@ class OccupancyDetector: @unchecked Sendable {
 
 // MARK: - 子进程输出收集
 
-/// 跑一次子进程，把它 stdout 的**全部**输出收集回来，**并保证一定收尾**。
+/// 一次子进程跑完之后可用的**全部**证据。
+///
+/// 三个字段同生共死：正常收尾时三样都有值（`output` / `errorOutput` 都可以是空字符串），
+/// 启动失败 / 超时时整个结果为 `nil`（见 ``SubprocessOutput``）。
+///
+/// **为什么要把 stderr 一起交出来**：lsof 的退出码 1 是二义的 —— 合法卷「无匹配」
+/// 与「路径失效」都会退 1、stdout 都 0 字节，**只有 stderr 能区分**
+/// （实测表见 ``OccupancyDetector/lsofResult(_:)``）。把 stderr 丢掉，上层就只能
+/// 靠退出码猜，而那正是「有的盘显示占用未知」这个回归的来源。
+struct SubprocessResult: Sendable, Equatable {
+
+    /// 标准输出（按 UTF-8 解码；空字符串是有效结果）。
+    let output: String
+
+    /// 子进程退出码。**保留给排查与测试，不作为「跑成没跑成」的判定依据**。
+    let exitStatus: Int32
+
+    /// 标准错误（按 UTF-8 解码）。**空字符串 = 子进程没有报错**，这是本次修复的判据。
+    let errorOutput: String
+}
+
+/// 跑一次子进程，把它 stdout 与 stderr 的**全部**输出收集回来，**并保证一定收尾**。
 ///
 /// ## 为什么要有这个类型（它取代了「阻塞读管道 + 事后 terminate」的写法）
 ///
@@ -324,35 +434,90 @@ class OccupancyDetector: @unchecked Sendable {
 ///   **既不依赖被测进程、也不依赖 Swift 并发线程池**，所以超时**真的会发生**；
 /// - 超时后 `terminate()` 杀掉子进程，并以 `nil` 收尾。
 ///
+/// ## 退出码与 stderr（2026-10-27 修订）
+///
+/// 自然收尾要**同时**满足「两条管道都 EOF」与「进程真的结束」（由 `terminationHandler` 给出），
+/// 前者保证输出收齐、后者保证退出码可信（`Process.terminationStatus` 只在进程结束后有效）。
+///
+/// **判定「跑成没跑成」的权威信号是 stderr 是否为空，不是退出码**：
+/// `lsof <合法卷>`（无匹配）与 `lsof <失效路径>` 的 stdout 都是 0 字节、退出码都是 1，
+/// 只有「失效路径会把错误写进 stderr」能区分两者（实测表见
+/// ``OccupancyDetector/lsofResult(_:)``）。退出码仍随结果交出，但只作排查线索。
+///
+/// ⚠️ **上一版误把「退出码非 0」当成唯一判据**，于是所有「列不出占用者」的合法盘都被
+/// 判成检测失败、显示「占用未知」—— 这是本次要修掉的回归，别再改回去。
+///
 /// **压测对照**：同样 100 次（含 1.7MB 输出的根卷），本类型全部 ≤ 0.36s 返回；
 /// 旧写法在第 10 次左右必挂。
 final class SubprocessOutput: @unchecked Sendable {
 
     private let lock = NSLock()
     private let task = Process()
-    private let pipe = Pipe()
+
+    /// stdout 与 stderr **各自一条独立管道**。
+    ///
+    /// 上一版把 stderr 直接丢给 `FileHandle.nullDevice`，理由是「它会和 stdout 抢 64KB 缓冲，
+    /// 填满之后子进程阻塞在写、父进程阻塞在读」。现在两路都走 `readabilityHandler`
+    /// （**回调式排空、不阻塞任何线程**），所以「写满 → 阻塞」这个前提不成立 ——
+    /// 而 stderr 又是 lsof 成败的唯一可靠判据（见 ``SubprocessResult`` 的说明），必须收。
+    private let outputPipe = Pipe()
+    private let errorPipe = Pipe()
+
     private let timeout: TimeInterval
-    private let completion: (String?) -> Void
-    private var buffer = Data()
+    private let completion: (SubprocessResult?) -> Void
+    private var outputBuffer = Data()
+    private var errorBuffer = Data()
     private var finished = false
+
+    /// stdout 管道是否已到 EOF（= 标准输出收齐）。
+    private var sawOutputEOF = false
+
+    /// stderr 管道是否已到 EOF（= 标准错误收齐）。
+    ///
+    /// 两条管道**都要**收尾才能定案：否则可能「stdout 收齐了、stderr 还在路上」，
+    /// 这时按空 stderr 判「跑成」会把一次真错误读成「无占用」。
+    private var sawErrorEOF = false
+
+    /// 子进程是否已**真正结束**。**只有它为真时 ``termination`` 才有效**。
+    private var processEnded = false
+
+    /// 子进程退出码。仅在 ``processEnded`` 为真时有意义
+    ///（`Process.terminationStatus` 只在进程真的结束后才有效，见 ``start()``）。
+    private var termination: Int32?
 
     /// 超时**已发生**。置位之后，**任何**收尾路径都只能按「没拿到」（`nil`）走。
     ///
     /// ⚠️ 为什么必须有这个位（2026-09-20 CI 实测撞到一次）：超时块里先 `terminate()`
-    /// 再 `complete(nil)`，而 `terminate()` 会让管道**立刻 EOF** ⇒ `readabilityHandler`
-    /// 收到空 chunk ⇒ `completeFromBuffer()` 以**「输出收齐了」**收尾。
-    /// 这与超时块的 `complete(nil)` 是**竞态**：谁先到谁生效。
+    /// 再按「没拿到」收尾，而 `terminate()` 会让管道**立刻 EOF** ⇒ `readabilityHandler`
+    /// 收到空 chunk ⇒ 收尾条件以**「输出收齐了」**成立。
+    /// 这与超时块自己的「没拿到」是**竞态**：谁先到谁生效。
     /// EOF 先到时调用方拿到的是 **空字符串**而不是 `nil` ⇒
     /// 「没拿到」被读成「拿到了、但输出为空」，上层会按「没有占用进程」而不是「不知道」处理
-    /// —— **症状与真问题逐字相同**。
+    /// —— **症状与真问题逐字相同**（2026-10-27 修的就是这一类：失败被静默读成「可安全推出」）。
     ///
     /// ⚠️ 它只在**负载下**偶发：本地一次都没复现，CI 上 434 条测试并发时炸了一次
     /// （`SubprocessOutputTests.超时是真超时而不是装饰` 拿到 `""`）。
-    /// ⇒ 判据放在**同一把锁里**（见 `complete`），不靠「先到先得」。
+    /// ⇒ 判据放在**同一把锁里**（见 ``complete(_:)``），不靠「先到先得」。
+    /// output / exitCode / stderr 也同锁一起落成 `nil`。
     private var timedOut = false
 
-    /// 结束后可读到输出；`nil` = 没拿到（启动失败或超时）。
-    private(set) var output: String?
+    /// 收尾后的完整结果；`nil` = 没拿到（启动失败 / 超时）。
+    ///
+    /// **三样证据在同一把锁里落定**（见 ``complete(_:)``），不会出现
+    /// 「stdout 有值但 stderr 还是初值」这种半截状态。
+    private(set) var result: SubprocessResult?
+
+    /// 结束后可读到 stdout；`nil` = 没拿到（启动失败 / 超时）。
+    var output: String? { result?.output }
+
+    /// 结束后可读到子进程退出码；`nil` = **退出码无意义**（启动失败 / 超时 / 还没收尾）。
+    var exitStatus: Int32? { result?.exitStatus }
+
+    /// 结束后可读到 stderr；`nil` = 没拿到（启动失败 / 超时）。
+    ///
+    /// `""` 是有效值，表示「子进程没有报错」—— 判定「跑成没跑成」靠的就是它
+    /// （见 ``OccupancyDetector/lsofResult(_:)``）。
+    var errorOutput: String? { result?.errorOutput }
 
     /// ⚠️ 超时定时器**不共用全局队列**。
     ///
@@ -372,43 +537,81 @@ final class SubprocessOutput: @unchecked Sendable {
         return finished
     }
 
+    /// - Parameter completion: 收尾回调，参数是完整的 ``SubprocessResult``：
+    ///   `nil` = 没拿到（启动失败 / 超时）；非 `nil` 时 stdout / stderr / 退出码
+    ///   在**同一把锁里**一起落定。**判定「跑成没跑成」看 `errorOutput` 是否为空**，
+    ///   不是退出码（见 ``OccupancyDetector/lsofResult(_:)``）。
     init(
         executableURL: URL,
         arguments: [String],
         timeout: TimeInterval,
-        completion: @escaping @Sendable (String?) -> Void
+        completion: @escaping @Sendable (SubprocessResult?) -> Void
     ) {
         self.timeout = timeout
         self.completion = completion
         task.executableURL = executableURL
         task.arguments = arguments
-        task.standardOutput = pipe
-        // **stderr 不进管道**：它会和 stdout 抢那 64KB 缓冲，
-        // 填满之后子进程阻塞在写、父进程阻塞在读，又是一处死锁。直接丢弃。
-        task.standardError = FileHandle.nullDevice
+        task.standardOutput = outputPipe
+        // stderr 也必须收（见 ``outputPipe`` 的说明）：lsof 的成败判据就在它里面。
+        // 两条管道各自由一个 `readabilityHandler` 排空，不存在「抢同一块缓冲」的问题。
+        task.standardError = errorPipe
     }
 
     /// 启动。**一定**会通过 `completion` 回调恰好一次（正常结束或超时）。
     ///
-    /// 调用方**不需要**持有本实例：`start()` 里的两个闭包都强引用 self，
+    /// 调用方**不需要**持有本实例：`start()` 里的三个闭包都强引用 self，
     /// 实例会一直活到收尾；收尾时 `readabilityHandler` 置 nil，循环引用随之断开。
     func start() {
+        // ⚠️ **必须在 `run()` 之前设好**：`terminationHandler` 在进程**已经退出**后才设，
+        //    有可能永远收不到回调（「刚开始就退出」的进程会漏掉，见 `SubprocessAwait` 的同款说明）。
+        //    漏掉就意味着 `processEnded` 永远为 false ⇒ 收尾只能靠超时 ⇒ 一次**成功**的检测
+        //    会被误判成「没跑成」。
+        //    退出码只在这里读（`Process.terminationStatus` 只有进程真的结束后才有效），
+        //    并**在同一把锁里**与「是否收尾」一起落定（见 ``tryFinish()``）。
+        task.terminationHandler = { [self] finished in
+            lock.lock()
+            processEnded = true
+            termination = finished.terminationStatus
+            lock.unlock()
+            tryFinish()
+        }
+
         do {
             try task.run()
         } catch {
+            // 启动失败 ⇒ 没有任何可信证据，按「没跑成」收尾（整个结果为 `nil`）。
             complete(nil)
             return
         }
 
-        pipe.fileHandleForReading.readabilityHandler = { [self] handle in
+        outputPipe.fileHandleForReading.readabilityHandler = { [self] handle in
             let chunk = handle.availableData
             if chunk.isEmpty {
-                // EOF：写端全部关闭，输出收齐了
-                completeFromBuffer()
+                // EOF：写端全部关闭，标准输出收齐了
+                lock.lock()
+                sawOutputEOF = true
+                lock.unlock()
+                tryFinish()
                 return
             }
             lock.lock()
-            buffer.append(chunk)
+            outputBuffer.append(chunk)
+            lock.unlock()
+        }
+
+        errorPipe.fileHandleForReading.readabilityHandler = { [self] handle in
+            let chunk = handle.availableData
+            if chunk.isEmpty {
+                // EOF：标准错误也收齐了。**它和 stdout 一样是收尾的必要条件**
+                //（少等它就可能把「stderr 还没到」误读成「stderr 为空」）。
+                lock.lock()
+                sawErrorEOF = true
+                lock.unlock()
+                tryFinish()
+                return
+            }
+            lock.lock()
+            errorBuffer.append(chunk)
             lock.unlock()
         }
 
@@ -421,20 +624,43 @@ final class SubprocessOutput: @unchecked Sendable {
             if task.isRunning {
                 task.terminate()
             }
-            // 走到这里说明 EOF 没来（或来得太晚）—— 按「没拿到」收尾，
-            // 上层会按授权状态兜底，绝不让调用方永远等下去。
+            // 走到这里说明收尾条件没凑齐（或来得太晚）—— **强制**按「没拿到」收尾。
+            // 上层会按授权状态兜底（`.unknown` / `.needsFullDiskAccess`，绝不落 `.none`），
+            // 绝不让调用方永远等下去。
             complete(nil)
         }
     }
 
-    private func completeFromBuffer() {
+    /// 自然收尾的判据：**「两条管道都收齐（EOF）」与「进程真的结束」三者必须都满足**。
+    ///
+    /// ⚠️ **为什么不能只看 stdout EOF 就收尾**：EOF 只说明写端关了，**不保证**
+    /// `terminationHandler` 已经跑过 ⇒ 此刻读 `termination` 会拿到 `nil` ⇒
+    /// 一次**成功**的 lsof（退出码 0）会被误报成「没跑成」。反之只看进程结束也不行
+    /// （可能还有缓冲没读回来）。stderr 同理：它的 EOF 没到就读它会读到空值，
+    /// 而「空 stderr = 跑成了」正是本轮的判据 —— 早读一步就会把真错误读成「无占用」。
+    ///
+    /// 三个信号（stdout EOF、stderr EOF、termination 回调）都会调到这里，但
+    /// ``complete(_:)`` 里的 `finished` 闸门在**同一把锁**内，最多只有一个能真正落定 ——
+    /// 不存在「先到先得」把退出码或 stderr 判错的缝。
+    private func tryFinish() {
         lock.lock()
-        let text = String(data: buffer, encoding: .utf8)
+        guard !finished, sawOutputEOF, sawErrorEOF, processEnded, let status = termination else {
+            lock.unlock()
+            return
+        }
+        // 三样证据在**同一把锁内**构造，避免「读 stdout 之后 stderr 又追加了一段」的半截结果。
+        let result = SubprocessResult(
+            output: String(data: outputBuffer, encoding: .utf8) ?? "",
+            exitStatus: status,
+            errorOutput: String(data: errorBuffer, encoding: .utf8) ?? "")
         lock.unlock()
-        complete(text)
+        complete(result)
     }
 
-    private func complete(_ value: String?) {
+    /// 收尾并回调（恰好一次）。
+    ///
+    /// - Parameter value: 完整结果（正常路径）或 `nil`（启动失败 / 超时）。
+    private func complete(_ value: SubprocessResult?) {
         lock.lock()
         guard !finished else {
             lock.unlock()
@@ -444,10 +670,15 @@ final class SubprocessOutput: @unchecked Sendable {
         // ⚠️ **判据必须与 `timedOut` 在同一把锁里判定**：超时一旦置位，
         //    不管是超时块还是（terminate 造成的）EOF 路径先到，收尾值都只可能是 `nil`。
         //    写成「if timedOut { complete(nil) }」在外面判，锁内锁外之间仍有缝。
-        output = timedOut ? nil : value
-        let final = output
+        //    stdout / stderr / 退出码是**同一个结构体**，一起落成 `nil`，不会只丢一半。
+        self.result = timedOut ? nil : value
+        let final = self.result
         lock.unlock()
-        pipe.fileHandleForReading.readabilityHandler = nil
+        // 三个闭包都强引用 self（见 ``start()``）；收尾时一并置 nil 才能断开循环引用。
+        // 不清就是一个「每跑一次子进程泄漏一个实例」的环（本应用 15s 轮询会持续触发）。
+        outputPipe.fileHandleForReading.readabilityHandler = nil
+        errorPipe.fileHandleForReading.readabilityHandler = nil
+        task.terminationHandler = nil
         completion(final)
     }
 }

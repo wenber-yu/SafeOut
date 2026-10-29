@@ -61,27 +61,24 @@ struct SettingsLayoutTests {
     /// `measure_settings_v3.py` 会把两路**并排量**并打出差值 ——
     /// 「通用」页实测 **两路逐点相同（差 0.00）**，这就是上面那句论证的证据。
     ///
-    /// 实测（2026-09-30，`--lang both`）：
+    /// 实测（2026-10-22 重量，`--lang both`；「通用」页移除「在 Dock 中显示图标」行后）：
     ///
     /// | 帧 | 页面 | zh-Hans | en |
     /// |---|---|---|---|
-    /// | 0 | 通用 | **308.34** | 324.28 |
-    /// | 1 | 通用 · 登录项等待系统批准 | **352.34** | **368.28** |
+    /// | 0 | 通用 | **264.34** | 264.34 |
+    /// | 1 | 通用 · 登录项等待系统批准 | **308.34** | **324.28** |
     /// | 2 | 外观 | 190.78 | 206.72 |
     /// | 3 | 更新 | 264.34 | 264.34 |
     /// | 4 | 诊断 | 146.78 | 146.78 |
     /// | 5 | 关于 | 251.03 | 251.03 |
     ///
-    /// ## v3 只改动了「通用」页（−16pt），其余四页逐点未变 —— 而且原因是可核对的
+    /// 2026-10-22 的变化只有「通用」页（−44pt = 一条 44pt 无说明开关行），
+    /// 其余四页逐点未变 —— v3 稿 `_10-combined-draft.html` 那一帧（264.34）
+    /// 与 `v2@592` 路**逐点相同（差 0.00）**，交叉校验通过。
     ///
-    /// 只有「通用」页有会**换行**的长说明文字 ⇒ 详情区从 520 变宽到 592 之后它少折一行。
-    /// 其余四页的行都没到折行边界 ⇒ 宽度变化对它们没有影响。
-    /// **这不是「大概没变」，是两路量出来一致、且与 v2 的数逐个对上的。**
-    /// （所以下表里那四页与 v2 时代同值**不是抄来的惰性**，谁再改宽度就得重跑脚本看它们动不动。）
-    ///
-    /// ⚠️ **判据必须是「最长的那门语言」**：只量中文会取到 352.34，短 32pt。
+    /// ⚠️ **判据必须是「最长的那门语言」**：只量中文会取到 308.34，短 15.94pt。
     private static let designFrameHeights: [SettingsSection: CGFloat] = [
-        .general: 308.34,
+        .general: 264.34,
         .appearance: 190.78,
         .updates: 264.34,
         .diagnostics: 146.78,
@@ -101,37 +98,37 @@ struct SettingsLayoutTests {
     /// | 行（label + 系统 Toggle，padding 12/16） | 48.00 |
     /// | 同行、开关钉 `frame(height: 22)` | 46.00 |
     ///
-    /// 设计稿侧 `.switch` 在 `ds.css` 里钉的是 22 ⇒ 差 **2/行**，与「通用」页实测
-    /// 310.4 − 308.34 = **2.06**（多出的 0.06 是折行/浮点噪声）吻合。
+    /// 设计稿侧 `.switch` 在 `ds.css` 里钉的是 22 ⇒ 差 **2/行**。
     /// **有说明文字的开关行不贡献**：那种行的行高由说明文字决定，盖过控件差
-    /// （⇒ 其余四页差 ≤0.98，逐点吻合）。
+    /// （⇒ 各页差 ≤0.98，逐点吻合）。
     ///
     /// ## HANDOFF 为什么不许把开关钉回 22
     ///
     /// §3.7 类别 3：系统控件「❗什么都不做」。钉 `frame(height: 22)` 是往系统控件上
     /// 叠自绘约束，退回老路 ⇒ 偏差只能记在**判据侧**，不能消在**实现侧**。
     ///
-    /// ⚠️ **「通用」页增删一行无说明开关行，这里的数必须跟着改**
-    /// （默认态 1 行：Dock 图标；第三态多 1 行：登录项行 —— 见 ``登录项待批准态的高度等于设计稿()``）。
-    private static let systemToggleDelta: [SettingsSection: CGFloat] = [
-        .general: 2  // 默认态：Dock 图标那一行（无说明）
-    ]
+    /// ⚠️ **默认态各页当前都没有「无说明开关行」**（2026-10-22「在 Dock 中显示图标」行
+    /// 随「纯菜单栏应用」决定移除后，「通用」页默认态只剩有说明的开关行），所以这张表是**空的**。
+    /// 第三态的登录项行（说明搬去受阻行 ⇒ 退化为无说明开关行）走
+    /// ``pendingApprovalExtraToggleDelta``，不在这里。
+    /// 若某页新增**无说明文字的开关行**，在这里补 `.section: 2 * 行数`。
+    private static let systemToggleDelta: [SettingsSection: CGFloat] = [:]
 
     /// 设计稿**第 2 帧**（通用 · 登录项等待系统批准）的高度 —— 同一个页面的**另一帧**。
     ///
     /// ## 为什么它不在 ``designFrameHeights`` 里
     ///
     /// 那张表按**分类**索引（一页一个数）。而这一帧与第 1 帧是**同一页**，
-    /// 只是多了一个条件分支 —— 塞进那张表要么覆盖掉 308.34、要么给 `SettingsSection`
+    /// 只是多了一个条件分支 —— 塞进那张表要么覆盖掉 264.34、要么给 `SettingsSection`
     /// 编一个假分类。所以另立一张**按语言**索引的表：
     ///
     /// | 语言 | 高度（v3 口径） |
     /// |---|---|
-    /// | `zh-Hans` | **352.34** |
-    /// | `en` | **368.28** ← 就是 ``designTallestFrame``（2026-10-10 重量，旧值 384.22） |
+    /// | `zh-Hans` | **308.34** |
+    /// | `en` | **324.28** ← 就是 ``designTallestFrame``（2026-10-22 重量，旧值 368.28） |
     ///
-    /// ⚠️ **两个数各有出处，不是同一个数抄两遍**：308.34 是第 1 帧、352.34 是第 2 帧。
-    /// 而 ``designTallestFrame``（368.28）**正是这里的英文版**。
+    /// ⚠️ **两个数各有出处，不是同一个数抄两遍**：264.34 是第 1 帧、308.34 是第 2 帧。
+    /// 而 ``designTallestFrame``（324.28）**正是这里的英文版**。
     ///
     /// ## v3 起它**不再是**面板高度的理由（这一点变了，别照旧读）
     ///
@@ -144,22 +141,22 @@ struct SettingsLayoutTests {
     ///
     /// 实测命令（`--lang both`）：`Tools/measure_settings_v3.py`。
     private static let designPendingApprovalHeights: [String: CGFloat] = [
-        "zh-Hans": 352.34,
-        // 384.22 → 368.28（2026-10-10 文案去 AI 化）：`takeOverFinderEjectFootnote`
-        // 与 `launchAtLoginFootnote` 在英文下都变短，这一帧（英文最坏情形）随之矮 15.94pt。
+        "zh-Hans": 308.34,
+        // 368.28 → 324.28（2026-10-22 移除「在 Dock 中显示图标」行，−44pt）。
         // ⚠️ **重量得来，不要手抄**：`python3 Tools/measure_settings_v3.py --json`
         // 取 `v2@592` → `en` → `frames[index=1].total`。
-        "en": 368.28,
+        "en": 324.28,
     ]
 
     /// 第三态比默认态**多**出的那条无说明开关行：登录项行 ——
     /// 待批准态下 `launchAtLoginDescription` 返回 `nil`（说明整体搬到受阻行），
-    /// 行高改由系统 Toggle（24pt）决定 ⇒ 在 ``systemToggleDelta`` 的 1 行之上**再 +2**
-    /// （第三态帧共 **2 行** ⇒ 总偏差 4，别只算这一条）。
+    /// 行高改由系统 Toggle（24pt）决定 ⇒ **+2**。
+    /// （2026-10-22 起第三态帧里**只有这 1 行**无说明开关行 —— 「Dock 图标」行已移除，
+    ///  ``systemToggleDelta`` 现为**空**，别再把两边各算一次。）
     private static let pendingApprovalExtraToggleDelta: CGFloat = 2
 
-    /// 设计稿**最高的一帧** = 通用 ·「登录项等待系统批准」· 英文 = **368.28**（v3 口径同值）。
-    /// 旧值 384.22 → 368.28 是 2026-10-10 文案改写后重量所得（英文下两条说明都变短）。
+    /// 设计稿**最高的一帧** = 通用 ·「登录项等待系统批准」· 英文 = **324.28**（v3 口径同值）。
+    /// 旧值 368.28 → 324.28 是 2026-10-22 移除「在 Dock 中显示图标」行后重量所得。
     ///
     /// ⚠️ **v3 起它不再是「面板高度」的依据**：v2 的 440 是照它算的（旧值下 440 − 384.22 = 55.78），
     /// 因为那时窗口的职责就是装设置内容。v3 的窗口是主窗口，高度由整体形态定。
@@ -182,9 +179,9 @@ struct SettingsLayoutTests {
     ///
     /// 完整推导见 ``面板高度既不截内容也不虚高()`` 与 `DesignTokens.Size.settingsPanel`。
     ///
-    /// ⚠️ 这个数变了就要重跑 `Tools/measure_settings_split.py`，并同步复核 440。
+    /// ⚠️ 这个数变了就要重跑 `Tools/measure_settings_v3.py`，并同步复核面板余量。
     /// 它与 ``designPendingApprovalHeights`` 的 `en` 项**是同一个数**（同一帧、同一语言）。
-    private static let designTallestFrame: CGFloat = 368.28
+    private static let designTallestFrame: CGFloat = 324.28
 
     /// ⚠️ **v3 退役：这里原有 `designSlackCeiling = 60`（「面板高 − 设计稿最高帧」的上界）。**
     ///
@@ -358,9 +355,12 @@ struct SettingsLayoutTests {
                 stats[y + gap].coverage > 0.85
             else { continue }
             // 横向必须均匀（排除文字行），且比上下都暗（排除填充行）。
+            // v3a 新配色里 warning 琥珀底与 divider 线的亮度差缩小到 ≈1.1，
+            // 阈值 1.0 会让琥珀行上下的 divider 漏判。降到 0.5 仍能稳定区分
+            // 白底 (luma 255) 上的 divider (luma ≈ 239) —— 差 16 远大于 0.5。
             guard stats[y].std < 2.5,
-                stats[y].luma < stats[y - gap].luma - 1,
-                stats[y].luma < stats[y + gap].luma - 1
+                stats[y].luma < stats[y - gap].luma - 0.5,
+                stats[y].luma < stats[y + gap].luma - 0.5
             else { continue }
             dividerRows.append(y)
         }
@@ -637,9 +637,9 @@ struct SettingsLayoutTests {
     ///
     /// ## 「通用 · 登录项等待系统批准」那一帧**不在这条判据里，且已单独有人守**
     ///
-    /// 它是**同一个页面的另一帧**（设计稿 09 页第 2 帧，英文 368.28），
+    /// 它是**同一个页面的另一帧**（设计稿 09 页第 2 帧，英文 324.28），
     /// 而本表按**分类**索引（一页一个数）⇒ 塞不进来，也**不该**塞
-    /// （那会覆盖掉 `.general` 的 324.28，即默认态）。
+    /// （那会覆盖掉 `.general` 的 264.34，即默认态）。
     ///
     /// ⚠️ 2026-09-29 之前，产品侧那一态与设计稿**故意不同形**（只换一句说明、
     /// 不画那行受阻提示行），所以两者之间**没有任何对应关系**，它当时只受
@@ -698,8 +698,8 @@ struct SettingsLayoutTests {
     ///
     /// | 断言 | 守的是 |
     /// |---|---|
-    /// | ``每个分类页的中文高度与设计稿逐点相同()``（默认态 324.28） | **常规排版**没走样 |
-    /// | 本条（第三态英文 368.28） | **条件插入的那一行**真的插进去了、且高度对 |
+    /// | ``每个分类页的中文高度与设计稿逐点相同()``（默认态 264.34） | **常规排版**没走样 |
+    /// | 本条（第三态英文 324.28） | **条件插入的那一行**真的插进去了、且高度对 |
     ///
     /// 只留前者的话，把 `generalCard` 里那句 `if isLaunchAtLoginPendingApproval`
     /// **整块删掉不会有任何东西报错**（默认态不经过那条分支）——
@@ -733,10 +733,11 @@ struct SettingsLayoutTests {
         )
 
         let head = SettingsMetrics.headerHeight
-        // 设计稿口径 + 系统控件偏差：第三态帧里同样有 Dock 图标那条无说明开关行
-        // （``systemToggleDelta`` 的 +2），**再加**登录项行 —— 待批准态下
-        // `launchAtLoginDescription` 返回 `nil`（说明整体搬去了受阻行），
-        // 行高改由系统 Toggle 24pt 决定 ⇒ 再 +2。两条合起来 = 第三态共 2 行。
+        // 设计稿口径 + 系统控件偏差：第三态帧里的无说明开关行只有登录项行 ——
+        // 待批准态下 `launchAtLoginDescription` 返回 `nil`（说明整体搬去了受阻行），
+        // 行高改由系统 Toggle 24pt 决定 ⇒ +2。
+        // （``systemToggleDelta`` 现为**空**：默认态各页都没有无说明开关行，
+        //   「Dock 图标」行已随「纯菜单栏应用」决定移除。）
         let extra = (Self.systemToggleDelta[.general] ?? 0) + Self.pendingApprovalExtraToggleDelta
         for (language, want) in Self.designPendingApprovalHeights.sorted(by: { $0.key < $1.key }) {
             let expected = want + extra
@@ -1207,7 +1208,7 @@ struct SettingsLayoutTests {
     /// 别指望这条像素判据。
     @Test func 分隔线只画在卡片内的行与行之间() {
         // 行数 → 分隔线数（n 行有 n−1 条缝）：
-        //   通用 4 行（语言 / Dock 图标 / 登录项 / 提醒占用）→ 3
+        //   通用 3 行（语言 / 登录项 / 提醒占用）→ 2
         //   外观 2 行（视觉效果 / 强调色）→ 1
         //   更新 3 行（自动检查 / 自动下载 / 检查更新状态机）→ 2
         //   诊断 1 行（错误日志）→ 0   ※ 只有一行，一条线都不该有
@@ -1215,8 +1216,10 @@ struct SettingsLayoutTests {
         // 历史：通用 2026-09-27 从 3 行变 4 行（加「接管访达的推出」）⇒ 2 → 3；
         //       更新 2026-09-28 从 2 行变 3 行（「自动更新」拆成两行）⇒ 1 → 2。
         //       两栏 2026-09-29：诊断 → 0、关于 → 0（单栏版把它俩算进那 6 条里）。
+        //       通用 2026-10-22 从 4 行变 3 行（移除「在 Dock 中显示图标」，
+        //       随「纯菜单栏应用」决定）⇒ 3 → 2。
         let expected: [(SettingsSection, Int)] = [
-            (.general, 3), (.appearance, 1), (.updates, 2), (.diagnostics, 0), (.about, 0),
+            (.general, 2), (.appearance, 1), (.updates, 2), (.diagnostics, 0), (.about, 0),
         ]
         for (section, want) in expected {
             let count = horizontalDividerCount(
@@ -1232,7 +1235,7 @@ struct SettingsLayoutTests {
         }
 
         // 第三态（``登录项待批准态的高度等于设计稿()`` 那一帧）在「通用」页**多一行**
-        // ⇒ 缝也多一条（4 → 5 行 ⇒ 3 → 4 条）。它必须单独量：上面那张表是**默认态**的，
+        // ⇒ 缝也多一条（3 → 4 行 ⇒ 2 → 3 条）。它必须单独量：上面那张表是**默认态**的，
         // 里面没有它。而「受阻行与上面那行糊成一整块」（忘了画分隔线）在渲染图上
         // 与「本来就该这样」长得一模一样 —— 正是本条要守的那类错误。
         //
@@ -1246,9 +1249,9 @@ struct SettingsLayoutTests {
                 launchAtLoginStateOverride: .requiresApproval),
             width: detailWidth)
         #expect(
-            pendingCount == 4,
+            pendingCount == 3,
             """
-            第三态的「通用」页测到 \(pendingCount) 条行间分隔线，期望 4 条（5 行 ⇒ 4 条缝）。
+            第三态的「通用」页测到 \(pendingCount) 条行间分隔线，期望 3 条（4 行 ⇒ 3 条缝）。
             受阻行是从普通行加出来的，`line(divider:)` 默认就是 `true` ——
             数目不对说明那一行没按同一套规则参与分隔线，或者 `divider` 被显式关掉了。
             """

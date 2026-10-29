@@ -69,12 +69,13 @@ struct GlassSurfaceTests {
     @Test("--bg-glass 明暗两套与 ds.css 逐值一致")
     func bgGlass与设计稿一致() {
         let light = rgba(DesignTokens.Palette.windowGlass(for: .light), dark: false)
-        #expect(hex255(light.r) == 255 && hex255(light.g) == 255 && hex255(light.b) == 255)
-        #expect(abs(light.a - 0.72) < 0.005, "浅色 --bg-glass 是 rgba(255,255,255,.72)")
+        // v3a Paper + Cobalt：暖纸基色，不再是冷纯白
+        #expect(hex255(light.r) == 252 && hex255(light.g) == 250 && hex255(light.b) == 245)
+        #expect(abs(light.a - 0.65) < 0.005, "浅色 --bg-glass 是 rgba(252,250,245,.65)")
 
         let dark = rgba(DesignTokens.Palette.windowGlass(for: .dark), dark: true)
-        #expect(hex255(dark.r) == 38 && hex255(dark.g) == 38 && hex255(dark.b) == 42)
-        #expect(abs(dark.a - 0.74) < 0.005, "深色 --bg-glass 是 rgba(38,38,42,.74)")
+        #expect(hex255(dark.r) == 30 && hex255(dark.g) == 33 && hex255(dark.b) == 48)
+        #expect(abs(dark.a - 0.70) < 0.005, "深色 --bg-glass 是 rgba(30,33,48,.70)")
     }
 
     /// 设计稿里主窗口与菜单面板是**同一条** `.win` 规则，底色必须同源。
@@ -91,35 +92,39 @@ struct GlassSurfaceTests {
     func 弹窗玻璃更厚() {
         let glass = rgba(DesignTokens.Palette.windowGlass(for: .light), dark: false)
         let thick = rgba(DesignTokens.Palette.popoverBackground(for: .light), dark: false)
-        #expect(abs(thick.a - 0.86) < 0.005)
+        // v3a：浅色 thick alpha 从 .86 降到 .82（深色从 .86 降到 .85）
+        #expect(abs(thick.a - 0.82) < 0.005)
         #expect(thick.a > glass.a, "弹窗浮在窗口之上，需要更强的遮挡")
     }
 
-    @Test("--text-3 是全设计稿唯一明暗透明度不同的一档（.38 / .36）")
+    @Test("--text-3 是全设计稿唯一明暗透明度不同的一档（v3a：.36 / .34）")
     func textDecorative明暗分档() {
         let light = rgba(DesignTokens.Palette.textDecorative, dark: false)
         let dark = rgba(DesignTokens.Palette.textDecorative, dark: true)
-        #expect(abs(light.a - 0.38) < 0.005, "浅色 --text-3 是 rgba(60,60,67,.38)")
-        #expect(abs(dark.a - 0.36) < 0.005, "深色 --text-3 是 rgba(235,235,245,.36)")
-        #expect(hex255(dark.r) == 235 && hex255(dark.g) == 235 && hex255(dark.b) == 245)
+        // v3a：基色换紫调深黑/米白，透明度微调降一档
+        #expect(abs(light.a - 0.36) < 0.005, "浅色 --text-3 是 rgba(26,24,34,.36)")
+        #expect(abs(dark.a - 0.34) < 0.005, "深色 --text-3 是 rgba(240,238,246,.34)")
+        #expect(hex255(dark.r) == 240 && hex255(dark.g) == 238 && hex255(dark.b) == 246)
     }
 
     // ⚠️ v3 退役：`--bg-subtle-hi 明暗两套都是 .14`（2026-09-30）——
     // 它钉的 `Palette.subtleHighlight` 只被自绘按钮的 hover 底用，
     // 交还系统样式后令牌已删（`DesignTokens` 里有退役说明）。
 
-    @Test("--danger-text 深色是 #ff8078")
+    @Test("--danger-text 深色是 #FCA5A5")
     func dangerText深色值() {
         let dark = rgba(DesignTokens.Palette.errorText, dark: true)
+        // v3a：danger-soft 换成 Tailwind Red-600 色系，text 换成浅红 #FCA5A5
         #expect(
-            hex255(dark.r) == 0xFF && hex255(dark.g) == 0x80 && hex255(dark.b) == 0x78,
-            "设计稿 --danger-text 深色 #ff8078；曾经写 #ff6961")
+            hex255(dark.r) == 0xFC && hex255(dark.g) == 0xA5 && hex255(dark.b) == 0xA5,
+            "设计稿 --danger-text 深色 #FCA5A5；旧值 #ff8078")
     }
 
-    @Test("--ok-text 深色是 #5cdb7c")
+    @Test("--ok-text 深色是 #5EEAD4")
     func okText深色值() {
         let dark = rgba(DesignTokens.Palette.successText, dark: true)
-        #expect(hex255(dark.r) == 0x5C && hex255(dark.g) == 0xDB && hex255(dark.b) == 0x7C)
+        // v3a：ok 换成 Tailwind Teal 色系，text 换成青瓷浅 #5EEAD4
+        #expect(hex255(dark.r) == 0x5E && hex255(dark.g) == 0xEA && hex255(dark.b) == 0xD4)
     }
 
     // MARK: 几何令牌
@@ -173,8 +178,10 @@ struct GlassSurfaceTests {
         let rep = try #require(render(GlassSurface(cornerRadius: 12), size: size))
         let center = pixel(rep, x: 60, y: 40)
         #expect(center.a == 255, "玻璃底必须是不透明的；alpha=0 说明这个视图根本没画背景")
-        #expect(center.r >= 245, "浅色下应当叠上 --bg-glass（白 .72），比裸材质更亮；实测 \(center)")
-        #expect(center.r == center.g && center.g == center.b, "浅色玻璃是中性白，不该偏色")
+        #expect(center.r >= 245, "浅色下应当叠上 --bg-glass（暖纸 252,250,245 .65），比裸材质更亮；实测 \(center)")
+        // v3a：暖纸基色 252,250,245 —— R≠G≠B，不再是中性纯白，但差值应在 8 以内
+        #expect(abs(center.r - center.g) < 8 && abs(center.g - center.b) < 8,
+            "浅色玻璃是暖纸基调，三色差应 < 8；实测 \(center)")
     }
 
     @Test("GlassSurface 会画出不透明的底（深色）")

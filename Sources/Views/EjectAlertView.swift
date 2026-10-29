@@ -298,7 +298,9 @@ struct EjectAlertView: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text(String(format: L10n.tr(.processPidFormat), process.pid))
+            // 磁盘映像没有 pid——它的「pid」是合成负值（仅作 Identifiable 身份），
+            // 显示「PID -1073…」是彻头彻尾的噪音；标明种类才是对用户有用的信息。
+            Text(kindLabel(for: process))
                 .font(.system(size: DesignTokens.FontSize.footnote).monospacedDigit())
                 .foregroundStyle(DesignTokens.Palette.mutedForeground)
                 .layoutPriority(1)
@@ -309,6 +311,16 @@ struct EjectAlertView: View {
             RoundedRectangle(cornerRadius: DesignTokens.Radius.sm, style: .continuous)
                 .fill(striped ? DesignTokens.Palette.sunken : .clear)
         )
+    }
+
+    /// 行尾标识：真进程显示 PID，磁盘映像显示「磁盘映像」。
+    private func kindLabel(for process: OccupyingProcess) -> String {
+        switch process.kind {
+        case .process:
+            return String(format: L10n.tr(.processPidFormat), process.pid)
+        case .diskImage:
+            return L10n.tr(.diskImageKindLabel)
+        }
     }
 
     /// 进程所属应用的图标；解析不到时回落为通用应用图标。

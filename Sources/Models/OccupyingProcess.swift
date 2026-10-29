@@ -15,11 +15,28 @@ import Foundation
 /// 只用于展示「为什么两个名字不一样」以及诊断输出。解析逻辑见 ``ProcessAppResolver``。
 struct OccupyingProcess: Identifiable, Sendable, Equatable {
 
+    /// 占用者的种类。
+    ///
+    /// **为什么需要区分**：磁盘映像（DMG）不是进程——它没有可发信号的 pid，
+    /// 「关闭」它的动作是 `hdiutil detach` 而不是 `SIGTERM`。
+    /// 若把映像伪装成普通进程混在列表里，清场流程会向一个合成 pid 发信号，
+    /// 而 POSIX 里 `kill(0)` / `kill(负值)` 的语义是「**整个进程组**」——这是本仓库
+    /// 最危险的一类误操作（见 ``ProcessTerminator`` 的双重防线）。
+    enum Kind: Sendable, Equatable {
+        /// 普通进程，`pid` 是真实 pid。
+        case process
+        /// 磁盘映像（DMG）占用，`pid` 是合成负值（仅作 `Identifiable` 身份，**不可发信号**）。
+        case diskImage(device: String)
+    }
+
     /// 进程标识符，同时作为 `Identifiable` 的 id。
     ///
     /// 此前是 `let id = UUID()`，与基于 pid 的 `==` / `hash` 语义冲突：两个 pid 相同的实例
     /// 被判为相等，id 却不同。SwiftUI 的 diff 依赖 `Identifiable`，这类不一致会在列表刷新时
     /// 表现为「整行被重建」的闪烁。
+    ///
+    /// ⚠️ 对 ``Kind/diskImage(device:)`` 条目这是**合成负值**（由 device 路径哈希，稳定、
+    /// 不与真 pid 冲突），只在检测/展示链路作身份用；``ProcessTerminator`` 绝不会向它发信号。
     var id: Int32 { pid }
 
     let pid: Int32
@@ -44,7 +61,13 @@ struct OccupyingProcess: Identifiable, Sendable, Equatable {
     var executablePath: String?
 
     /// 该进程访问卷内文件的代表路径（UI 目前不展示，仅诊断/排查用）。
+    ///
+    /// 对 ``Kind/diskImage(device:)`` 条目：backing 文件（`.dmg`）的完整路径，
+    /// 芯片悬停提示会展示它（用户可自证「是哪张映像在占」）。
     let path: String
+
+    /// 占用者种类（默认 ``Kind/process``，既有调用点零改动）。
+    let kind: Kind
 
     /// - Parameter displayName: 省略或传 `nil` 表示「尚未解析应用身份」，此时回落为
     ///   ``processName``。这条默认规则保证 UI 永远不会显示空白名字。
@@ -54,7 +77,8 @@ struct OccupyingProcess: Identifiable, Sendable, Equatable {
         displayName: String? = nil,
         appBundlePath: String? = nil,
         executablePath: String? = nil,
-        path: String
+        path: String,
+        kind: Kind = .process
     ) {
         self.pid = pid
         self.processName = processName
@@ -62,5 +86,33 @@ struct OccupyingProcess: Identifiable, Sendable, Equatable {
         self.appBundlePath = appBundlePath
         self.executablePath = executablePath
         self.path = path
+        self.kind = kind
+    }
+
+    /// 构造一个「磁盘映像占用」条目。
+    ///
+    /// - `pid` 用**合成负值**：`-1 - (fnv1a32(device) & 0x3FFFFFFF)`。
+    ///   - 负值永不与真实 pid 冲突（真 pid 恒 > 0）；
+    ///   - 由 device 路径决定 ⇒ 同一张映像每轮检测得到**相同** id，SwiftUI 列表不闪行。
+    ///     ⚠️ 不能用 Swift 自带 `hashValue`——它每次进程启动都随机化，id 会每轮都变。
+    /// - `processName` / `displayName` = backing 文件名（如 `Game.dmg`）：
+    ///   映像没有「应用身份」可解析，文件名就是用户唯一能认出的名字。
+    static func diskImage(imagePath: String, device: String) -> OccupyingProcess {
+        let name = URL(fileURLWithPath: imagePath).lastPathComponent
+        return OccupyingProcess(
+            pid: -1 - Int32(fnv1a32(device) & 0x3FFF_FFFF),
+            processName: name,
+            path: imagePath,
+            kind: .diskImage(device: device)
+        )
+    }
+
+    /// FNV-1a 32 位哈希——跨进程启动**稳定**的字符串哈希（合成 pid 的种子）。
+    private static func fnv1a32(_ string: String) -> UInt32 {
+        var hash: UInt32 = 0x811C_9DC5
+        for byte in string.utf8 {
+            hash = (hash ^ UInt32(byte)) &* 0x0100_0193
+        }
+        return hash
     }
 }

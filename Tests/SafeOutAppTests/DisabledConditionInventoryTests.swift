@@ -79,19 +79,10 @@ struct DisabledConditionInventoryTests {
                 + "`allowsAutomaticUpdates` 为假时是空操作，检查不做、下载根本写不进去。"
                 + "**且不是死路**：检查行永远可点，用户的出口一直在；"
                 + "「禁用时必须说明原因」由 `UpdateSettingsTests.下载行的可点性与说明必须同源` 钉住"),
-        Entry(
-            file: "Sources/Views/SettingsView.swift",
-            snippet: ".disabled(true)",
-            reason:
-                "**v3 从 `takeOverTapAction` 搬过来的同一条判据**：没授「完全磁盘访问」时，"
-                + "``SettingsSectionPane/takeOverUnavailableControl`` 里那颗 `Toggle` 恒不可点。"
-                + "判据是**宿主/环境能力**（读 `takeOverAvailability`），与开关自己的值"
-                + "（`takeOverFinderEject`）无关。\n"
-                + "⚠️ 这一条**必须**挡，理由比 v2 更硬：那颗 `Toggle` 的 `isOn` 是"
-                + "`.constant(takeOverOn)`（常量 binding）—— 若允许命中，拨一下开关**视觉会动、值不会落**，"
-                + "正是「允许点击 → 什么都不发生 / 再弹错」的反面形态。"
-                + "且未授权那一态**不是死路**：同一行行尾就是「打开系统设置」，"
-                + "授权回来（`didBecomeActive`）这一行当场恢复可点"),
+        // ⚠️ 2026-10-22 划账：这里原有一条 `SettingsView.swift` 的 `.disabled(true)`
+        // （未授 FDA 时「推出时提醒占用」开关恒不可点）。用户报告「点 switch 没反应」后
+        // 改为**可点、点击弹 FDA 引导**（``SettingsSectionPane/takeOverUnavailableControl``），
+        // 该处不再是「让控件点不动」的写法 —— 还了账，按上面的口径回来划掉。
         Entry(
             file: "Sources/Views/DesignSystemComponents.swift",
             snippet: ".disabled(!isEnabled)",

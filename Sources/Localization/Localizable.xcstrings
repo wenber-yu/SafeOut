@@ -318,9 +318,16 @@
     },
     "ejectBusyNoProcessInfo" : {
       "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "磁盘「%@」正被占用，但查不出是哪些程序。请到「系统设置 › 隐私与安全性 › 完全磁盘访问」里允许 %@，再重试。" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "\"%@\" is in use, but we can't tell which apps. Allow %@ under System Settings › Privacy & Security › Full Disk Access, then try again." } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "磁碟「%@」正被佔用，但查不出是哪些程式。請到「系統設定 › 隱私權與安全性 › 完全磁碟存取」裡允許 %@，再重試。" } }
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "磁盘「%@」正被占用，但查不出是哪些程序——聚焦索引等系统服务也会这样。请到「系统设置 › 隐私与安全性 › 完全磁盘访问」允许 %@ 后重试。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "\"%@\" is in use, but we can't tell which apps — system services like Spotlight indexing can also hold it. Allow %@ under System Settings › Privacy & Security › Full Disk Access, then try again." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "磁碟「%@」正被佔用，但查不出是哪些程式——聚焦索引等系統服務也會這樣。請到「系統設定 › 隱私權與安全性 › 完全磁碟存取」允許 %@ 後重試。" } }
+      }
+    },
+    "diskImageKindLabel" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "磁盘映像" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Disk Image" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "磁碟映像" } }
       }
     },
     "ejectBusyWarning" : {
@@ -547,13 +554,6 @@
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "更新" } }
       }
     },
-    "showDockIcon" : {
-      "localizations" : {
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 Dock 中显示图标" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show icon in Dock" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "在 Dock 中顯示圖示" } }
-      }
-    },
     "takeOverFinderEject" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "推出时提醒占用" } },
@@ -573,6 +573,20 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要「完全磁盘访问」才能看出是谁在占用。" } },
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Full Disk Access is needed to see what's using a disk." } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要「完全磁碟存取」才能看出是誰在佔用。" } }
+      }
+    },
+    "takeOverNeedsFDAPromptMessage" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "授权后才能列出占用外置磁盘的进程。在系统设置里开启后回到本页，再打开这个开关即可。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Full Disk Access is required to list the processes holding an external disk. Turn it on in System Settings, then come back and enable the switch here." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "授權後才能列出佔用外接磁碟的行程。在系統設定裡開啟後回到本頁，再打開這個開關即可。" } }
+      }
+    },
+    "takeOverNeedsFDAPromptTitle" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要先允许「完全磁盘访问」" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Full Disk Access Required First" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要先允許「完全磁碟存取」" } }
       }
     },
     "tintedMode" : {

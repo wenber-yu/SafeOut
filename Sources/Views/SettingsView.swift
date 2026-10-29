@@ -125,6 +125,27 @@ extension SettingsPrompt {
             openSettings: AppSettings.openAccessibilitySettings,
             dismissTitle: L10n.tr(.notNow))
     }
+
+    /// 用户在**未授「完全磁盘访问」**时点击「推出时提醒占用」开关 → 引导提示。
+    ///
+    /// ## 为什么点击开关弹的是它，而不是静默地什么都不发生
+    ///
+    /// 未授权时那一行的开关曾经 `.disabled(true)`（2026-10-22 之前的形态）：
+    /// 用户点开关、界面纹丝不动，唯一入口是旁边那颗不显眼的「打开系统设置」按钮 ——
+    /// 「打开一个开关，然后它静默地什么都不做」是最难自查的一类缺陷。
+    /// 现在开关保持**可点**，点击即弹本引导；开关本身**不写偏好**、恒显示「关」
+    /// （`effectiveIsOn` 口径：没授权画了「开」就是在撒谎）。授权回到本页后，
+    /// 那一行自动翻成可用（`didBecomeActive` 重探），用户再正常拨开 ——
+    /// 下游「通知授权 + 辅助功能引导」链路因此一步不变。
+    ///
+    /// 「暂不」与 ``accessibilityOnboarding()`` 同一口径：用户有权不授权，按钮就该这么说。
+    static func takeOverNeedsFDA() -> SettingsPrompt {
+        SettingsPrompt(
+            title: L10n.tr(.takeOverNeedsFDAPromptTitle),
+            message: L10n.tr(.takeOverNeedsFDAPromptMessage),
+            openSettings: AppSettings.openFullDiskAccessSettings,
+            dismissTitle: L10n.tr(.notNow))
+    }
 }
 
 // MARK: - 排版度量
@@ -360,6 +381,15 @@ struct SettingsSectionPane: View {
     /// 默认空实现：单测与离屏出图里拨开关不该真的去申请系统权限。
     var onTakeOverEnabled: () -> Void = {}
 
+    /// 用户在**未授「完全磁盘访问」**时点击「推出时提醒占用」开关上抛
+    /// （宿主接：弹 ``SettingsPrompt/takeOverNeedsFDA()`` 引导）。
+    ///
+    /// **为什么不在本视图里直接弹**：弹窗状态在宿主 ``MainDetailView`` 上
+    /// （`prompt`），本视图是**内容列**，拿不到 —— 与 ``onTakeOverEnabled`` 同一条接法。
+    ///
+    /// 默认空实现：单测与离屏出图里点开关不该真的去弹窗。
+    var onTakeOverNeedsFDA: () -> Void = {}
+
     /// ⚠️ **仅供离屏出图 / 预览**：`nil` 时走真实状态 ``UpdateController/rowState``。
     ///
     /// **为什么需要它**：七态里「下载中 / 已就绪 / 失败」在真机上造不出来
@@ -409,7 +439,6 @@ struct SettingsSectionPane: View {
     @AppStorage(AppSettings.Key.visualStyle) private var visualStyleRaw = VisualStyle.default.rawValue
     @AppStorage(AppSettings.Key.accentColor) private var accentColorRaw = AccentColor.default.rawValue
     @AppStorage(AppSettings.Key.appLanguage) private var appLanguageRaw = AppLanguage.default.rawValue
-    @AppStorage(AppSettings.Key.showDockIcon) private var showDockIcon = false
 
     /// 「接管访达的推出」开关（默认关）。
     ///
@@ -464,7 +493,8 @@ struct SettingsSectionPane: View {
         takeOverAvailabilityOverride: AppSettings.TakeOverAvailability? = nil,
         launchAtLoginStateOverride: LaunchAtLoginState? = nil,
         onLaunchAtLoginError: @escaping (LaunchAtLoginError) -> Void = { _ in },
-        onTakeOverEnabled: @escaping () -> Void = {}
+        onTakeOverEnabled: @escaping () -> Void = {},
+        onTakeOverNeedsFDA: @escaping () -> Void = {}
     ) {
         self.section = section
         self.updateStateOverride = updateStateOverride
@@ -473,6 +503,7 @@ struct SettingsSectionPane: View {
         self.launchAtLoginStateOverride = launchAtLoginStateOverride
         self.onLaunchAtLoginError = onLaunchAtLoginError
         self.onTakeOverEnabled = onTakeOverEnabled
+        self.onTakeOverNeedsFDA = onTakeOverNeedsFDA
         // **打开面板的那一刻就要说实话**：首帧先画「可用」、下一帧再翻成「不可用」，
         // 用户看到的是一个**任何时刻都不存在的状态**（同 ``appVersion`` 那条「别显示假值」）。
         //
@@ -1020,7 +1051,7 @@ struct SettingsSectionPane: View {
             }
         }
     }
-    /// 通用页：语言 / 在 Dock 中显示图标 / 登录时启动 / 推出时提醒占用。
+    /// 通用页：语言 / 登录时启动 / 推出时提醒占用。
     private var generalCard: some View {
         settingsCard {
             // 语言行是「通用」组的第一行（设计稿 `05-settings.html` 的位置）。
@@ -1034,15 +1065,8 @@ struct SettingsSectionPane: View {
                 languageControl
             }
 
-            // 设计稿这一行**只有标签、没有说明**（`.sline` 实测 44pt）。
-            // 曾给它加了一句「在 Dock 与 App 切换器中显示图标。」，
-            // 于是整行 44 → 59，四组内容比设计稿高出 15pt，
-            // 当时的面板（566pt）装不下，「关于」又被挤出滚动区。
-            // 「在 Dock 中显示图标」本身已经说清了后果，不需要再解释一遍。
-            toggleLine(
-                label: L10n.tr(.showDockIcon),
-                isOn: $showDockIcon
-            )
+            // （曾有「在 Dock 中显示图标」开关行，2026-10-22 随「纯菜单栏应用」决定移除：
+            //   LSUIElement=true 后系统层面永不进 Dock，开关已无对象。）
             toggleLine(
                 label: L10n.tr(.launchAtLogin),
                 description: launchAtLoginDescription,
@@ -1399,27 +1423,41 @@ struct SettingsSectionPane: View {
             : L10n.tr(.takeOverFinderEjectNeedsFDA)
     }
 
-    /// **不可用**时的行尾：一个画成关的开关（禁用）+「打开系统设置」。
+    /// **不可用**时的行尾：一个可点的开关（恒显示「关」）+「打开系统设置」。
     ///
-    /// **为什么仍然把开关画出来**：它是「本应用有这么一个设置项」的锚点。
+    /// **为什么开关仍然画出来**：它是「本应用有这么一个设置项」的锚点。
     /// 整行换成按钮会让用户以为功能被拿掉了，而他要的只是「去哪把它打开」。
     /// 所以这一态**没有**走 ``toggleLine(label:description:isOn:isEnabled:divider:tone:)``
     /// —— 那个方法里只有 `Toggle` 一个尾巴，塞不下第二个可点控件。
     ///
-    /// **为什么旁边那个按钮是必要的**：说明文字说得出「缺什么」（完全磁盘访问），
-    /// 说不出「在哪开」—— 而最后这一步正是绝大多数人会卡住的地方。
+    /// **为什么开关保持可点、而不是 `.disabled(true)`**（2026-10-22 用户报告）：
+    /// 禁用态下点开关**什么都不会发生** —— 「打开一个开关，然后它静默地什么都不做」
+    /// 是最难自查的一类缺陷；唯一入口只剩旁边那颗不显眼的按钮。
+    /// 现在点击即上抛 ``onTakeOverNeedsFDA``（宿主弹 ``SettingsPrompt/takeOverNeedsFDA()``），
+    /// 开关本身**不写偏好**、恒显示「关」 —— 显示口径见
+    /// ``AppSettings/TakeOverAvailability/effectiveIsOn(userWants:availability:)``。
+    ///
+    /// **为什么旁边那个按钮仍然保留**：弹窗给「为什么」，按钮给「直达」——
+    /// 已经知道原因的用户不必再看一遍弹窗。
     /// `x-apple.systempreferences:` 是**唯一**能直接跳到该子面板的手段，
     /// 全仓只有 ``AppSettings/openFullDiskAccessSettings()`` 一处实现（主窗口横幅同源）。
     ///
     /// ⚠️ 开关 `labelsHidden()`：文字已经在左边那一列，`Toggle` 再把空 label 画一遍
-    /// 会在行首留一段莫名缩进。`.disabled(true)` 只作用于这个 `Toggle` 自己
-    /// —— 它与按钮是**兄弟**，不是嵌套。
+    /// 会在行首留一段莫名缩进。
     private var takeOverUnavailableControl: some View {
         HStack(spacing: DesignTokens.Spacing.sm) {
-            Toggle("", isOn: .constant(takeOverOn))
-                .toggleStyle(.switch)
-                .labelsHidden()
-                .disabled(true)
+            Toggle(
+                "",
+                isOn: Binding(
+                    get: { takeOverOn },
+                    set: { newValue in
+                        // 只响应「拨向开」：显示值恒为关，拨向关在这里不是真实手势。
+                        guard newValue else { return }
+                        onTakeOverNeedsFDA()
+                    })
+            )
+            .toggleStyle(.switch)
+            .labelsHidden()
             ActionButton(
                 title: L10n.tr(.openSystemSettings),
                 variant: .outline,
@@ -1464,7 +1502,14 @@ struct SettingsSectionPane: View {
                 AccentSwatch(
                     color: color,
                     isSelected: accentColor == color,
-                    onTap: { accentColorRaw = color.rawValue }
+                    onTap: {
+                        accentColorRaw = color.rawValue
+                        // 同步系统侧强调色 —— 侧栏选中胶囊的唯一颜色来源
+                        //（2026-10-22 macOS 27 实证，见 ``AppSettings/syncAppleAccentColor()``）。
+                        // ⚠️ 不能靠 `UserDefaults.didChangeNotification` 兜底：实测它
+                        // 对写入并不可靠送达（写入后键值纹丝不动），必须在写入点显式同步。
+                        AppSettings.syncAppleAccentColor()
+                    }
                 )
             }
         }
