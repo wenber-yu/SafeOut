@@ -17,6 +17,39 @@ final class DiskListStore: ObservableObject {
 
     @Published private(set) var disks: [DiskInfo] = []
 
+    /// 最近一次 ``disks`` 发布是不是「**只换了容量数字**」。
+    ///
+    /// **为什么需要这个标记**：``OccupancyStore`` 订阅 ``disks``，每次发布都会重跑一轮 `lsof`。
+    /// 容量刷新（每轮 15s 一次）只改 `freeBytes` / `usedBytes`，卷集合没变，
+    /// 也没有任何重新枚举进程的理由 —— 若不区分，占用检测会被容量刷新翻倍触发；
+    /// 更糟的是两次 `lsof` 只隔毫秒级，写入活动的速率采样会因「间隔太短」落空，
+    /// 界面就在「正在写入」和「可安全推出」之间来回闪。
+    ///
+    /// **为什么放在锁盒里、而不是一个普通属性**：订阅方的 sink 回调是**同步**投递的，
+    /// 必须在那一刻就判定「这次发布属于哪一种」。做成主 actor 属性就只能挪进 `Task` 里读，
+    /// 而那时可能已经过去了另一次发布 —— 读到的标记说的就不是这次了。
+    nonisolated var lastPublishWasCapacityOnly: Bool { publishKind.isCapacityOnly }
+
+    private nonisolated let publishKind = PublishKindBox()
+
+    /// 发布性质的锁盒（见 ``lastPublishWasCapacityOnly``）。
+    private final class PublishKindBox: @unchecked Sendable {
+        private let lock = NSLock()
+        private var capacityOnly = false
+
+        var isCapacityOnly: Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return capacityOnly
+        }
+
+        func set(capacityOnly: Bool) {
+            lock.lock()
+            self.capacityOnly = capacityOnly
+            lock.unlock()
+        }
+    }
+
     private var observers: [NSObjectProtocol] = []
 
     /// 真正干活的枚举入口。**可注入**是为了让 `refresh()` 的并发合并能被离线单测
@@ -62,6 +95,9 @@ final class DiskListStore: ObservableObject {
         /// ``OccupancyStore`` 用 `sink` 而不是视图里 `.onChange(of:)` 的原因 ——
         /// 后者在「新数组内容相等」时静默不触发，导致「刷新」按钮刷不动占用结论。
         func replaceDisksForTesting(_ newDisks: [DiskInfo]) {
+            // 这是「卷集合发生变化」的人工发布，必须与容量刷新区分开，
+            // 否则 ``OccupancyStore`` 会把一次真实的列表变更当成容量抖动而跳过检测。
+            publishKind.set(capacityOnly: false)
             disks = newDisks
         }
     #endif
@@ -117,6 +153,8 @@ final class DiskListStore: ObservableObject {
             pendingRerun = false
             let fetch = fetchDisks
             let fetched = await Task.detached(priority: .userInitiated) { fetch() }.value
+            // 完整枚举：卷集合与身份都可能变，占用结论必须重测（见 ``lastPublishWasCapacityOnly``）。
+            publishKind.set(capacityOnly: false)
             disks = fetched
         } while pendingRerun
         isRefreshing = false
@@ -126,6 +164,47 @@ final class DiskListStore: ObservableObject {
         let resuming = refreshWaiters
         refreshWaiters = []
         for continuation in resuming { continuation.resume() }
+    }
+
+    /// 只重读各卷的**容量**（`statfs`，每卷一次 syscall），**不**重新枚举磁盘。
+    ///
+    /// **为什么需要它**：``disks`` 原来只在插拔事件里重建，所以拷几个 GB 之后，
+    /// 行上仍写着「已用 3.4 MB · 剩余 1.07 GB」，而旁边已经显示「正在写入 · 约 2.1 MB/s」
+    /// —— 进度条一动不动，用户读到的是自相矛盾的两句话。
+    ///
+    /// 读不到容量（卷刚卸载）就**保留旧值**：换掉整条列表是挂载/卸载通知的职责，
+    /// 这里只负责「同一颗卷的数字要新鲜」。
+    ///
+    /// 只有数字真的变了才发布 —— 闲着的机器上不会每 15s 白刷一次界面。
+    func refreshCapacities() {
+        var updated = disks
+        var changed = false
+        for index in updated.indices {
+            guard
+                let free = VolumeWriteActivityDetector.availableBytes(
+                    atMountPath: updated[index].mountPath)
+            else { continue }
+            // 总容量沿用枚举时的值，而不是再读一次 statfs：两个口径的块大小算法并不完全一致，
+            // 混用会让「1.07 GB」这类徽章在两个数字之间跳动。已用 = 总量 − 可用（与 DiskService 同口径）。
+            let used = max(0, updated[index].totalBytes - free)
+            guard used != updated[index].usedBytes || free != updated[index].freeBytes else {
+                continue
+            }
+            updated[index] = DiskInfo(
+                id: updated[index].id,
+                bsdName: updated[index].bsdName,
+                volumeName: updated[index].volumeName,
+                mountPath: updated[index].mountPath,
+                totalBytes: updated[index].totalBytes,
+                usedBytes: used,
+                freeBytes: free,
+                deviceProtocol: updated[index].deviceProtocol,
+                deviceModel: updated[index].deviceModel)
+            changed = true
+        }
+        guard changed else { return }
+        publishKind.set(capacityOnly: true)
+        disks = updated
     }
 
     private func setupMonitoring() {

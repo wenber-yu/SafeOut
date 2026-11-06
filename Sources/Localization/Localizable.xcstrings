@@ -1051,6 +1051,13 @@
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "使用狀況未知" } }
       }
     },
+    "compactWriting" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在写入" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Writing" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在寫入" } }
+      }
+    },
     "diskCountFormat" : {
       "localizations" : {
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 块" } },
@@ -1252,6 +1259,20 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设置…" } },
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings…" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "設定…" } }
+      }
+    },
+    "writingEvidenceTitleFormat" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在写入 · 约 %@（可能在拷贝文件）" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Writing · about %@ (possibly copying files)" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在寫入 · 約 %@（可能在拷貝檔案）" } }
+      }
+    },
+    "writingStatusFormat" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在写入 · %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Writing · %@" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在寫入 · %@" } }
       }
     }
   },

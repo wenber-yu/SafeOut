@@ -5,7 +5,7 @@
    来源：Sources/Localization/Localizable.xcstrings
        + Design/ui/v2/assets/i18n-extra.json
    ----------------------------------------------------------------------------
-   源指纹 81554ed71780bd493de7ae2b5a5d401420301393c3ea8655b7ae3eec2ef821e4
+   源指纹 0170e89c47d6339593b19b9c992cdd7ae61fb1ba3898457a8d0eb2a7fc35d647
      = sha256(xcstrings + extra + 本脚本) —— 任一方变了它就是旧的，
        由 DesignDraftIntegrityTests 拦下「改了源忘了重跑」。
    ----------------------------------------------------------------------------
@@ -59,6 +59,7 @@ window.DS_L10N = {
       "compactBusyFormat": "%d 个程序在用",
       "compactSafe": "可安全推出",
       "compactUnknown": "占用未知",
+      "compactWriting": "正在写入",
       "diskCountFormat": "%d 块",
       "diskImageKindLabel": "磁盘映像",
       "done": "完成",
@@ -260,7 +261,9 @@ window.DS_L10N = {
       "versionDirtyNoticeFormat": "开发版（%d 处未保存改动 · 构建 %@）",
       "versionLineFormat": "版本 %@ · 构建 %@ · %@",
       "viewLog": "查看日志",
-      "visualEffects": "视觉效果"
+      "visualEffects": "视觉效果",
+      "writingEvidenceTitleFormat": "正在写入 · 约 %@（可能在拷贝文件）",
+      "writingStatusFormat": "正在写入 · %@"
   },
   "en": {
       "accentColor": "Accent Color",
@@ -289,6 +292,7 @@ window.DS_L10N = {
       "compactBusyFormat": "%d in use",
       "compactSafe": "Safe to eject",
       "compactUnknown": "Usage unknown",
+      "compactWriting": "Writing",
       "diskCountFormat": "%d",
       "diskImageKindLabel": "Disk Image",
       "done": "Done",
@@ -490,7 +494,9 @@ window.DS_L10N = {
       "versionDirtyNoticeFormat": "Dev build (%d uncommitted changes · build %@)",
       "versionLineFormat": "Version %@ · Build %@ · %@",
       "viewLog": "View Log",
-      "visualEffects": "Visual Effects"
+      "visualEffects": "Visual Effects",
+      "writingEvidenceTitleFormat": "Writing · about %@ (possibly copying files)",
+      "writingStatusFormat": "Writing · %@"
   },
   "zh-Hant": {
       "accentColor": "強調色",
@@ -519,6 +525,7 @@ window.DS_L10N = {
       "compactBusyFormat": "%d 個程式在使用",
       "compactSafe": "可安全退出",
       "compactUnknown": "使用狀況未知",
+      "compactWriting": "正在寫入",
       "diskCountFormat": "%d 個",
       "diskImageKindLabel": "磁碟映像",
       "done": "完成",
@@ -720,6 +727,8 @@ window.DS_L10N = {
       "versionDirtyNoticeFormat": "開發版（%d 處未儲存變更 · 建置 %@）",
       "versionLineFormat": "版本 %@ · 建置 %@ · %@",
       "viewLog": "檢視日誌",
-      "visualEffects": "視覺效果"
+      "visualEffects": "視覺效果",
+      "writingEvidenceTitleFormat": "正在寫入 · 約 %@（可能在拷貝檔案）",
+      "writingStatusFormat": "正在寫入 · %@"
   }
 };

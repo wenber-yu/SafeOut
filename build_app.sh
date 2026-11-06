@@ -760,5 +760,9 @@ else
     echo " 分发产物：PACKAGE=1 ./build_app.sh 生成未公证的 dmg / zip（供 GitHub Release 使用）"
 fi
 echo " 运行：        open \"$APP_BUNDLE\""
-echo " 安装到系统：  cp -R \"$APP_BUNDLE\" /Applications/"
+echo " 安装到系统：  rm -rf \"/Applications/SafeOut.app\" && ditto \"$APP_BUNDLE\" \"/Applications/SafeOut.app\""
+echo "               ⚠️ 必须是「先删后拷」。cp -R 在目标已存在时是**合并**：旧包里残留的"
+echo "                  文件（曾见 4 个 .cstemp）会留在 Sparkle 的嵌套签名组件里，"
+echo "                  codesign --verify --deep --strict 立刻报「a sealed resource is missing or invalid」。"
+echo "                  签名封印一坏，TCC 就匹配不上当初的授权记录 —— 表现为「每次更新都要重新授权完全磁盘访问」。"
 echo "=================================================="

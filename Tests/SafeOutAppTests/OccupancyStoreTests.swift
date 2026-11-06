@@ -112,15 +112,21 @@ private func waitForNextRound(
 }
 
 /// 造一个不跑真实 lsof 的 store。`pollInterval` 默认给足，避免轮询干扰断言。
+///
+/// `availableBytes` 默认返回 `nil`（读不到），于是占用相关的用例一行采样都不会做 ——
+/// 这是刻意的：它们守的是「结论只有一份」，不该被写入活动的采样搅进来。
 @MainActor
 private func makeStore(
     diskStore: DiskListStore,
     pollInterval: TimeInterval = 3600,
     autoStart: Bool = false,
+    now: @escaping () -> Date = Date.init,
+    availableBytes: @escaping @Sendable (String) -> Int64? = { _ in nil },
     detect: @escaping @Sendable (String) async -> OccupancyResult
 ) -> OccupancyStore {
     OccupancyStore(
-        diskStore: diskStore, pollInterval: pollInterval, detect: detect, autoStart: autoStart)
+        diskStore: diskStore, pollInterval: pollInterval, detect: detect, autoStart: autoStart,
+        now: now, availableBytes: availableBytes)
 }
 
 // MARK: - 测试
@@ -369,5 +375,206 @@ struct OccupancyStoreTests {
 
         diskStore.replaceDisksForTesting([makeDisk("/Volumes/PROBE-2")])
         expectEvent(await waitForNextRound(live), "列表一变必须走事件路")
+    }
+}
+
+// MARK: - 写入活动
+//
+// 这一组守的是 2026-10-30 用户报的症：正在访达里拷贝，两块盘却显示「可安全推出」。
+// 实测成因是 `lsof` 对访达拷贝**零命中**，而可用空间在以 33 MB/s 减少 ——
+// 后者不需要任何权限，是本应用能拿到的唯一一条「正在写」的证据。
+
+/// 按顺序吐出预先写好的容量读数。
+///
+/// `availableBytes` 是 `@Sendable` 的**同步**闭包，用 actor 会要求 `await`；
+/// 这里用 `NSLock` 包住可变状态 —— 与 ``SignalBox`` 同一类做法。
+private final class ReadingSequence: @unchecked Sendable {
+    private let lock = NSLock()
+    private let values: [Int64?]
+    private var index = 0
+
+    init(_ values: [Int64?]) { self.values = values }
+
+    /// 取下一个读数；用完之后**停在最后一个**上（后续轮次表现为「不再变化」）。
+    func next() -> Int64? {
+        lock.lock()
+        defer { lock.unlock() }
+        let value = values[min(index, values.count - 1)]
+        index += 1
+        return value
+    }
+}
+
+/// 每次调用前进固定步长的时钟 —— 让速率可以被**精确**断言，不掺调度延迟。
+private final class SteppingClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var current: TimeInterval
+    private let step: TimeInterval
+
+    init(start: TimeInterval = 0, step: TimeInterval = 15) {
+        self.current = start
+        self.step = step
+    }
+
+    func next() -> Date {
+        lock.lock()
+        defer { lock.unlock() }
+        let value = Date(timeIntervalSince1970: current)
+        current += step
+        return value
+    }
+}
+
+/// 按**预先写好的时刻**逐个吐出的时钟（用完之后停在最后一个）。
+///
+/// `SteppingClock` 的步长是固定的，造不出「15s → 0.2s → 14.8s」这种用于
+/// 复现「额外一轮把写入活动抹掉」的序列 —— 而那个序列正是 2026-10-30 用户报告的
+/// 「拷贝中闪一下正在写入又变回没有占用」的形状。
+private final class ScriptedClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private let times: [TimeInterval]
+    private var index = 0
+
+    init(_ times: [TimeInterval]) { self.times = times }
+
+    func next() -> Date {
+        lock.lock()
+        defer { lock.unlock() }
+        let value = Date(timeIntervalSince1970: times[min(index, times.count - 1)])
+        index += 1
+        return value
+    }
+}
+
+@Suite("写入活动的采样")
+@MainActor
+struct VolumeActivityStoreTests {
+
+    /// **第一轮必须什么都不说**：速率是「两轮读数之差 ÷ 间隔」，只有一轮时没有差值。
+    ///
+    /// 若这里为了「快点显示」而拿 `DiskInfo.freeBytes` 之类的旧值凑数，
+    /// 就会在学生拷贝刚开始时就报出一个凭空的速率。
+    @Test("首轮没有可比较的读数，不发布写入活动")
+    func 首轮不发布写入活动() async {
+        let diskStore = DiskListStore(monitoring: false)
+        let disk = makeDisk("/Volumes/WRITE")
+        let reads = ReadingSequence([1_000_000_000])
+        let clock = SteppingClock()
+        let store = makeStore(
+            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() }
+        ) { _ in .none }
+
+        await store.refresh(disks: [disk])
+
+        #expect(store.activity(for: disk) == nil, "只有一次读数时不能凭空算出速率")
+    }
+
+    /// **本组最重要的一条**：拷贝进行中必须报「正在写入」，停手之后必须撤掉。
+    ///
+    /// 两轮间隔 15s、可用空间减少 36 MB ⇒ 2.4 MB/s。
+    /// 数值用精确相等断言，是为了守住「速率 = 差值 ÷ 间隔」这条算法本身 ——
+    /// 若哪天有人把 `f_bavail * f_bsize` 换成 1000 进制、或把间隔当成 1s，这里立刻红。
+    @Test("可用空间持续减少时发布写入活动，停手后撤销")
+    func 空间减少时发布写入活动() async {
+        let diskStore = DiskListStore(monitoring: false)
+        let disk = makeDisk("/Volumes/WRITE")
+        // 1 GB → 964 MB（少 36 MB）→ 964 MB（停手）
+        let reads = ReadingSequence([1_000_000_000, 964_000_000, 964_000_000])
+        let clock = SteppingClock(start: 0, step: 15)
+        let store = makeStore(
+            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() }
+        ) { _ in .none }
+        defer { store.stop() }
+
+        await store.refresh(disks: [disk])
+        await store.refresh(disks: [disk])
+        let activity = store.activity(for: disk)
+        #expect(
+            activity?.bytesPerSecond == 2_400_000,
+            "36 MB / 15s 应为 2.4 MB/s，实际 \(activity.map { String($0.bytesPerSecond) } ?? "nil")")
+
+        // 占用结论这条线**完全没变**：`lsof` 仍然什么都看不到。
+        #expect(
+            store.result(for: disk) == .none,
+            "写入活动是独立通道：它不改变「没有进程占用」这个结论（用户报的正是「只有结论、没有理由」）")
+
+        await store.refresh(disks: [disk])
+        #expect(
+            store.activity(for: disk) == nil,
+            "写入停了就必须撤掉证据，否则界面永远挂着「正在写入」，用户会学会无视它")
+    }
+
+    /// 拔盘之后那块盘的写入活动必须消失 —— 与占用结论的「整体替换」同一条纪律。
+    @Test("拔掉的盘不留下写入活动")
+    func 拔盘清除写入活动() async {
+        let diskStore = DiskListStore(monitoring: false)
+        let disk = makeDisk("/Volumes/WRITE")
+        let reads = ReadingSequence([1_000_000_000, 964_000_000])
+        let clock = SteppingClock()
+        let store = makeStore(
+            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() }
+        ) { _ in .none }
+        defer { store.stop() }
+
+        await store.refresh(disks: [disk])
+        await store.refresh(disks: [disk])
+        #expect(store.activity(for: disk) != nil)
+
+        await store.refresh(disks: [])
+
+        #expect(store.activities.isEmpty, "盘都拔了还挂着「正在写入」，等于给不存在的盘提建议")
+    }
+
+    /// **读不到容量 ≠ 没有写入**：这一轮不发布活动，但也绝不发布一个「0 字节/秒」的假结论。
+    @Test("读不到容量的盘不发布写入活动")
+    func 读不到容量时不发布写入活动() async {
+        let diskStore = DiskListStore(monitoring: false)
+        let disk = makeDisk("/Volumes/WRITE")
+        let store = makeStore(diskStore: diskStore, availableBytes: { _ in nil }) { _ in .none }
+        defer { store.stop() }
+
+        await store.refresh(disks: [disk])
+        await store.refresh(disks: [disk])
+
+        #expect(store.activity(for: disk) == nil)
+    }
+
+    /// **本组第三条关键断言**：间隔太短的一轮**不许**把写入活动撤销掉。
+    ///
+    /// 守的是 2026-10-30 用户报告：「拷贝电影时，盘上『正在写入』闪一下就变回
+    /// 『没有占用』，点刷新又会闪一下又恢复」。
+    ///
+    /// 成因：点刷新会叠出**两轮**（`DiskListStore.refresh()` 发布触发一轮、视图紧接着
+    /// 显式 `refresh(disks:)` 又来一轮），第二轮的两轮间隔只有毫秒级 ⇒ `detect` 算不出速率
+    /// ⇒ 原先的「整体替换」把真实结论抹成了空。
+    ///
+    /// 判据：间隔 < ``VolumeWriteActivityDetector/minimumInterval`` 的那一轮**保持原值**；
+    /// 而**间隔足够长、且可用空间不再减少**的那一轮仍然要撤销（否则「正在写入」永远挂着）。
+    @Test("间隔太短的一轮不撤销写入活动，下一个有效采样才撤销")
+    func 间隔太短不撤销写入活动() async {
+        let diskStore = DiskListStore(monitoring: false)
+        let disk = makeDisk("/Volumes/WRITE")
+        // 1 GB → 964 MB（15s，2.4 MB/s）→ 964 MB（只隔 0.2s，复现「点刷新叠出的第二轮」）
+        // → 964 MB（再过 14.8s，停手）
+        let reads = ReadingSequence([1_000_000_000, 964_000_000, 964_000_000, 964_000_000])
+        let clock = ScriptedClock([0, 15, 15.2, 30])
+        let store = makeStore(
+            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() }
+        ) { _ in .none }
+        defer { store.stop() }
+
+        await store.refresh(disks: [disk])  // 首轮：只有基线
+        await store.refresh(disks: [disk])  // 15s：检出写入
+        #expect(store.activity(for: disk)?.bytesPerSecond == 2_400_000)
+
+        await store.refresh(disks: [disk])  // 0.2s 后：下不了结论的一轮
+        #expect(
+            store.activity(for: disk) != nil,
+            "间隔太短的一轮算不出速率，那不是「没在写」；抹掉它界面就会闪一下 —— 正是用户报的那个 bug")
+
+        await store.refresh(disks: [disk])  // 14.8s 后：有效间隔 + 不再减少 ⇒ 真的停手
+        #expect(
+            store.activity(for: disk) == nil,
+            "有效间隔上没有写入就必须撤销；否则「正在写入」会永远挂着，用户会学会无视它")
     }
 }

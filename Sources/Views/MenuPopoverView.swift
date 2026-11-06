@@ -617,6 +617,7 @@ struct MenuDiskList: View {
                 MenuBarDiskRow(
                     disk: disk,
                     occupancy: occupancyStore.result(for: disk),
+                    activity: occupancyStore.activity(for: disk),
                     accent: accent,
                     onEject: { onEject(disk) }
                 )

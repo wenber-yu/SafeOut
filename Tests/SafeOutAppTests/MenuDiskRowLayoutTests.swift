@@ -115,6 +115,81 @@ struct MenuDiskRowLayoutTests {
         #expect(DiskRowState(.occupied([])) == .safe, "lsof 返回 0 行时是「确认没占用」，不是「忙」")
     }
 
+    /// **2026-10-30 用户报的症**：访达正在拷贝，界面却显示「可安全推出」。
+    ///
+    /// 这里钉住的是**归约**这一层：`lsof` 什么都没看到（`.none`）**不足以**下「安全」的结论 ——
+    /// 只要容量在不断减少，就必须是 ``DiskRowState/writing``。
+    @Test func 测到写入时不再归约为安全() {
+        let activity = VolumeWriteActivity(
+            bytesPerSecond: 36_000_000, sampledAt: Date(timeIntervalSince1970: 0))
+
+        #expect(
+            DiskRowState(.none, activity: activity) == .writing(activity),
+            "可用空间在减少就不能说「可安全推出」——这正是用户报的那一屏")
+
+        #expect(
+            DiskRowState(.occupied([]), activity: activity) == .writing(activity),
+            "`.occupied([])` 本就是「系统说忙但列不出进程」，写入活动正好补上可读的理由")
+    }
+
+    /// 能点名、能关闭的进程比一个速率更能回答「去关掉哪个应用」——所以进程证据优先。
+    @Test func 进程证据压过写入活动() {
+        let activity = VolumeWriteActivity(
+            bytesPerSecond: 36_000_000, sampledAt: Date(timeIntervalSince1970: 0))
+
+        #expect(
+            DiskRowState(.occupied(sampleProcesses), activity: activity) == .busy(sampleProcesses))
+    }
+
+    /// 「不知道」压过任何活动证据：连进程都看不到，就别再断言别的了。
+    @Test func 未知状态不因写入活动变成有结论() {
+        let activity = VolumeWriteActivity(
+            bytesPerSecond: 36_000_000, sampledAt: Date(timeIntervalSince1970: 0))
+
+        #expect(DiskRowState(.unknown, activity: activity) == .unknown)
+        #expect(DiskRowState(.needsFullDiskAccess, activity: activity) == .unknown)
+    }
+
+    /// 写入中的盘**同样不能拔**，但**没有可关闭的对象**。
+    ///
+    /// 两条分开断言，是因为它们各自决定一处 UI：
+    /// `isBusy` 决定按钮是否变红「关闭并推出」（写入时不能变 —— 没有 pid 可杀），
+    /// `needsAttention` 决定琥珀条与琥珀图标（写入时必须亮 —— 最危险的时刻不能长得像闲置）。
+    @Test func 写入态不是忙态但仍需留意() {
+        let activity = VolumeWriteActivity(
+            bytesPerSecond: 36_000_000, sampledAt: Date(timeIntervalSince1970: 0))
+        let state = DiskRowState(.none, activity: activity)
+
+        #expect(state.isBusy == false, "写入活动没有 pid，变红按钮等于承诺一个做不到的动作")
+        #expect(state.needsAttention, "琥珀条必须出现，否则界面和闲置时一模一样")
+        #expect(DiskRowState(.none).needsAttention == false)
+        #expect(DiskRowState(.unknown).needsAttention == false)
+    }
+
+    // MARK: - 写入文案
+
+    /// 文案必须带出**速率**（用户要的是「它在干什么、多快」，不是一个笼统的「忙」）。
+    ///
+    /// ⚠️ 断言只挑**与 locale 无关**的部分（速率串 `36 MB/s` 不本地化）：
+    /// CI 跑在 `en_US`，写死中文会让这条在本地绿、在 CI 红。
+    @Test func 写入态文案带出速率() {
+        let activity = VolumeWriteActivity(
+            bytesPerSecond: 36_000_000, sampledAt: Date(timeIntervalSince1970: 0))
+
+        let title = DiskRowText.evidenceTitle(.writing(activity))
+        #expect(title.contains(activity.formattedRate), "证据区标题里必须带速率，实际：\(title)")
+        #expect(
+            title != DiskRowText.evidenceTitle(.safe),
+            "写入态不能沿用「可安全推出」那句话")
+
+        let status = DiskRowText.writingStatus(activity)
+        #expect(status.contains(activity.formattedRate), "面板第三行必须带速率，实际：\(status)")
+
+        #expect(
+            DiskRowText.compactStatus(.writing(activity)) != DiskRowText.compactStatus(.safe),
+            "紧凑行的短标签也必须换，不能和「可安全推出」长一样")
+    }
+
     // MARK: - 文案构成
 
     @Test func 无占用进程时不产生占用行文案() {

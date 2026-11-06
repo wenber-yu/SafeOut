@@ -374,6 +374,9 @@ struct MainActorBlockingTests {
         "DiskListStoreConcurrencyTests.swift":
             "`DiskListStore` 整个类标了 `@MainActor` ⇒ 它的 `init(fetch:monitoring:)` 与 `disks` "
             + "都是主 actor 隔离的。实测摘掉文件级标注立刻 4 处编译错（建不出实例、读不到 `disks`）",
+        "DiskListStoreCapacityTests.swift":
+            "`DiskListStore` 是 `@MainActor`：建实例（`init(monitoring:)`）、灌列表"
+            + "（`replaceDisksForTesting`）、读 `disks` 三样都只能主 actor ⇒ 摘掉立刻编译错",
         "EjectFlowControllerTests.swift":
             "`EjectFlowController` / `EjectAlertPanel` / `EjectAlertPresenter` 都是主 actor；装配走 `NSHostingController`",
         "EmptyStateTests.swift": "离屏渲染 `OffscreenRender.bitmap` + `ViewFixtures.mainWindow`（两个都 `@MainActor`）",

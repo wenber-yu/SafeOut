@@ -456,6 +456,7 @@ struct DiskListRegion: View {
                         DiskRow(
                             disk: disk,
                             occupancy: occupancyStore.result(for: disk),
+                            activity: occupancyStore.activity(for: disk),
                             accent: accent,
                             onEject: { onEject(disk) },
                             density: density,

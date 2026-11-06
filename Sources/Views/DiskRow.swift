@@ -94,7 +94,8 @@ private struct BusyBar: View {
 
 // MARK: - 行状态
 
-/// 一块盘的判定结论。由 ``OccupancyResult`` 归约而来，UI 只认这三种。
+/// 一块盘的判定结论。由 ``OccupancyResult``（+ 可选的 ``VolumeWriteActivity``）归约而来，
+/// UI 只认这四种。
 ///
 /// **为什么要单独归约**：``OccupancyResult`` 有四个 case，其中 `.needsFullDiskAccess`
 /// 与 `.unknown` 在**展示上是同一件事**（都是「不知道」），但语义不同（前者用户可补救）。
@@ -102,25 +103,51 @@ private struct BusyBar: View {
 enum DiskRowState: Equatable {
     /// 已确认有进程占用，携带进程列表。
     case busy([OccupyingProcess])
-    /// 已确认没有进程占用。
+    /// 没有进程占用，但容量在稳定减少 —— **正在被写入**（见 ``VolumeWriteActivity``）。
+    case writing(VolumeWriteActivity)
+    /// 已确认没有进程占用、也没有测到写入。
     case safe
     /// 无法判断（未授权 FDA / 沙盒）。**不可当作安全**。
     case unknown
 
-    init(_ result: OccupancyResult) {
+    /// 归约。**写入活动只在「没有进程」时才升格成 ``writing``**：
+    /// 有进程时那句话更具体（能点名、能关闭），速率反而是次要信息。
+    init(_ result: OccupancyResult, activity: VolumeWriteActivity? = nil) {
         switch result {
         case .occupied(let processes):
-            self = processes.isEmpty ? .safe : .busy(processes)
+            if !processes.isEmpty {
+                self = .busy(processes)
+            } else {
+                // `.occupied([])` 是「系统说忙但列不出进程」，它本身已经**不安全**；
+                // 此时写入活动正好补上一条可读的理由。
+                self = activity.map(DiskRowState.writing) ?? .safe
+            }
         case .none:
-            self = .safe
+            self = activity.map(DiskRowState.writing) ?? .safe
         case .unknown, .needsFullDiskAccess:
+            // 「不知道」压过任何活动证据：连进程都看不到，就别再断言别的了。
             self = .unknown
         }
     }
 
+    /// 有**进程**占用（决定按钮是否变红「关闭并推出」）。
+    ///
+    /// ⚠️ 写入活动**不算** `isBusy`：它没有 pid，变红按钮等于承诺一个做不到的动作。
     var isBusy: Bool {
         if case .busy = self { return true }
         return false
+    }
+
+    /// 需要用户留意（任一种「这块盘现在别拔」）。琥珀条、琥珀图标、悬停底色都用它。
+    ///
+    /// **为什么不直接用 `isBusy`**：写入中的盘同样是「别拔」，只是拦它的手段不同
+    /// （等它写完，而不是关掉某个应用）。若只按 `isBusy` 画琥珀条，
+    /// 界面会在最危险的时刻表现得和闲置时一模一样 —— 这次用户报的正是这个。
+    var needsAttention: Bool {
+        switch self {
+        case .busy, .writing: return true
+        case .safe, .unknown: return false
+        }
     }
 
     var processes: [OccupyingProcess] {
@@ -199,6 +226,10 @@ enum DiskRowText {
             return String(format: L10n.tr(.busyEvidenceTitleFormat), processes.count)
         case .busy:
             return L10n.tr(.busyEvidenceTitleFallback)
+        case .writing(let activity):
+            // **说人话**：用户此刻最想知道的是「我到底能不能拔」，而不只是「有进程」。
+            // 速率来自 ``VolumeWriteActivity`` 的实测，比笼统的「有写入」更像在做事。
+            return String(format: L10n.tr(.writingEvidenceTitleFormat), activity.formattedRate)
         case .safe:
             return L10n.tr(.safeToEjectConclusion)
         case .unknown:
@@ -213,11 +244,22 @@ enum DiskRowText {
             return processes.isEmpty
                 ? L10n.tr(.busyEvidenceTitleFallback)
                 : String(format: L10n.tr(.compactBusyFormat), processes.count)
+        case .writing:
+            // 紧凑行只有 46pt 高、还要和容量数字挤一行，速率留给证据区/面板，这里只报状态。
+            return L10n.tr(.compactWriting)
         case .safe:
             return L10n.tr(.compactSafe)
         case .unknown:
             return L10n.tr(.compactUnknown)
         }
+    }
+
+    /// 菜单栏面板第三行的写入文案，如「正在写入 · 36 MB/s」。
+    ///
+    /// 与 ``evidenceTitle(_:)`` 的写入分支分开，是因为面板只有 360pt 宽：
+    /// 主窗口那句「（可能在拷贝文件）」放进来会被截尾，反而把速率挤掉。
+    static func writingStatus(_ activity: VolumeWriteActivity) -> String {
+        String(format: L10n.tr(.writingStatusFormat), activity.formattedRate)
     }
 
     // MARK: 行内动作的可访问性标签
@@ -253,6 +295,11 @@ struct DiskRow: View {
 
     let disk: DiskInfo
     let occupancy: OccupancyResult
+    /// 「正在被写入」的实测证据（来自 ``OccupancyStore/activity(for:)``）。
+    ///
+    /// 单独成一路入参而不是并进 `occupancy`：它不是「占用」，没有 pid，
+    /// 也不能被「关闭并推出」拿去清场（见 ``OccupancyStore/activities`` 的说明）。
+    var activity: VolumeWriteActivity? = nil
     let accent: AccentColor
     let onEject: () -> Void
 
@@ -266,7 +313,7 @@ struct DiskRow: View {
     /// 证据区是否展开（设计稿 `.evid__hint` 的「收起清单」）。
     @State private var isEvidenceExpanded = true
 
-    private var state: DiskRowState { DiskRowState(occupancy) }
+    private var state: DiskRowState { DiskRowState(occupancy, activity: activity) }
 
     var body: some View {
         switch density {
@@ -283,7 +330,7 @@ struct DiskRow: View {
                 systemName: "externaldrive.fill",
                 style: .diskRow,
                 accent: accent,
-                isBusy: state.isBusy)
+                isBusy: state.needsAttention)
 
             VStack(alignment: .leading, spacing: DesignTokens.Size.rowColumnGap) {
                 headRow
@@ -366,6 +413,16 @@ struct DiskRow: View {
                     ? { withAnimation(DesignTokens.Motion.standard) { isEvidenceExpanded.toggle() } }
                     : nil
             )
+        case .writing:
+            // 没有可点名的进程：证据区只放结论（带速率），不画芯片列表。
+            EvidenceBlock(
+                kind: .writing,
+                title: DiskRowText.evidenceTitle(state),
+                processes: [],
+                isExpanded: true,
+                hint: nil,
+                onToggleHint: nil
+            )
         case .safe:
             EvidenceBlock(
                 kind: .safe,
@@ -395,7 +452,7 @@ struct DiskRow: View {
                 systemName: "externaldrive.fill",
                 style: .compactRow,
                 accent: accent,
-                isBusy: state.isBusy)
+                isBusy: state.needsAttention)
 
             Text(disk.displayName)
                 .font(.system(size: DesignTokens.FontSize.bodyStrong, weight: .semibold))
@@ -448,6 +505,7 @@ struct DiskRow: View {
     private var compactStatusIcon: String {
         switch state {
         case .busy: return "exclamationmark.triangle.fill"
+        case .writing: return "arrow.down.circle.fill"
         case .safe: return "checkmark"
         case .unknown: return "info.circle"
         }
@@ -455,7 +513,7 @@ struct DiskRow: View {
 
     private var compactStatusColor: Color {
         switch state {
-        case .busy: return DesignTokens.Palette.warningText
+        case .busy, .writing: return DesignTokens.Palette.warningText
         case .safe: return DesignTokens.Palette.successText
         case .unknown: return DesignTokens.Palette.mutedForeground
         }
@@ -466,7 +524,7 @@ struct DiskRow: View {
     /// 悬停底色：被占用行用琥珀浅底（强化「这块盘有情况」），其余用中性浅底。
     private var rowBackground: Color {
         guard hovering else { return .clear }
-        return state.isBusy ? DesignTokens.Palette.warningSoft : DesignTokens.Palette.subtle
+        return state.needsAttention ? DesignTokens.Palette.warningSoft : DesignTokens.Palette.subtle
     }
 
     /// 被占用行的左侧琥珀条 —— **两种密度各有自己的规格**（设计稿 §3 的「三种行」）。
@@ -484,7 +542,7 @@ struct DiskRow: View {
     /// 而 4pt 正好是 `2 ×（10 − 8）`。**算术与实测对不上时，先怀疑接线，别先怀疑取整。**
     @ViewBuilder
     private var busyBar: some View {
-        if state.isBusy {
+        if state.needsAttention {
             switch density {
             case .regular:
                 BusyBar(
@@ -541,6 +599,11 @@ struct DiskRow: View {
 struct EvidenceBlock: View {
     enum Kind {
         case busy
+        /// 有写入但没有可点名的进程（访达拷贝这类 `lsof` 看不到的写入）。
+        ///
+        /// 与 `.busy` 共用琥珀底色 —— 用户要做的决定是同一个（「先别拔」），
+        /// 只是拦路的原因不同；图标与文案把这层差别说清楚。
+        case writing
         case safe
         case unknown
     }
@@ -560,8 +623,31 @@ struct EvidenceBlock: View {
     var body: some View {
         switch kind {
         case .safe: safeBody
-        case .busy: blockBody(background: DesignTokens.Palette.warningSoft, border: DesignTokens.Palette.warningLine)
-        case .unknown: blockBody(background: DesignTokens.Palette.sunken, border: DesignTokens.Palette.border)
+        case .busy, .writing:
+            blockBody(
+                background: DesignTokens.Palette.warningSoft,
+                border: DesignTokens.Palette.warningLine)
+        case .unknown:
+            blockBody(background: DesignTokens.Palette.sunken, border: DesignTokens.Palette.border)
+        }
+    }
+
+    /// 头部图标。**写入用「向下箭头进圈」而不是警告三角**：它不是在报错，
+    /// 而是在说「数据正在流进来」——三角会让用户以为出了问题、急着去关东西。
+    private var iconName: String {
+        switch kind {
+        case .busy: return "exclamationmark.triangle.fill"
+        case .writing: return "arrow.down.circle.fill"
+        case .unknown: return "info.circle"
+        case .safe: return "checkmark"
+        }
+    }
+
+    /// 头部的配色是否走琥珀这一档（只有 `blockBody` 里会问）。
+    private var usesWarningColor: Bool {
+        switch kind {
+        case .busy, .writing: return true
+        case .safe, .unknown: return false
         }
     }
 
@@ -591,7 +677,7 @@ struct EvidenceBlock: View {
     private func blockBody(background: Color, border: Color) -> some View {
         VStack(alignment: .leading, spacing: DesignTokens.Size.evidenceHeadGap) {
             HStack(spacing: 6) {
-                Image(systemName: kind == .busy ? "exclamationmark.triangle.fill" : "info.circle")
+                Image(systemName: iconName)
                     .font(.system(size: 12, weight: .semibold))
                 Text(title)
                     .font(.system(size: DesignTokens.FontSize.caption, weight: .semibold))
@@ -604,7 +690,8 @@ struct EvidenceBlock: View {
                 }
             }
             .foregroundStyle(
-                kind == .busy ? DesignTokens.Palette.warningText : DesignTokens.Palette.mutedForeground)
+                usesWarningColor
+                    ? DesignTokens.Palette.warningText : DesignTokens.Palette.mutedForeground)
 
             if isExpanded && !processes.isEmpty {
                 chips
@@ -720,6 +807,8 @@ struct MenuBarDiskRow: View {
 
     let disk: DiskInfo
     let occupancy: OccupancyResult
+    /// 「正在被写入」的实测证据，同 ``DiskRow/activity``。
+    var activity: VolumeWriteActivity? = nil
     let accent: AccentColor
     let onEject: () -> Void
     var isEjecting: Bool = false
@@ -727,7 +816,7 @@ struct MenuBarDiskRow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var hovering = false
 
-    private var state: DiskRowState { DiskRowState(occupancy) }
+    private var state: DiskRowState { DiskRowState(occupancy, activity: activity) }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -735,7 +824,7 @@ struct MenuBarDiskRow: View {
                 systemName: "externaldrive.fill",
                 style: .menuRow,
                 accent: accent,
-                isBusy: state.isBusy)
+                isBusy: state.needsAttention)
 
             VStack(alignment: .leading, spacing: 1) {
                 HStack(alignment: .firstTextBaseline, spacing: DesignTokens.Spacing.xs) {
@@ -838,6 +927,18 @@ struct MenuBarDiskRow: View {
             )
             .lineLimit(1)
             .truncationMode(.tail)
+        case .writing(let activity):
+            // **这里说的就是用户想知道的那件事**：不是「有个我们查不到的进程」，
+            // 而是「文件正在往里写，速度多少」。面板只有三行长、宽 360pt，
+            // 所以用短句式（不带「可能在拷贝文件」那半句），把速率留在最前面。
+            Text(DiskRowText.writingStatus(activity))
+                .font(.system(size: DesignTokens.FontSize.footnote, weight: .medium))
+                .foregroundStyle(DesignTokens.Palette.warningText)
+                .designLineHeight(
+                    DesignTokens.LineHeight.base, fontSize: DesignTokens.FontSize.footnote
+                )
+                .lineLimit(1)
+                .truncationMode(.tail)
         case .safe:
             Text(L10n.tr(.compactSafe))
                 .font(.system(size: DesignTokens.FontSize.footnote))
@@ -858,7 +959,7 @@ struct MenuBarDiskRow: View {
     }
 
     private var hoverBackground: Color {
-        state.isBusy ? DesignTokens.Palette.warningSoft : DesignTokens.Palette.subtle
+        state.needsAttention ? DesignTokens.Palette.warningSoft : DesignTokens.Palette.subtle
     }
 
     /// 被占用行的左侧琥珀条（设计稿 `.mrow--busy::before`：**2.5pt**，上下各内缩 7）。
@@ -871,7 +972,7 @@ struct MenuBarDiskRow: View {
     /// 而承载修复的 `menuBusyBar*` 两个令牌当时**零消费者**（注释里的 `✅` 是假的）。
     @ViewBuilder
     private var busyBar: some View {
-        if state.isBusy {
+        if state.needsAttention {
             BusyBar(
                 width: DesignTokens.Size.menuBusyBarWidth,
                 verticalInset: DesignTokens.Size.menuBusyBarInset)
