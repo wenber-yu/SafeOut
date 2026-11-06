@@ -461,8 +461,9 @@ struct VolumeActivityStoreTests {
         let reads = ReadingSequence([1_000_000_000])
         let clock = SteppingClock()
         let store = makeStore(
-            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() }
-        ) { _ in .none }
+            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() },
+            detect: { _ in .none }
+        )
 
         await store.refresh(disks: [disk])
 
@@ -482,8 +483,9 @@ struct VolumeActivityStoreTests {
         let reads = ReadingSequence([1_000_000_000, 964_000_000, 964_000_000])
         let clock = SteppingClock(start: 0, step: 15)
         let store = makeStore(
-            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() }
-        ) { _ in .none }
+            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() },
+            detect: { _ in .none }
+        )
         defer { store.stop() }
 
         await store.refresh(disks: [disk])
@@ -512,8 +514,9 @@ struct VolumeActivityStoreTests {
         let reads = ReadingSequence([1_000_000_000, 964_000_000])
         let clock = SteppingClock()
         let store = makeStore(
-            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() }
-        ) { _ in .none }
+            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() },
+            detect: { _ in .none }
+        )
         defer { store.stop() }
 
         await store.refresh(disks: [disk])
@@ -530,7 +533,8 @@ struct VolumeActivityStoreTests {
     func 读不到容量时不发布写入活动() async {
         let diskStore = DiskListStore(monitoring: false)
         let disk = makeDisk("/Volumes/WRITE")
-        let store = makeStore(diskStore: diskStore, availableBytes: { _ in nil }) { _ in .none }
+        let store = makeStore(
+            diskStore: diskStore, availableBytes: { _ in nil }, detect: { _ in .none })
         defer { store.stop() }
 
         await store.refresh(disks: [disk])
@@ -559,8 +563,9 @@ struct VolumeActivityStoreTests {
         let reads = ReadingSequence([1_000_000_000, 964_000_000, 964_000_000, 964_000_000])
         let clock = ScriptedClock([0, 15, 15.2, 30])
         let store = makeStore(
-            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() }
-        ) { _ in .none }
+            diskStore: diskStore, now: { clock.next() }, availableBytes: { _ in reads.next() },
+            detect: { _ in .none }
+        )
         defer { store.stop() }
 
         await store.refresh(disks: [disk])  // 首轮：只有基线
