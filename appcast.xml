@@ -3,23 +3,21 @@
     <channel>
         <title>SafeOut</title>
         <item>
-            <title>2026.10.29</title>
-            <pubDate>Thu, 29 Oct 2026 15:24:14 +0800</pubDate>
+            <title>2026.11.06</title>
+            <pubDate>Fri, 06 Nov 2026 20:14:13 +0800</pubDate>
             <link>https://github.com/wenber-yu/SafeOut</link>
-            <sparkle:version>339</sparkle:version>
-            <sparkle:shortVersionString>2026.10.29</sparkle:shortVersionString>
+            <sparkle:version>344</sparkle:version>
+            <sparkle:shortVersionString>2026.11.06</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
             <description><![CDATA[<ul>
-<li><strong>主窗口和设置合成一扇窗</strong>：左边一列导航，上面是「外置磁盘」，下面五个设置分类；点哪一项，右边就换到那一页。窗口大小固定，不会再被内容挤变形</li>
-<li><strong>侧栏的选中色跟着你选的强调色走</strong>：以前侧栏选中底色永远是系统那套颜色；现在在设置 › 外观 里换颜色，侧栏的选中项和图标立刻一起变。鼠标划过也有高亮，行与行之间留出了间隔</li>
-<li><strong>没授权时，点「推出时提醒占用」开关会有引导</strong>：以前点了没有任何反应；现在会说明缺什么权限，并一键跳到系统设置的「完全磁盘访问权限」页</li>
-<li><strong>能看到 DMG 镜像和聚焦索引的占用</strong>：以前打开过 .dmg 里的游戏、盘被它和聚焦索引占着，应用却说「没有占用」；现在会列出具体是谁占着，「关闭并推出」会先把这些镜像卸掉再推出</li>
-<li><strong>应用彻底变成菜单栏应用</strong>：不再出现在 Dock 与 ⌘Tab 里；设置里的「在 Dock 中显示图标」开关也一并去掉</li>
-<li><strong>配色更新</strong>：换成暖纸底色，强调色四色（钴蓝 / 紫罗兰 / 橙 / 翡翠）更沉稳一档</li>
+<li><strong>拷贝进行中不再说「可以推出」</strong>：现在会显示「正在写入 · 约 X MB/s（可能在拷贝文件）」，磁盘图标和提示条一起变琥珀色。这条判断靠的是盘上可用空间的变化，所以即便没有授予「完全磁盘访问」，也能看到</li>
+<li><strong>拷贝时盘上的已用 / 剩余会跟着变</strong>：以前这两个数字停在插入那一刻，旁边却写着「正在写入」，自相矛盾；现在每一轮刷新都会带到最新</li>
+<li><strong>写入中点刷新不再闪烁</strong>：以前「正在写入」会闪一下又退回「没有程序在用，可以推出」，连点刷新每次都能重现；现在会稳稳地停在「正在写入」，等真正写完才恢复</li>
+<li><strong>更新应用后不用再重新授权「完全磁盘访问」</strong>：以前每次替换安装，应用包的签名会被旧文件破坏，系统于是把授权作废；现在改为整包替换安装，签名保持完好，授权在更新后继续有效。本次因为之前的授权已经被作废，还需要你最后手动勾选一次</li>
 </ul>
 ]]></description>
-            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.10.29/SafeOut-2026.10.29.dmg" length="2856366" type="application/octet-stream" sparkle:edSignature="D0ON69WwXrro7nLd9aIH3sDF/cy0HfqftWd8BMENc3qvHrXIDMfdAIa3O6TXov0sRaHLfewv+hGBRLflu2KABg=="/>
+            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.11.06/SafeOut-2026.11.06.dmg" length="2871854" type="application/octet-stream" sparkle:edSignature="sc420PW6o90FAbMYyQ8CjSbWKDb8UT0xbO+e4aUKApZzH1KPTDE7CtWBOUZlt4yS77DQwJYEeS5kSC+FDna1CA=="/>
         </item>
     </channel>
 </rss>
