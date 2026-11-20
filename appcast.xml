@@ -3,21 +3,22 @@
     <channel>
         <title>SafeOut</title>
         <item>
-            <title>2026.11.06</title>
-            <pubDate>Fri, 06 Nov 2026 20:14:13 +0800</pubDate>
+            <title>2026.11.20</title>
+            <pubDate>Fri, 20 Nov 2026 13:57:38 +0800</pubDate>
             <link>https://github.com/wenber-yu/SafeOut</link>
-            <sparkle:version>344</sparkle:version>
-            <sparkle:shortVersionString>2026.11.06</sparkle:shortVersionString>
+            <sparkle:version>346</sparkle:version>
+            <sparkle:shortVersionString>2026.11.20</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
             <description><![CDATA[<ul>
-<li><strong>拷贝进行中不再说「可以推出」</strong>：现在会显示「正在写入 · 约 X MB/s（可能在拷贝文件）」，磁盘图标和提示条一起变琥珀色。这条判断靠的是盘上可用空间的变化，所以即便没有授予「完全磁盘访问」，也能看到</li>
-<li><strong>拷贝时盘上的已用 / 剩余会跟着变</strong>：以前这两个数字停在插入那一刻，旁边却写着「正在写入」，自相矛盾；现在每一轮刷新都会带到最新</li>
-<li><strong>写入中点刷新不再闪烁</strong>：以前「正在写入」会闪一下又退回「没有程序在用，可以推出」，连点刷新每次都能重现；现在会稳稳地停在「正在写入」，等真正写完才恢复</li>
-<li><strong>更新应用后不用再重新授权「完全磁盘访问」</strong>：以前每次替换安装，应用包的签名会被旧文件破坏，系统于是把授权作废；现在改为整包替换安装，签名保持完好，授权在更新后继续有效。本次因为之前的授权已经被作废，还需要你最后手动勾选一次</li>
+<li><strong>区分系统守护进程</strong>：当占用方是 mds、fseventsd、quickLookUIService 这类系统服务时，会明确标出并提示风险，避免误关影响系统功能</li>
+<li><strong>Spotlight 占用时一键去隐私设置</strong>：检测到聚焦索引占用外置盘，占用区会提供「打开聚焦隐私设置」按钮，把盘加入排除列表即可从根源减少推不出；跳转已按 macOS 各版本适配</li>
+<li><strong>菜单栏面板重做</strong>：换成自绘面板，第二次点图标不再「闪一下」，图标下方也不再多一个倒三角，面板与主窗口保持同一套毛玻璃</li>
+<li><strong>推出提示弹窗不再自己关闭</strong>：以前占用方自己退出时弹窗会替你收掉，现在一定等你做决定</li>
+<li><strong>修复占用显示「未知」</strong>：修复了一处后台探测阻塞导致占用检测卡住的问题，现在能正常列出占用进程</li>
 </ul>
 ]]></description>
-            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.11.06/SafeOut-2026.11.06.dmg" length="2871854" type="application/octet-stream" sparkle:edSignature="sc420PW6o90FAbMYyQ8CjSbWKDb8UT0xbO+e4aUKApZzH1KPTDE7CtWBOUZlt4yS77DQwJYEeS5kSC+FDna1CA=="/>
+            <enclosure url="https://github.com/wenber-yu/SafeOut/releases/download/v2026.11.20/SafeOut-2026.11.20.dmg" length="2898464" type="application/octet-stream" sparkle:edSignature="8Qmq+bTIy3lASqToqToNr4DlDRgP5d+qYSgrpSlbWrVYG4LM72J5sUgjA9GLesgLFCIvLkZi3TvGqAIZ/KnlBA=="/>
         </item>
     </channel>
 </rss>
