@@ -46,6 +46,22 @@ struct OccupyingProcess: Identifiable, Sendable, Equatable {
     /// ⚠️ **这不是用户认识的应用名**，不要在 UI 里直接展示——请用 ``displayName``。
     let processName: String
 
+    /// 是否系统守护进程（mds / mdworker / fseventsd / quickLookUIService 等）。
+    ///
+    /// 识别到系统守护进程时 UI 会给风险提示：这类进程无法通过「关闭应用」解除占用，
+    /// 强行干预可能影响 Spotlight、Quick Look、Time Machine 等系统功能。
+    var isSystemDaemon: Bool {
+        guard kind == .process else { return false }
+        let known: Set<String> = [
+            "mds", "mdworker", "mdworker_shared", "mdbulkimport",
+            "fseventsd", "quickLookUIService", "quicklookd", "qlmanage",
+            "fsck_hfs", "diskimagesiod", "backupd", "timemachinesd",
+            "launchd", "kernel_task", "WindowServer",
+            "syslogd", "configd", "powerd", "bluetoothd", "AirPlayXPCHelper",
+        ]
+        return known.contains(processName)
+    }
+
     /// 用户可见名称 —— UI 的**单一事实来源**。
     ///
     /// 能定位到所属应用时是应用显示名（`Bunny`）；定位不到（`tail` / `ffmpeg` 这类

@@ -154,6 +154,16 @@ enum DiskRowState: Equatable {
         if case .busy(let list) = self { return list }
         return []
     }
+
+    /// 是否是 Spotlight 索引进程占用（mds / mdworker）。
+    ///
+    /// 磁盘块层只信 lsof 真抓到的进程，不做旁路检测。
+    var isSpotlightOccupancy: Bool {
+        guard case .busy(let processes) = self else { return false }
+        return processes.contains {
+            $0.processName.hasPrefix("mds") || $0.processName.hasPrefix("mdworker")
+        }
+    }
 }
 
 /// 行的密度（设计稿 §3.3）。
@@ -315,6 +325,16 @@ struct DiskRow: View {
 
     private var state: DiskRowState { DiskRowState(occupancy, activity: activity) }
 
+    /// Spotlight 是否占用**这块盘**（判定信号）。
+    ///
+    /// 只认 lsof 在这块盘上真抓到 mds / mdworker —— 全局 `mds` 几乎总在跑（系统级索引），
+    /// 拿它当「Spotlight 正占用本盘」会让每块盘都冒出提示，误导用户以为占用来自 Spotlight。
+    /// 因此这里不用全局活跃度旁路信号；旁路只留给「推出失败但 lsof 看不到任何进程」的弹窗场景
+    /// （那种场景下 Spotlight 是合理猜测，见 ``EjectAlertModel/busy(disk:occupying:)``）。
+    private var spotlightHintActive: Bool {
+        state.isSpotlightOccupancy
+    }
+
     var body: some View {
         switch density {
         case .regular: regularBody
@@ -399,6 +419,17 @@ struct DiskRow: View {
     /// 证据区（设计稿 §3.4）。三种状态各有长相，但**都由同一处判定驱动**。
     @ViewBuilder
     private var evidenceArea: some View {
+        // spotlightHintActive 是稳定值（5 秒缓存），在这里算一次，
+        // 后续所有 case 都用这个 let，保证整个渲染周期条件不变。
+        let spotlightActive = spotlightHintActive
+        let spotlightBody =
+            spotlightActive
+            ? String(format: L10n.tr(.spotlightHintBodyFormat), disk.displayName) : nil
+        let spotlightTitle = spotlightActive ? L10n.tr(.spotlightHintAction) : nil
+        let spotlightAction: (() -> Void)? =
+            spotlightActive
+            ? { AppSettings.openSpotlightPrivacySettings() } : nil
+
         switch state {
         case .busy(let processes):
             EvidenceBlock(
@@ -411,17 +442,22 @@ struct DiskRow: View {
                     : nil,
                 onToggleHint: processes.count > 1
                     ? { withAnimation(DesignTokens.Motion.standard) { isEvidenceExpanded.toggle() } }
-                    : nil
+                    : nil,
+                spotlightBody: spotlightBody,
+                spotlightActionTitle: spotlightTitle,
+                onSpotlightAction: spotlightAction
             )
         case .writing:
-            // 没有可点名的进程：证据区只放结论（带速率），不画芯片列表。
             EvidenceBlock(
                 kind: .writing,
                 title: DiskRowText.evidenceTitle(state),
                 processes: [],
                 isExpanded: true,
                 hint: nil,
-                onToggleHint: nil
+                onToggleHint: nil,
+                spotlightBody: spotlightBody,
+                spotlightActionTitle: spotlightTitle,
+                onSpotlightAction: spotlightAction
             )
         case .safe:
             EvidenceBlock(
@@ -430,7 +466,10 @@ struct DiskRow: View {
                 processes: [],
                 isExpanded: true,
                 hint: nil,
-                onToggleHint: nil
+                onToggleHint: nil,
+                spotlightBody: spotlightBody,
+                spotlightActionTitle: spotlightTitle,
+                onSpotlightAction: spotlightAction
             )
         case .unknown:
             EvidenceBlock(
@@ -439,7 +478,10 @@ struct DiskRow: View {
                 processes: [],
                 isExpanded: true,
                 hint: L10n.tr(.unknownEvidenceHint),
-                onToggleHint: nil
+                onToggleHint: nil,
+                spotlightBody: spotlightBody,
+                spotlightActionTitle: spotlightTitle,
+                onSpotlightAction: spotlightAction
             )
         }
     }
@@ -616,6 +658,11 @@ struct EvidenceBlock: View {
     /// 右侧提示：`.unknown` 时是「授权后可检测」，`.busy` 时是「收起/展开清单」。
     let hint: String?
     let onToggleHint: (() -> Void)?
+    /// Spotlight 场景下在 block 底部渲染 info callout + 跳转按钮。
+    /// 非 Spotlight 场景全传 nil（不会渲染底部额外区域）。
+    let spotlightBody: String?
+    let spotlightActionTitle: String?
+    let onSpotlightAction: (() -> Void)?
 
     /// 芯片最多显示几个，其余折叠为 `+N`。
     private let maxVisibleChips = 6
@@ -695,6 +742,37 @@ struct EvidenceBlock: View {
 
             if isExpanded && !processes.isEmpty {
                 chips
+            }
+
+            // Spotlight 场景：在底部渲染 info callout + 跳转按钮。
+            if let spotlightBody, let spotlightActionTitle, let onSpotlightAction {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .top, spacing: 6) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(DesignTokens.Palette.mutedForeground)
+                            .padding(.top, 1)
+                        Text(spotlightBody)
+                            .font(.system(size: DesignTokens.FontSize.footnote))
+                            .foregroundStyle(DesignTokens.Palette.mutedForeground)
+                            .designLineHeight(
+                                DesignTokens.LineHeight.base,
+                                fontSize: DesignTokens.FontSize.footnote
+                            )
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Button(action: onSpotlightAction) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 10, weight: .semibold))
+                            Text(spotlightActionTitle)
+                                .font(.system(size: DesignTokens.FontSize.footnote, weight: .medium))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(DesignTokens.Palette.foreground)
+                }
+                .padding(.top, 6)
             }
         }
         .padding(.top, DesignTokens.Size.evidencePaddingTop)

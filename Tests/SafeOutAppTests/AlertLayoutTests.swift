@@ -141,6 +141,7 @@ struct AlertLayoutTests {
         EjectAlertModel(
             icon: base.icon, title: base.title, subtitle: base.subtitle,
             section: section ?? base.section, callout: callout ?? base.callout,
+            showSpotlightPrivacyButton: base.showSpotlightPrivacyButton,
             footNote: footNote ?? base.footNote, actions: actions ?? base.actions)
     }
 

@@ -5,7 +5,7 @@
    来源：Sources/Localization/Localizable.xcstrings
        + Design/ui/v2/assets/i18n-extra.json
    ----------------------------------------------------------------------------
-   源指纹 0170e89c47d6339593b19b9c992cdd7ae61fb1ba3898457a8d0eb2a7fc35d647
+   源指纹 16c15a8669e7efe5616c360bb3700320b433549cc163b65749ca821c179f8e66
      = sha256(xcstrings + extra + 本脚本) —— 任一方变了它就是旧的，
        由 DesignDraftIntegrityTests 拦下「改了源忘了重跑」。
    ----------------------------------------------------------------------------
@@ -212,6 +212,11 @@ window.DS_L10N = {
       "settingsGroupDiagnostics": "诊断",
       "settingsGroupGeneral": "通用",
       "settingsGroupUpdates": "更新",
+      "spotlightHintAction": "打开聚焦隐私设置",
+      "spotlightHintBodyFormat": "关掉 mds 只是治标；把「%@」加入聚焦隐私排除列表才能根治。",
+      "spotlightHintTitle": "Spotlight 索引占用了这块盘",
+      "systemDaemonLabel": "系统服务",
+      "systemDaemonTooltip": "这是 macOS 的系统守护进程，无法通过正常退出解除占用。强行关闭可能影响 Spotlight、Quick Look 或 Time Machine 等系统功能。",
       "takeOverFinderEject": "推出时提醒占用",
       "takeOverFinderEjectFootnote": "在访达里点推出，磁盘被占用时菜单栏会告诉你是谁在占用，可一键关掉并推出。",
       "takeOverFinderEjectNeedsFDA": "需要「完全磁盘访问」才能看出是谁在占用。",
@@ -445,6 +450,11 @@ window.DS_L10N = {
       "settingsGroupDiagnostics": "Diagnostics",
       "settingsGroupGeneral": "General",
       "settingsGroupUpdates": "Updates",
+      "spotlightHintAction": "Open Spotlight Privacy",
+      "spotlightHintBodyFormat": "Quitting mds only helps temporarily. Add “%@” to the Spotlight Privacy exclusion list to fix it for good.",
+      "spotlightHintTitle": "Spotlight is indexing this disk",
+      "systemDaemonLabel": "System",
+      "systemDaemonTooltip": "This is a macOS system daemon. It can't be quit normally — force-stopping may break Spotlight, Quick Look, Time Machine, or other system features.",
       "takeOverFinderEject": "Alert on eject when in use",
       "takeOverFinderEjectFootnote": "If Finder can't eject a disk, the menu bar tells you what's holding it, with a one-click fix.",
       "takeOverFinderEjectNeedsFDA": "Full Disk Access is needed to see what's using a disk.",
@@ -678,6 +688,11 @@ window.DS_L10N = {
       "settingsGroupDiagnostics": "診斷",
       "settingsGroupGeneral": "一般",
       "settingsGroupUpdates": "更新",
+      "spotlightHintAction": "打開聚焦隱私權設定",
+      "spotlightHintBodyFormat": "關掉 mds 只是治標；把「%@」加入聚焦隱私權排除清單才能根治。",
+      "spotlightHintTitle": "Spotlight 索引正在佔用這顆磁碟",
+      "systemDaemonLabel": "系統服務",
+      "systemDaemonTooltip": "這是 macOS 的系統守護行程，無法透過正常退出解除佔用。強行關閉可能影響 Spotlight、Quick Look 或 Time Machine 等系統功能。",
       "takeOverFinderEject": "退出時提醒佔用",
       "takeOverFinderEjectFootnote": "在 Finder 裡點退出，磁碟被佔用時選單列會告訴你是誰在佔用，可一鍵關掉並退出。",
       "takeOverFinderEjectNeedsFDA": "需要「完全磁碟存取」才能看出是誰在佔用。",

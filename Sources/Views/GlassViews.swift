@@ -12,8 +12,9 @@ import SwiftUI
 /// ⚠️ **本文件曾写「`.underWindowBackground` = NSPopover 系统默认背景」，这是错的**：
 /// 2026-09-15 用探针打印 `NSPopover` 的窗口视图树，popover 的 `NSPopoverFrame`
 /// 是一档 **`.titlebar`**（material rawValue 0）的 `NSVisualEffectView`。
-/// 也就是说菜单面板与主窗口**本来就不是同一档材质** —— 这正是「两块玻璃色温不一样」的根因之一。
-/// 修法见 ``NSPopover/normalizeBackdropMaterial()``。
+/// 也就是说菜单面板与主窗口**本来就不是同一档材质**。
+/// 2026-11-10 起菜单面板已改成自绘 ``StatusPanel``（无边框窗口 + 同一块 ``GlassSurface``），
+/// 那段「归一化 popover 材质」的补丁随之删除 —— 不再有第二块玻璃需要对齐。
 struct VisualEffectBackground: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
@@ -27,67 +28,6 @@ struct VisualEffectBackground: NSViewRepresentable {
         nsView.material = .underWindowBackground
         nsView.blendingMode = .behindWindow
         nsView.state = .followsWindowActiveState
-    }
-}
-
-// MARK: - 让系统 popover 的底衬与主窗口同档
-
-extension NSPopover {
-
-    /// 把系统 popover 的底衬材质改成与主窗口同一档（`.underWindowBackground`）。
-    ///
-    /// **为什么需要**：`NSPopover` 的窗口视图树顶层是私有的 `NSPopoverFrame`，
-    /// 它本身就是一个 `NSVisualEffectView`，材质是 **`.titlebar`** —— 与主窗口的
-    /// `.underWindowBackground` 不是同一档。两者各自叠上 `--bg-glass` 之后仍是两种色温。
-    ///
-    /// **为什么可以这么改**：`material` / `blendingMode` / `state` 都是 `NSVisualEffectView`
-    /// 的**公开属性**，`NSPopoverFrame` 只是它的子类，改的是公开 API。
-    /// 探针实测（2026-09-15）：改后 material 稳定停在 `.underWindowBackground`（rawValue 21），
-    /// popover 的圆角、箭头、窗口阴影全部保持 —— 它们由 frame 的遮罩与窗口阴影负责，
-    /// 与 material 无关。
-    ///
-    /// **不摘 `NSGlassView`**：那是系统新增的玻璃渲染层，也是圆角/描边的绘制者之一，
-    /// 摘掉属于动系统私有视图，风险大于收益。材质对齐 + 同色叠加已经足够让两块玻璃一致。
-    ///
-    /// - Returns: 被改到的那个 `NSVisualEffectView`；视图树还没建好时为 `nil`。
-    @discardableResult
-    func normalizeBackdropMaterial() -> NSVisualEffectView? {
-        guard let frame = backdropFrameView else { return nil }
-        frame.material = .underWindowBackground
-        frame.blendingMode = .behindWindow
-        frame.state = .followsWindowActiveState
-        return frame
-    }
-
-    /// **只读**当前底衬材质（不做任何修改）。
-    ///
-    /// **为什么要有这个只读版本**：真机自检（`--preview-popover-keys`）要验的是
-    /// 「上屏路径有没有把材质归一化」。如果自检里用 `normalizeBackdropMaterial()` 去取材质，
-    /// 它自己就把材质改好了 —— **断言永远为真，等于没测**。
-    /// 这个坑值得记下来：自检里读一个「会被自检本身修正」的状态，就是在自证。
-    var backdropMaterial: NSVisualEffectView.Material? { backdropFrameView?.material }
-
-    /// popover 窗口视图树的**最外层** `NSVisualEffectView`，也就是私有的 `NSPopoverFrame`。
-    ///
-    /// 从 `window.contentView` 一路向上到根，再向下深度优先找第一个 ——
-    /// 因为 `NSPopoverFrame` 既是根视图本身、又是效果视图，只能这么找。
-    private var backdropFrameView: NSVisualEffectView? {
-        guard let window = contentViewController?.view.window else { return nil }
-        var top = window.contentView
-        while let parent = top?.superview { top = parent }
-        return top?.firstVisualEffectView
-    }
-}
-
-extension NSView {
-    /// 深度优先找到第一个 `NSVisualEffectView`（**先看自己**，因为 `NSPopoverFrame`
-    /// 本身就是效果视图，而它是整棵树里最外层的那个）。
-    fileprivate var firstVisualEffectView: NSVisualEffectView? {
-        if let effect = self as? NSVisualEffectView { return effect }
-        for sub in subviews {
-            if let found = sub.firstVisualEffectView { return found }
-        }
-        return nil
     }
 }
 
@@ -263,9 +203,10 @@ struct LiquidGlassBackground: NSViewRepresentable {
 ///        background: var(--bg-glass); backdrop-filter: blur(30px) saturate(180%); }
 /// ```
 /// 但实现侧三处各写各的：主窗口只有 `NSVisualEffectView`（缺 `--bg-glass` 叠加，
-/// 于是显示为系统材质那层偏冷的灰）、菜单面板什么都没有（靠 `NSPopover` 自带材质，
-/// 又是另一档 `.titlebar`）、设置面板用了 `--bg-glass-thick`（白一档）。
+/// 于是显示为系统材质那层偏冷的灰）、菜单面板曾靠 `NSPopover` 自带 `.titlebar` 材质、
+/// 设置面板用了 `--bg-glass-thick`（白一档）。
 /// 三块玻璃三种色温 —— 用户一眼就看出来了。
+/// （2026-11-10 起菜单面板也改用本组件，三处终于走同一条规则。）
 ///
 /// **材质之上为什么还要叠一层色**：`--bg-glass` 在设计稿里是铺在模糊之上的**半透明色**，
 /// 它才是决定「暖白 / 暖深灰」的那一层。只放系统材质等于只做了模糊、没上色。

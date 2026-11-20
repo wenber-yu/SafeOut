@@ -423,4 +423,48 @@ enum AppSettings {
         else { return }
         NSWorkspace.shared.open(url)
     }
+
+    /// 打开「系统设置 › 聚焦」面板（Spotlight 隐私排除列表的入口所在）。
+    ///
+    /// 用户反馈的核心需求：mds / mdworker 反复占用外置盘导致推不出，杀掉 Spotlight 进程
+    /// 也只是让它重启索引，根本解决不了。把这块盘加到 Spotlight 隐私排除列表才是根源解法。
+    ///
+    /// 面板标识随系统版本变过三次，**不能只写死当前本机那一条**，因此按版本给出候选序列，
+    /// 依次尝试（见 ``spotlightPrivacyCandidates()``）。
+    nonisolated static func openSpotlightPrivacySettings() {
+        for urlString in spotlightPrivacyCandidates() {
+            guard let url = URL(string: urlString) else { continue }
+            if NSWorkspace.shared.open(url) { return }
+        }
+    }
+
+    /// 按运行系统的版本给出「聚焦隐私」入口 URL 的候选序列（首选在前，逐个兜底）。
+    ///
+    /// 为什么是「序列」而不是单条：不同大版本里 Spotlight 设置的位置完全不同，
+    /// 写死一条必然在别的版本上跳错地方（历史上旧 URL 在 macOS 26 就跳到了 Siri）。
+    ///
+    /// - **macOS Tahoe（26）及更新**：Spotlight 独立成「聚焦」面板 →
+    ///   `com.apple.Spotlight-Settings.extension`。隐私排除列表是面板内**弹窗**
+    ///   （`__showSearchPrivacySheet`），`?Privacy` / `?privacyFlow` 等锚点都无法直接弹出
+    ///   （已逐一实测），因此停在面板、由用户点右下角「搜索隐私…」。
+    /// - **macOS 13–25（Ventura … Sequoia）**：Siri 与 Spotlight 合并为一个面板 →
+    ///   `com.apple.Siri-Settings.extension`（Spotlight 隐私在该面板的「聚焦」分区里）。
+    /// - **macOS 12 及更早（Monterey …）**：经典「系统偏好设置」的 Spotlight 隐私标签 →
+    ///   `com.apple.preference.spotlight?Privacy`，可直接落到隐私列表。
+    ///
+    /// 末尾始终保留经典 URL 兜底：万一新扩展在本机不存在，至少还能落到旧面板。
+    nonisolated static func spotlightPrivacyCandidates() -> [String] {
+        let spotlightPane = "x-apple.systempreferences:com.apple.Spotlight-Settings.extension"
+        let siriPane = "x-apple.systempreferences:com.apple.Siri-Settings.extension"
+        let legacyPane = "x-apple.systempreferences:com.apple.preference.spotlight?Privacy"
+
+        let major = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
+        if major >= 26 {
+            return [spotlightPane, siriPane, legacyPane]
+        } else if major >= 13 {
+            return [siriPane, spotlightPane, legacyPane]
+        } else {
+            return [legacyPane]
+        }
+    }
 }

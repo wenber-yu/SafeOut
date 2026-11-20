@@ -82,21 +82,20 @@ enum EjectUI {
             await EjectFlowController.shared.eject(disk: disk)
         }
 
-        // ② 系统那次推出的结果若**已经让这个「被占用」的弹窗站不住**（成功 / 设备已不在）
-        // ⇒ 收掉它并刷新列表。
-        //
-        // ⚠️ **`gate` 防的是「收错窗」**：用户可能已经对这个预弹的弹窗表过态
-        // （点了「关闭并推出」、按了 Esc），那个弹窗早已被收掉、甚至已经有**新的**弹窗
-        // （`terminateAndEject` 失败后的失败窗）在显示 —— 此时再收一次就会收错。
-        // 判据是「**这个预弹窗还在不在等用户**」（见 `dismissPreemptivePopupIfNeeded`
-        // 与 `PreemptiveAlertGate` 的说明）。
+        // 闸门：防止 watcher 收错窗 ——
+        // present 一返回就 settle（不管用户点了什么），watcher 看到 settled 就不再尝试收窗。
         let gate = PreemptiveAlertGate()
+
+        // ② 系统那次推出的结果不再自动收弹窗 ——
+        //    **弹窗是等用户决定「要不要关进程」的信号**。哪怕 BugBnB 自己退了、后台 eject
+        //    成功了，SafeOut 也不能替用户把弹窗收掉（用户可能还没看到弹窗）。
+        //    列表照常刷新（让用户看到磁盘状态的实时变化），但弹窗留着。
+        //    `terminateAndEject` 里有一层保护：它会先等 `inFlight` 那次 eject ——
+        //    如果盘已经推出去了，那次 eject 会返回 `.ejected`，终止进程 + 重试推盘两步
+        //    都会被跳过，最终弹窗切换到成功态（用户点按钮 ≈ 承认"盘已经出去了"）。
         Task { @MainActor in
-            await Self.dismissPreemptivePopupIfNeeded(
-                gate: gate,
-                outcome: await inFlight.value,
-                dismiss: { EjectAlertPresenter.shared.respond(.cancel) },
-                refresh: { await DiskListStore.shared.refresh() })
+            await DiskListStore.shared.refresh()
+            // 不再调用 dismiss() —— 弹窗关闭必须是用户的决定
         }
 
         // ③ 立刻弹窗，等用户决定。

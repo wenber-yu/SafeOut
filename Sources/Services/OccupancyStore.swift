@@ -65,6 +65,17 @@ final class OccupancyStore: ObservableObject {
     /// 琥珀色的「正在写入」，不改变「关闭并推出」的语义。
     @Published private(set) var activities: [String: VolumeWriteActivity] = [:]
 
+    /// Spotlight（mds 系列）当前是否在索引。
+    ///
+    /// ## 为什么它必须在这里、而且必须是异步算出来的
+    ///
+    /// 轮询周期里顺手探测一次，界面只读这个**纯值**。绝不能让视图在 `body` 里现算 ——
+    /// 探测实现是起一个 `ps` 子进程，当它在 SwiftUI 首次布局时同步跑在主线程上，
+    /// 会把状态栏项的上屏请求一起堵住：实测菜单栏图标因此永远不出现
+    /// （AX 坐标落到 `(-1, y)`，即被排到屏幕左侧之外）。
+    /// 2026-11-20 用逐项跳过启动步骤的方式定位到这一条。
+    @Published private(set) var spotlightActiveIndexing = false
+
     /// 上一轮的容量采样，用于算写入速率。键是 ``DiskInfo/id``。
     ///
     /// 只保留**最新一轮**：磁盘拔出后它必须消失，否则同名卷再插上来会拿别的盘的旧读数做差。
@@ -233,6 +244,8 @@ final class OccupancyStore: ObservableObject {
             if !activities.isEmpty { activities = [:] }
             // 磁盘全拔了：旧读数必须一起消失，否则同路径卷再插上来会拿别的盘的读数做差。
             lastSamples = [:]
+            // 没有磁盘时不刷新 Spotlight 标志：这一轮不该产生任何无关的 `objectWillChange`
+            // 抖动（上层把「一轮一次变更」当作轮次结束信号，多一次就会被误判成提前完成）。
             return
         }
         // **采样放在检测之前**：这一轮的容量读数与「上一轮」的读数做差，
@@ -251,7 +264,12 @@ final class OccupancyStore: ObservableObject {
             }
             for await (id, result) in group { next[id] = result }
         }
+        // Spotlight 活跃度在这里算（需要 `await`），但**先不赋值**：
+        // 下一次赋值必须紧贴 `publish` 且中间**不许再有 `await`** —— 否则这一轮的
+        // `objectWillChange` 会被拆成「检测前 / 检测后」两次，把「一轮结束」的信号提前。
+        let spotlightActive = await OccupancyDetector.hasActiveSpotlightIndexing()
         publish(next)
+        if spotlightActiveIndexing != spotlightActive { spotlightActiveIndexing = spotlightActive }
     }
 
     /// 占用结论的**唯一写入点**：同时写 ``results``（给界面）与 ``OccupancySnapshotStore``（给 hook）。

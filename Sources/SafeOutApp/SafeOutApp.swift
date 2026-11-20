@@ -69,7 +69,15 @@ enum AppReopenPolicy {
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    private var statusPopover: NSPopover!
+
+    /// 菜单栏面板：自绘无边框窗口（见 ``StatusPanel``）。
+    ///
+    /// 2026-11-10 从 `NSPopover` 换过来，两个直接原因：
+    /// 1. 系统 popover 必画锚点箭头（没有公开 API 关掉），而用户参照的菜单栏应用都没有；
+    /// 2. `.transient` 在「点菜单栏图标」时会先自动关闭，按钮 action 再把它打开一次
+    ///    —— 表现为「闪一下又出现」。
+    private var statusPanel: StatusPanel?
+
     private var mainWindow: NSWindow!
 
     /// 建 `mainWindow` 时用的磁盘列表来源 —— **供自检核对「窗口渲染的确实是这份数据」**。
@@ -108,8 +116,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var ejectingDiskId: String?
 
-    /// popover 显示状态监听，关闭时按钮恢复未选中态。
-    private var popoverEventMonitor: Any?
+    /// 面板的「点外面就收起」监听（本地 / 全局鼠标 + 应用失焦 + Esc）。
+    /// 见 ``installStatusPanelDismissMonitors()``。
+    private var statusPanelEventMonitors: [Any] = []
 
     /// 「待处理占用提醒」的订阅 —— 有提醒时把菜单栏图标换成警示态。
     private var attentionCancellable: AnyCancellable?
@@ -249,11 +258,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 菜单面板预览：把状态栏面板**真的挂到状态栏按钮上、真的上屏**。
         //
-        // **为什么离屏出图不够**：面板的底衬是 `NSPopover` 窗口自己的
-        // `NSPopoverFrame`（一档 `.titlebar` 的 `NSVisualEffectView`），
-        // 而离屏渲染里**根本没有这个窗口** —— 「材质有没有被归一化到 `.underWindowBackground`」
-        // 「contentSize 是不是真实内容高」（它直接决定锚点，错了面板会离图标几十 pt）
-        // 这两件事只有真机才知道。
+        // **为什么离屏出图不够**：面板有没有上屏、内容高是不是真实内容高、
+        // 与菜单栏图标的间距对不对，都要等真实窗口存在才知道；
+        // 尤其自绘 ``StatusPanel`` 的位置是手算的，算错的表现是「压住图标」或「离图标几十 pt」。
         let autoPopoverKeys = CommandLine.arguments.contains("--preview-popover-keys")
         if autoPopoverKeys || CommandLine.arguments.contains("--preview-popover") {
             delegate.runPopoverPreview(autoKeys: autoPopoverKeys)
@@ -974,12 +981,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// 把状态栏面板真的挂到状态栏按钮上、真的上屏，核对**离屏出图覆盖不到**的部分。
     ///
-    /// **为什么需要它**：面板的底衬是 `NSPopover` 窗口自己的 `NSPopoverFrame`
-    /// （一档 `.titlebar` 的 `NSVisualEffectView`）。离屏渲染里**根本没有这个窗口**，
-    /// 所以「材质有没有被归一化到 `.underWindowBackground`」在离屏测试里永远是绿的 ——
-    /// 哪怕 `normalizeBackdropMaterial()` 一个视图都没找到。
-    /// 同理，`contentSize` 是不是真实内容高只有上屏后才知道，而它直接决定锚点
-    /// （错了面板会离图标几十 pt，见 ``showStatusPopover(anchoredTo:)`` 里的三组对照实验）。
+    /// **为什么需要它**：离屏渲染里没有真实窗口 —— 面板有没有上屏、上屏后
+    /// 内容尺寸对不对、跟菜单栏图标的几何关系对不对，全都要等窗口真的存在才知道。
+    /// 尤其 2026-11-10 换成自绘 ``StatusPanel`` 之后，位置由 ``positionStatusPanel(_:below:size:)``
+    /// 手算，算错的表现是「压住图标」或「离图标几十 pt」，离屏测试对此一无所知。
     ///
     /// **只读**：面板动作出口被换成记录，不会真的打开主窗口/设置、不会退出、不会推出任何盘。
     ///
@@ -1005,29 +1010,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             // 等状态栏按钮真的被系统放进一个可见窗口里。
             //
-            // **为什么必须等**：`NSPopover.show(relativeTo:of:)` 要求锚点视图在一个
-            // **可见窗口**内，而 `NSStatusBarWindow` 是系统在应用启动完成后**异步**放置的。
-            // 预览是在 `main()` 里抢先建的（早于 `app.run()`），抢跑的结果是 `show` **静默**
-            // 什么都不做 —— 实测第一版 `isShown` 恒为 false，且没有任何报错。
+            // **为什么必须等**：``positionStatusPanel(_:below:size:)`` 要读按钮在屏幕上的坐标，
+            // 而 `NSStatusBarWindow` 是系统在应用启动完成后**异步**放置的；
+            // 抢跑时 `button.window` 还是 nil，面板就摆不到任何地方（而且不报错）。
             await waitUntilStatusButtonIsOnScreen()
-            // `.accessory`（只驻留菜单栏）形态下应用不在前台，popover 不会上屏。
-            // **`activate` 是异步生效的**：调用后立刻 `show` 仍然会失败（实测），
+            // `.accessory`（只驻留菜单栏）形态下应用不在前台，面板上屏后拿不到焦点。
+            // **`activate` 是异步生效的**：调用后立刻 `show` 仍然可能失败（实测），
             // 必须等 `isActive` 真的变 true。
             NSApp.activate(ignoringOtherApps: true)
             await WindowSelfCheck.waitUntilAppIsActive()
 
-            showStatusPopover(anchoredTo: button)
-            // 材质归一化依赖「窗口已上屏、视图树已建好」，而那是异步的 ——
-            // `showStatusPopover` 里那次 `DispatchQueue.main.async` 也要等下一个 runloop。
-            // 用固定等待而不是轮询：这里等的不是某个布尔量，而是**窗口建树完成**，
-            // 没有可直接观测的谓词。600ms 在实测里足够（上屏通常 <100ms）。
+            showStatusPanel(anchoredTo: button)
+            // 窗口上屏与 SwiftUI 视图建树是异步的（`contentViewController` 交换后
+            // 还要等下一个 runloop 才完成布局）。用固定等待而不是轮询：这里等的不是
+            // 某个布尔量，而是**窗口建树完成**，没有可直接观测的谓词。
             try? await Task.sleep(nanoseconds: 600_000_000)
 
-            dumpPopoverState(label: "A · 菜单面板", mismatches: &mismatches)
+            dumpStatusPanelState(label: "A · 菜单面板", mismatches: &mismatches)
 
             guard autoKeys else {
                 print("人工核对模式：面板已上屏（本模式不会真的打开主窗口/设置，也不会退出）。")
-                print("  核对要点：面板底衬与主窗口是否为同一块玻璃；面板是否紧贴菜单栏图标下方。")
+                print("  核对要点：图标下方没有倒三角；面板与菜单栏图标间距 \(StatusPanel.anchorGap)pt。")
                 print("  核对完 ⌘Q 退出。")
                 return
             }
@@ -1042,7 +1045,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             print("预览结束（未对任何真实磁盘执行操作，也未真的打开任何窗口）")
             if mismatches.isEmpty {
-                print("✅ 菜单面板真机自检通过：面板上屏、底衬材质与主窗口同档、contentSize 等于真实内容高")
+                print("✅ 菜单面板真机自检通过：面板上屏、宽度等于设计稿、高度等于真实内容高、间距 \(StatusPanel.anchorGap)pt")
                 exit(0)
             }
             for line in mismatches { print("❌ \(line)") }
@@ -1089,55 +1092,51 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     ///
     /// 四条断言各有明确后果：
     /// 1. 面板必须真的上屏 —— 否则后面每一条都是在测一个不存在的窗口；
-    /// 2. `contentSize.width` 必须 = 设计稿的 360（`02-menu-bar.html` 的 `.win--popover`）。
-    ///    ⚠️ **不能拿窗口 frame 宽去比 360**：popover 的窗口框 = 内容尺寸 + 箭头 + 一圈阴影，
-    ///    实测 386×306（360×280 + 四边各 13），拿 386 去比 360 会误报；
-    /// 3. `contentSize.height` 必须 ≈ 视图自己量出来的高 —— 这条是**锚点的捕手**：
-    ///    `NSPopover` 用 `contentSize` 算锚点，取到 0 会回退到默认 320×320，
-    ///    面板因此离图标下偏几十 pt（实测过 72pt）；
-    /// 4. 底衬材质必须是 `.underWindowBackground`（rawValue 21）——
-    ///    系统默认给的是 `.titlebar`（rawValue 0），两者不是同一块玻璃。
-    ///    这条**只有真机才有牙**：离屏渲染里没有 popover 窗口，永远查不出。
+    /// 2. 内容宽必须 = 设计稿的 360（`02-menu-bar.html` 的 `.win--popover`）；
+    /// 3. 内容高必须 ≈ 视图自己量出来的高 —— 高度错了面板会「压住图标」或「离图标老远」；
+    /// 4. 面板顶边与按钮底边的间距必须 = ``StatusPanel/anchorGap`` ——
+    ///    换成自绘窗口之后位置是我们手算的，这一条是 ``positionStatusPanel(_:below:size:)`` 的捕手。
     @MainActor
-    private func dumpPopoverState(label: String, mismatches: inout [String]) {
-        guard let popover = statusPopover else {
+    private func dumpStatusPanelState(label: String, mismatches: inout [String]) {
+        guard let panel = statusPanel else {
             mismatches.append("A 面板对象不存在")
             return
         }
-        let window = popover.contentViewController?.view.window
-        // ⚠️ **只读**取材质：这里绝不能调 `normalizeBackdropMaterial()` —— 它会顺手把材质
-        // 改好，断言就永远为真了（自证陷阱）。见 ``NSPopover/backdropMaterial``。
-        let material = popover.backdropMaterial
-        let contentHeight = popover.contentViewController?.view.fittingSize.height ?? 0
+        let contentHeight = panel.contentViewController?.view.fittingSize.height ?? 0
+        // 无边框窗口没有标题栏 ⇒ contentLayoutRect 就是内容区尺寸，
+        // 不能用 `frame` 去比 360：frame 会带上窗口服务器那点取整误差。
+        let contentSize = panel.contentLayoutRect.size
+        let anchor = statusItem?.button.flatMap { button -> NSRect? in
+            guard let window = button.window else { return nil }
+            return window.convertToScreen(button.convert(button.bounds, to: nil))
+        }
+        let gap = anchor.map { $0.minY - panel.frame.maxY } ?? -1
 
         print(
-            "  \(label)：上屏=\(popover.isShown) 窗口=\(window?.frame.width ?? -1)×\(window?.frame.height ?? -1) "
-                + "contentSize=\(popover.contentSize.width)×\(popover.contentSize.height) "
-                + "视图量高=\(contentHeight) 底衬材质=\(material.map { "\($0.rawValue)" } ?? "未找到") "
-                + "窗口号=\(window?.windowNumber ?? -1) 应用前台=\(NSApp.isActive) "
+            "  \(label)：上屏=\(panel.isVisible) 窗口=\(panel.frame.width)×\(panel.frame.height) "
+                + "contentSize=\(contentSize.width)×\(contentSize.height) "
+                + "视图量高=\(contentHeight) 图标间距=\(gap) "
+                + "窗口号=\(panel.windowNumber) 应用前台=\(NSApp.isActive) "
                 + "锚点窗口号=\(statusItem?.button?.window?.windowNumber ?? -1)"
         )
 
-        if !popover.isShown {
-            // 最常见的成因是「应用不在前台」—— `NSPopover.show` 在这种情况下**静默失败**。
-            // 把这条线索直接写进失败信息，省得下次又去查材质。
-            let hint = NSApp.isActive ? "" : "（应用不在前台，`show` 会静默失败）"
-            mismatches.append("A 面板没有上屏（isShown=false）\(hint)")
+        if !panel.isVisible {
+            // 最常见成因：面板的 `hidesOnDeactivate` 没关掉，或定位时 `button.window` 还是 nil。
+            let hint = NSApp.isActive ? "" : "（应用不在前台）"
+            mismatches.append("A 面板没有上屏（isVisible=false）\(hint)")
         }
-        if abs(popover.contentSize.width - DesignTokens.Size.menuPopoverWidth) > 0.5 {
+        if abs(contentSize.width - DesignTokens.Size.menuPopoverWidth) > 0.5 {
             mismatches.append(
-                "A 面板内容宽应为 \(DesignTokens.Size.menuPopoverWidth)，实得 \(popover.contentSize.width)")
+                "A 面板内容宽应为 \(DesignTokens.Size.menuPopoverWidth)，实得 \(contentSize.width)")
         }
-        if abs(popover.contentSize.height - contentHeight) > 1 {
+        if abs(contentSize.height - contentHeight) > 1 {
             mismatches.append(
-                "A contentSize 高 \(popover.contentSize.height) 与视图量高 \(contentHeight) 不一致 —— "
-                    + "面板会被锚错位置")
+                "A contentSize 高 \(contentSize.height) 与视图量高 \(contentHeight) 不一致 —— "
+                    + "面板会被摆错位置")
         }
-        if let material, material != .underWindowBackground {
+        if gap >= 0, abs(gap - StatusPanel.anchorGap) > 1 {
             mismatches.append(
-                "A 底衬材质是 \(material.rawValue)，应被归一化为 .underWindowBackground(21)")
-        } else if material == nil {
-            mismatches.append("A 没有找到 popover 的底衬 NSVisualEffectView —— 材质没被归一化")
+                "A 面板顶边距图标 \(gap)pt，应为 \(StatusPanel.anchorGap)pt —— positionStatusPanel 算错了")
         }
     }
 
@@ -1556,7 +1555,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - 状态栏
 
-    /// 状态栏按钮：点击切换 NSPopover（与设计稿"菜单栏弹出面板"对齐：360px 宽，毛玻璃）。
+    /// 状态栏按钮：点击切换菜单面板（与设计稿"菜单栏弹出面板"对齐：360px 宽，毛玻璃）。
     ///
     /// **幂等**：`main()` 里的 `--preview-popover` 会在 `applicationDidFinishLaunching`
     /// 之前先建一次状态栏（预览要立刻把面板挂上去），随后正常的启动流程又会调一次。
@@ -1569,15 +1568,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// 原来这里是 `guard let button = statusItem.button else { return }`：
     /// 若 `statusItem` 建出来了而 `button` 为 nil，就**什么都不做地返回** ——
     /// 此时 `statusItem` 已非 nil，于是 :1525 那道幂等 guard 会让**之后所有调用全部空转**，
-    /// `statusPopover` 也永远不会被创建。表现是「菜单栏图标不出、点图标没反应」，
+    /// `statusPanel` 也永远不会被创建。表现是「菜单栏图标不出、点图标没反应」，
     /// 且**没有任何错误日志**（不是崩了，是静默卡死）。
     ///
     /// 现在的处置：**button 拿不到就把这个半成品状态栏拆掉**，让 `statusItem` 回到 nil
     /// ⇒ 下一次调用（换一次屏幕配置、或者压根没有下一次）仍有机会重建成功，
-    /// 而不会卡在一个「有 item、无 button、无 popover」的坏状态里。
+    /// 而不会卡在一个「有 item、无 button、无面板」的坏状态里。
     private func setupStatusItem() {
         guard statusItem == nil else { return }
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        // 给状态栏项一个持久化标识：系统据此记住它在菜单栏中的位置。
+        // 没有这个标识时，macOS 27 在菜单栏项目很多的情况下会把新项排到屏幕最左侧
+        // （实测 AXPosition.x = -1，即完全溢出到屏幕外，用户看不到任何图标），
+        // 有了标识用户还能按住 Cmd 拖动它并把位置记住。
+        statusItem?.autosaveName = "SafeOutStatusItem"
         guard let button = statusItem?.button else {
             // 半初始化 ⇒ 立刻回滚，不留下「有 item、无 button」的坏状态。
             if let halfBuilt = statusItem {
@@ -1595,21 +1599,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         updateStatusItemImage()
         button.toolTip = L10n.tr(.appName)
         button.setAccessibilityLabel(L10n.tr(.appName))
-        button.setAccessibilityRole(.button)
         button.setAccessibilityHelp(L10n.tr(.openMainWindow))
         button.target = self
         button.action = #selector(handleStatusItemClick(_:))
 
-        statusPopover = NSPopover()
-        statusPopover.behavior = .transient
-        statusPopover.animates = false
+        statusPanel = makeStatusPanel()
+
+        // **面板的收起条件必须自己管**：换成普通窗口之后，没有 `.transient` 那层自动关闭
+        // （见 ``StatusPanel`` 的类注释）。点面板外、切到别的应用、按 Esc 都要显式收起。
+        installStatusPanelDismissMonitors()
 
         // **NSStatusBarWindow 位置异常自检与重建**：
         // 当外接屏拔除 / macOS 屏幕配置变化后，NSStatusBarWindow 的 `frame` 会**残留**
         // 旧的屏幕坐标（本机实测：曾插过外接屏，拔了后 window.frame.origin.x = -3859，
         // button.window.screen = nil，window.frame 不在 NSScreen.screens 内），
         // 导致 `button.convert(_, to:).convertToScreen()` 拿到完全错误的屏幕坐标 →
-        // popover 飞到屏幕外、用户看不见。
+        // 面板飞到屏幕外、用户看不见。
         // 销毁并重建 NSStatusItem，强制系统重新放置状态栏按钮。
         rebuildStatusItemIfOffscreen()
 
@@ -1621,6 +1626,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // `queue: .main` 已保证回调在主线程执行，用 assumeIsolated 把这一事实告知编译器，
             // 否则 Swift 6 严格并发会拒绝在 `@Sendable` 闭包里触碰 @MainActor 隔离的状态。
             MainActor.assumeIsolated {
+                // 屏幕配置变了 ⇒ 面板原来的屏幕坐标全部失效，先收起（下次打开会重新算）。
+                self?.hideStatusPanel()
                 self?.rebuildStatusItemIfOffscreen()
             }
         }
@@ -1634,10 +1641,123 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard !statusItemButtonOnScreen(), let staleItem = statusItem else { return }
         NSStatusBar.system.removeStatusItem(staleItem)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem?.autosaveName = "SafeOutStatusItem"
         statusItem?.button?.toolTip = L10n.tr(.appName)
         statusItem?.button?.target = self
         statusItem?.button?.action = #selector(handleStatusItemClick(_:))
         updateStatusItemImage()
+    }
+
+    /// 建菜单栏面板（**只建一次**；内容视图在每次打开时重建，见 ``showStatusPanel(anchoredTo:)``）。
+    ///
+    /// 这几行里每一条去掉都会**静默**劣化，且不会让别的断言变红：
+    /// - 少了 `backgroundColor = .clear` / `isOpaque = false` ⇒ 圆角外露出矩形白底，箭头没了但换成方角；
+    /// - 少了 `hidesOnDeactivate = false` ⇒ 点别的应用面板直接从屏幕上消失（`NSPanel` 默认 true）；
+    /// - 少了 `level = .popUpMenu` ⇒ 面板被主窗口盖住；
+    /// - 少了 `collectionBehavior` ⇒ 切 Space 后面板留在原来的桌面。
+    private func makeStatusPanel() -> StatusPanel {
+        let panel = StatusPanel(
+            contentRect: NSRect(
+                origin: .zero,
+                size: NSSize(width: DesignTokens.Size.menuPopoverWidth, height: 1)),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false)
+        panel.isFloatingPanel = true
+        // 与菜单同层：浮在普通窗口之上，但不会盖住系统弹窗。
+        panel.level = .popUpMenu
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
+        panel.hidesOnDeactivate = false
+        panel.isReleasedWhenClosed = false
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+        // 圆角与描边由 SwiftUI 那层画（``GlassSurface``），窗口不做自己的出现动画 ——
+        // 否则上屏第一帧会先看到一个矩形外框。
+        panel.animationBehavior = .none
+        panel.isMovableByWindowBackground = false
+        panel.onCancel = { [weak self] in self?.hideStatusPanel() }
+        return panel
+    }
+
+    /// 菜单栏图标在屏幕坐标里的范围（向外扩 4pt，覆盖按压时的细微位移）。
+    ///
+    /// **用途**：点面板外收起时，必须把「点图标」这一下排除掉 —— 它是切换开关本身。
+    /// 实测（2026-11-10 诊断日志）：真实鼠标点击菜单栏图标时，事件会被系统当成
+    /// 「发给了别的进程」⇒ **全局监听也会收到它**，于是 mouseDown 先 hide、
+    /// mouseUp 的按钮 action 再 show，表现为「闪一下又出现」。
+    private func statusItemHitFrame() -> NSRect? {
+        guard let button = statusItem?.button, let window = button.window else { return nil }
+        return window.convertToScreen(button.convert(button.bounds, to: nil))
+            .insetBy(dx: -4, dy: -4)
+    }
+
+    /// 点面板外 / 按 Esc / 应用失去焦点 → 收起面板。
+    ///
+    /// **为什么本地与全局两条鼠标监听都要**：
+    /// - 全局监听只收到**别的应用**的事件（点桌面、点别的 App）；
+    /// - 点本应用自己的其它窗口（主窗口 / 设置）不走全局监听 ⇒ 补一条本地监听。
+    ///
+    /// ⚠️ **点在菜单栏图标上的那一下必须放行**：它就是切换开关本身。
+    /// 这里只「看着不拦」，让按钮 action 看到 `isVisible == true` 后收起
+    /// —— 这正是「第二次点图标关闭」而不是「闪一下再打开」的那一处。
+    private func installStatusPanelDismissMonitors() {
+        guard statusPanelEventMonitors.isEmpty else { return }
+
+        let local = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) {
+            [weak self] event -> NSEvent? in
+            guard let self, let panel = self.statusPanel, panel.isVisible else { return event }
+            // 面板自己的点击：交给 SwiftUI 控件处理
+            if event.window === panel { return event }
+            // 菜单栏图标：交给 ``handleStatusItemClick(_:)`` 切换
+            if let anchorWindow = self.statusItem?.button?.window,
+                event.window === anchorWindow
+            {
+                return event
+            }
+            if let icon = self.statusItemHitFrame(), icon.contains(NSEvent.mouseLocation) {
+                return event
+            }
+            self.hideStatusPanel()
+            return event
+        }
+        if let local { statusPanelEventMonitors.append(local) }
+
+        let global = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) {
+            [weak self] _ in
+            guard let self, let panel = self.statusPanel, panel.isVisible else { return }
+            let location = NSEvent.mouseLocation
+            // 点菜单栏图标 = 切换开关本身，不能当成「点外面」。
+            if let icon = self.statusItemHitFrame(), icon.contains(location) {
+                return
+            }
+            if !panel.frame.contains(location) {
+                self.hideStatusPanel()
+            }
+        }
+        if let global { statusPanelEventMonitors.append(global) }
+
+        // Esc：``StatusPanel/cancelOperation(_:)`` 是标准入口，但键盘事件只有在面板是
+        // key window 时才会沿响应链走到那里；本地监听作为不依赖焦点的兜底。
+        let keys = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event -> NSEvent? in
+            guard let self, let panel = self.statusPanel, panel.isVisible else { return event }
+            if event.keyCode == 53 {
+                self.hideStatusPanel()
+                return nil
+            }
+            return event
+        }
+        if let keys { statusPanelEventMonitors.append(keys) }
+
+        // 切到别的应用：面板属于「随手看一眼」的界面，不该跟着用户到处跑。
+        let resign = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.hideStatusPanel()
+            }
+        }
+        statusPanelEventMonitors.append(resign)
     }
 
     /// 订阅「待处理占用提醒」，驱动菜单栏图标 + 清除已推出的盘。
@@ -1706,13 +1826,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// **为什么是菜单面板而不是主窗口**：提醒与「关闭并推出」都在面板上。
     /// 跳去主窗口等于让用户再找一次那个按钮。
     ///
-    /// ⚠️ **必须先 `activate`**：`.accessory` 形态下应用不在前台，
-    /// `NSPopover` 不会上屏（与 `--preview-popover` 那条注释同一个坑）。
+    /// ⚠️ **必须先 `activate`**：`.accessory` 形态下应用不在前台时，
+    /// 面板上屏后拿不到焦点（Esc / 键盘导航都会失效）。
     @MainActor
     private func presentAttentionPanel() {
-        guard let popover = statusPopover, let button = statusItem?.button else { return }
+        guard let panel = statusPanel, let button = statusItem?.button else { return }
         NSApp.activate(ignoringOtherApps: true)
-        if !popover.isShown { showStatusPopover(anchoredTo: button) }
+        if !panel.isVisible { showStatusPanel(anchoredTo: button) }
     }
 
     /// 根据是否还有待处理提醒，切换菜单栏图标。
@@ -1736,23 +1856,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// 切换 popover 显示/隐藏。第二次点同一按钮会关闭。
+    /// 切换面板显示/隐藏。**第二次点同一按钮只关闭**，不会「闪一下再打开」。
+    ///
+    /// 旧实现用 `.transient` 的 `NSPopover`：系统在 mouseDown 时就把它关掉了，
+    /// 于是 mouseUp 到达这里时 `isShown` 已经是 false ⇒ 走了「打开」分支。
+    /// 现在关闭只发生在这一个 if 里，没有任何系统预关闭。
     @objc private func handleStatusItemClick(_ sender: AnyObject?) {
-        guard let popover = statusPopover, let button = statusItem?.button else { return }
-        if popover.isShown {
-            popover.performClose(sender)
+        guard let panel = statusPanel, let button = statusItem?.button else { return }
+        if panel.isVisible {
+            hideStatusPanel()
             return
         }
-        showStatusPopover(anchoredTo: button)
+        showStatusPanel(anchoredTo: button)
     }
 
-    /// 把菜单面板建起来并上屏。**抽出来是为了让 `--preview-popover` 走同一条路径** ——
-    /// 真机自检要验的正是这条路径（材质归一化、contentSize、上屏），
+    /// 把菜单面板建起来、摆到菜单栏图标正下方并上屏。
+    /// **抽出来是为了让 `--preview-popover` 走同一条路径** ——
     /// 另写一份「预览专用的显示代码」等于什么都没验。
     @MainActor
-    private func showStatusPopover(anchoredTo button: NSStatusBarButton) {
-        guard let popover = statusPopover else { return }
-        // 重新构造 contentViewController，保证引用最新 AccentColor 等设置
+    private func showStatusPanel(anchoredTo button: NSStatusBarButton) {
+        guard let panel = statusPanel else { return }
+        // 每次打开都重建内容视图：强调色等偏好可能在两次打开之间改过。
         let accent = AppSettings.accentColor
         let view = MenuPopoverView(
             accent: accent,
@@ -1762,73 +1886,54 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             onQuit: { [weak self] in self?.handlePopoverAction(.quit) },
             onEject: { [weak self] disk in self?.handlePopoverEject(disk) }
         )
-        // **定位完全交给系统，唯一要做的是先告诉它真实内容尺寸**。
+        // **先强制布局一次，再量真实内容高**。
         //
-        // `preferredEdge` 的官方定义（Apple Docs, show(relativeTo:of:preferredEdge:)）：
-        //   "The edge of positioningView the popover should prefer to be anchored to."
-        // screen 坐标 y 向上，按钮在菜单栏里时 `button.minY` 是**视觉底部**，
-        // 想让 popover 出现在按钮**下方** → 锚定 `.minY`。
-        //
-        // ⚠️ **"popover 离图标很远 / 先出现在下方再跳"的真正根因（2026-09-11 三组对照实验确认）**：
-        // 若 `popover.contentSize` 在 show 时仍是 `(0,0)`——NSHostingController 的 SwiftUI
-        // 内容此刻尚未布局，其 preferredContentSize 为 0——NSPopover 会**回退到默认 320×320**
-        // 来计算锚点，于是 popover 顶部比按钮底部低了 `320 − 实际内容高度` pt。
-        // 本机实测：内容高约 246 → 下偏 72pt，正是"离图标老远"的来源。
-        //
-        // 对照实验（/tmp/de_min_popover*.swift，均为教科书式 `show(preferredEdge: .minY)`）：
-        //   A 显式 contentSize=360×272            → gap 0.5pt  ✓
-        //   B SwiftUI 内容 + 不设 contentSize     → contentSize 变 (320,320) → gap 48.5pt  ✗
-        //   C SwiftUI 内容 + show 前先布局取高度  → gap 0.5pt  ✓
-        //
-        // 结论：**系统定位本身是精确的**（gap 0.5pt 就是 popover 自带阴影区）。
-        // 因此只需在 show 之前强制 SwiftUI 完成一次布局、把真实高度写进 contentSize，
-        // 不再需要任何 snap 平移 / alpha 隐藏补偿（那套补偿才是"复杂"的来源）。
+        // 直接读 `preferredContentSize` 此刻还是 0 —— SwiftUI 内容尚未布局。
+        // NSPopover 时代这个 0 会让系统回退到默认 320×320 去算锚点（实测面板下偏 72pt）；
+        // 现在是自绘窗口，高度错了表现为「压住图标」或「离图标老远」，同样不能靠猜。
         let hosting = NSHostingController(rootView: view)
+        // 窗口是透明的（圆角由 ``GlassSurface`` 画），宿主视图必须同透明 ——
+        // 否则四角会露出宿主自己那层矩形底色，圆角白画。
+        hosting.view.wantsLayer = true
+        hosting.view.layer?.backgroundColor = NSColor.clear.cgColor
         hosting.view.setFrameSize(NSSize(width: DesignTokens.Size.menuPopoverWidth, height: 0))
         hosting.view.layoutSubtreeIfNeeded()
         let fittingSize = hosting.view.fittingSize
-        // contentSize 必须在 contentViewController 之后设置，否则会被 hosting 覆盖。
-        popover.contentViewController = hosting
-        popover.contentSize = NSSize(
+        let size = NSSize(
             width: DesignTokens.Size.menuPopoverWidth,
             height: max(fittingSize.height, 1)
         )
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        panel.contentViewController = hosting
+        panel.setContentSize(size)
+        positionStatusPanel(panel, below: button, size: size)
+        panel.makeKeyAndOrderFront(nil)
+        panel.orderFrontRegardless()
+        // 防焦点环：面板里第一个交互控件不该被自动描上蓝圈。
+        panel.makeFirstResponder(hosting.view)
+    }
 
-        // **让 popover 的底衬与主窗口同档材质**。
-        //
-        // `NSPopover` 的窗口顶层是私有的 `NSPopoverFrame`，它本身就是一档
-        // `.titlebar` 的 `NSVisualEffectView`；主窗口用的是 `.underWindowBackground`。
-        // 两者不是同一块玻璃 —— 这正是「菜单栏面板和主窗口背景色不一致」的根因。
-        // 探针实测（2026-09-15）见 `NSPopover.normalizeBackdropMaterial()`。
-        //
-        // 视图树要等窗口真正上屏才建好，所以这里同步试一次、下一个 runloop 再试一次。
-        // 两次都失败也不影响功能，只是面板会退回系统默认材质。
-        popover.normalizeBackdropMaterial()
+    /// 把面板摆到按钮正下方（水平居中、必要时夹在屏幕可见区内）。
+    ///
+    /// 屏幕坐标原点在左下：按钮在菜单栏里，`anchor.minY` 就是它的**下边**，
+    /// 面板顶边 = `anchor.minY − 间距`，即 `origin.y = 面板顶边 − 面板高`。
+    private func positionStatusPanel(_ panel: NSPanel, below button: NSStatusBarButton, size: NSSize) {
+        guard let anchorWindow = button.window else { return }
+        let anchor = anchorWindow.convertToScreen(button.convert(button.bounds, to: nil))
+        let visible = (anchorWindow.screen ?? NSScreen.main)?.visibleFrame ?? .zero
+        let margin: CGFloat = 8
+        let maxX = visible.maxX - size.width - margin
+        let minX = visible.minX + margin
+        // 屏幕比面板还窄时 maxX < minX：取 minX 保证不越过左缘（面板右缘可以被裁）。
+        let x = min(max(anchor.midX - size.width / 2, minX), max(maxX, minX))
+        let y = anchor.minY - StatusPanel.anchorGap - size.height
+        panel.setFrameOrigin(NSPoint(x: x.rounded(), y: y.rounded()))
+    }
 
-        // 防焦点环 + 让 NSPopover(.transient) hit-test 命中内部
-        DispatchQueue.main.async {
-            self.statusPopover.normalizeBackdropMaterial()
-            self.statusPopover.contentViewController?.view.window?.makeFirstResponder(
-                self.statusPopover.contentViewController?.view
-            )
-        }
-
-        // 兜底：监听全局鼠标事件。NSPopover(.transient) 理论上会自动在点击外部时关闭，
-        // 但 macOS 26 + SwiftUI 组合下偶有不触发（尤其合成事件或某些外部窗口）。
-        // 这里手动检查：若 popover 显示且当前鼠标位置不在 popover 窗口内，则主动关闭。
-        if popoverEventMonitor == nil {
-            popoverEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) {
-                [weak self] _ in
-                guard let self, let popover = self.statusPopover, popover.isShown else { return }
-                let clickLocation = NSEvent.mouseLocation
-                if let popoverWindow = popover.contentViewController?.view.window,
-                    !popoverWindow.frame.contains(clickLocation)
-                {
-                    popover.performClose(nil)
-                }
-            }
-        }
+    /// 收起面板。**不销毁窗口** —— 下次打开复用同一个窗口，只重建内容视图。
+    @MainActor
+    private func hideStatusPanel() {
+        guard let panel = statusPanel, panel.isVisible else { return }
+        panel.orderOut(nil)
     }
 
     /// 面板动作的出口。为 `nil` 时走真实行为；`--preview-popover` 会把它换成「只记录」。
@@ -1846,12 +1951,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         switch kind {
         case .openMainWindow:
-            statusPopover?.performClose(nil)
+            hideStatusPanel()
             showMainWindow()
         case .refreshDisks:
             Task { await DiskListStore.shared.refresh() }
         case .openSettings:
-            statusPopover?.performClose(nil)
+            hideStatusPanel()
             showSettings()
         case .quit:
             NSApplication.shared.terminate(nil)
@@ -1859,7 +1964,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handlePopoverEject(_ disk: DiskInfo) {
-        statusPopover?.performClose(nil)
+        hideStatusPanel()
         eject(disk)
     }
 

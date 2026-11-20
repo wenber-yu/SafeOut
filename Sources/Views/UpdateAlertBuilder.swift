@@ -37,6 +37,7 @@ enum UpdateAlertBuilder {
                 kind: .info,
                 systemImage: "info.circle",
                 text: L10n.tr(.updateCallout)),
+            showSpotlightPrivacyButton: false,
             // 操作区左边那个**不占按钮**的出口。没有它，用户只能在
             // 「永久跳过这个版本」和「现在就重启」之间二选一 ——
             // 而多数人真正想说的是「现在不方便」。

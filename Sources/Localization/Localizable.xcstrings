@@ -1274,6 +1274,41 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Writing · %@" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "正在寫入 · %@" } }
       }
+    },
+    "systemDaemonLabel" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "系统服务" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "System" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "系統服務" } }
+      }
+    },
+    "systemDaemonTooltip" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这是 macOS 的系统守护进程，无法通过正常退出解除占用。强行关闭可能影响 Spotlight、Quick Look 或 Time Machine 等系统功能。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This is a macOS system daemon. It can't be quit normally — force-stopping may break Spotlight, Quick Look, Time Machine, or other system features." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這是 macOS 的系統守護行程，無法透過正常退出解除佔用。強行關閉可能影響 Spotlight、Quick Look 或 Time Machine 等系統功能。" } }
+      }
+    },
+    "spotlightHintTitle" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Spotlight 索引占用了这块盘" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Spotlight is indexing this disk" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "Spotlight 索引正在佔用這顆磁碟" } }
+      }
+    },
+    "spotlightHintBodyFormat" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关掉 mds 只是治标；把「%@」加入聚焦隐私排除列表才能根治。" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Quitting mds only helps temporarily. Add “%@” to the Spotlight Privacy exclusion list to fix it for good." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "關掉 mds 只是治標；把「%@」加入聚焦隱私權排除清單才能根治。" } }
+      }
+    },
+    "spotlightHintAction" : {
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开聚焦隐私设置" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open Spotlight Privacy" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "打開聚焦隱私權設定" } }
+      }
     }
   },
   "version" : "1.0"

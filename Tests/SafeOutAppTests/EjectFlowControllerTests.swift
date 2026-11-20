@@ -1011,13 +1011,15 @@ struct EjectFlowControllerTests {
     /// （`EjectAlertPresenter.present` 会 `makeKeyAndOrderFront`），
     /// 测试进程里不能跑 ⇒ 只能钉接线。五条各自防一个不同的回归：
     /// ① 系统推出**照常发起**（不许因为「缓存说占用」就跳过系统调用）；
-    /// ② 结果让窗上那句话站不住时**收窗**（成功 / 设备已不在，不许留一个谎报「被占用」的弹窗）；
+    /// ② 系统推出**成功**时**不许**收窗 —— 弹窗关闭必须是用户的决定（2026-11-20 用户实测反馈：
+    ///    占用方自己退出后弹窗未经点击就消失、盘也被推出，产生歧义）；
     /// ③ 用户点「关闭并推出」时把那次还在跑的推出**传下去**（不许并发调 `unmountAndEjectDevice`）；
     /// ④ 落闸那一句**必须走** `awaitPreemptiveChoice` —— 就地写回 `eject` 里（尤其写回
     ///    `guard` 之后）会让 §8.146.6 那条漏判复活，而上面那条纯函数守卫**看不见**
     ///    `eject` 本体的顺序；
-    /// ⑤ 收窗那一句**必须走** `dismissPreemptivePopupIfNeeded`（同理：判据就地写反、
-    ///    漏掉 `!gate.isSettled`，不会有任何编译错）。
+    /// ⑤ `eject` 里**不许**再出现收窗调用（`respond(.cancel)` / `dismissPreemptivePopupIfNeeded`）
+    ///    —— 与②同一条纪律：弹窗关闭必须是用户的决定。判据函数仍保留（供将来复用），
+    ///    但 `eject` 不再调用它。
     @Test func 提前弹窗的五条接线() throws {
         let source = try String(
             contentsOf: repoRootForEjectTests.appendingPathComponent("Sources/Services/EjectUI.swift"),
@@ -1029,10 +1031,11 @@ struct EjectFlowControllerTests {
             「能不能推出」仍必须由系统的 `fBsyErr` 说了算（§8.146）
             """)
         #expect(
-            source.contains("EjectAlertPresenter.shared.respond(.cancel)"),
+            !source.contains("EjectAlertPresenter.shared.respond(.cancel)"),
             """
-            系统推出**成功**时没有收掉预弹的占用窗 —— 用户会看到一个
-            谎报「被占用」的弹窗（而盘其实已经推出去了）
+            系统推出**成功**时不许自动收起预弹的占用窗 —— 弹窗关闭必须是用户的决定。
+            2026-11-20 用户实测：占用方自己退出后，弹窗未经点击就消失、盘也被推出，产生歧义。
+            结果回来后列表照常刷新即可，弹窗留着等用户表态。
             """)
         #expect(
             source.contains("awaiting: inFlight"),
@@ -1049,11 +1052,10 @@ struct EjectFlowControllerTests {
             按 Esc 时闸门永不落，之后那次推出成功会收掉别的弹窗
             """)
         #expect(
-            source.contains("await Self.dismissPreemptivePopupIfNeeded("),
+            !source.contains("await Self.dismissPreemptivePopupIfNeeded("),
             """
-            收窗那一句没有走 `dismissPreemptivePopupIfNeeded` —— 就地写回 `eject` 里、
-            判据写反（漏掉 `!gate.isSettled`）不会有任何编译错，
-            而它会去收掉之后才打开的那个弹窗（§8.146.6）
+            `eject` 里仍调用了 `dismissPreemptivePopupIfNeeded` —— 与②同一条纪律：
+            系统推出有了结果也**不许**自动收掉预弹窗，弹窗关闭必须是用户的决定。
             """)
     }
 

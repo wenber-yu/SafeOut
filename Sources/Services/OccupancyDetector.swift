@@ -51,6 +51,53 @@ class OccupancyDetector: @unchecked Sendable {
 
     private static let logger = Logger(subsystem: "com.safeout.app", category: "Occupancy")
 
+    // MARK: - Spotlight 活跃度旁路检测
+
+    /// 最轻量的 Spotlight 活跃检测：`ps -Ao command=` 然后 grep 进程名。
+    ///
+    /// 只看进程名、不看 CPU/内存/文件路径 —— 开销极低（一次约 50ms）。
+    ///
+    /// ⚠️ **不要在视图 `body` 里同步调用它**：它会起一个 `ps` 子进程。实测这个调用若落在
+    /// SwiftUI 首次布局的主线程上，会把状态栏项的上屏请求一起堵住，菜单栏图标永远不出现
+    /// （AX 坐标落在 `(-1, y)`）。界面需要这个结论时读
+    /// ``OccupancyStore/spotlightActiveIndexing``（轮询周期里在后台算好）。
+    ///
+    /// - Returns: 正在运行的 mds / mdworker / mdworker_shared / mdbulkimport 进程数 ≥ 1
+    ///
+    /// ⚠️ **必须走 ``SubprocessOutput``，不能自己 `Process` + `waitUntilExit()`**：
+    /// `ps -Ao command=` 在本机实测输出 **203 KB**，远超管道缓冲（64 KB）。
+    /// 先 `waitUntilExit()` 再读管道会**永久死锁** —— 子进程写满缓冲阻塞、
+    /// 父进程等子进程退出，两边互等。
+    /// 2026-11-20 实测症状：调用在 SwiftUI 首次布局里 ⇒ 主线程冻结、状态栏图标永不出现；
+    /// 挪到后台任务后 ⇒ 那个 `await` 永不返回，占用检测停在「占用情况未知」。
+    nonisolated static func hasActiveSpotlightIndexing() async -> Bool {
+        let output = await withCheckedContinuation { (continuation: CheckedContinuation<String, Never>) in
+            // 超时与 lsof 同量级（5s）：一次 `ps` 正常 50ms 上下，5s 已经是「它出事了」。
+            let run = SubprocessOutput(
+                executableURL: URL(fileURLWithPath: "/bin/ps"),
+                arguments: ["-Ao", "command="],
+                timeout: lsofTimeout
+            ) { result in
+                continuation.resume(returning: result?.output ?? "")
+            }
+            run.start()
+        }
+        // 用它的 basename 匹配 Spotlight 进程名。这样能同时覆盖：
+        // - `mds`（单进程，无额外参数）
+        // - `mdworker_shared -s mdworker -c MDSImporterWorker -m ...`（工作进程，后面带参数）
+        let spotlightBasenames: Set<String> = [
+            "mds", "mds_stores", "mdworker", "mdworker_shared", "mdbulkimport",
+        ]
+        for rawLine in output.split(separator: "\n", omittingEmptySubsequences: false) {
+            let trimmed = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            let executable = trimmed.split(separator: " ", maxSplits: 1).first!
+            let basename = String(executable.split(separator: "/").last!)
+            if spotlightBasenames.contains(basename) { return true }
+        }
+        return false
+    }
+
     /// lsof 单次调用的最长等待时间（秒），超时即视为检测失败。
     ///
     /// ⚠️ 这个数现在**真的会生效**（以前不会，见 ``SubprocessOutput`` 的说明）。

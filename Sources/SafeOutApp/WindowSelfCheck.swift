@@ -70,8 +70,8 @@ enum WindowSelfCheck {
 
     /// 等应用真的变成前台（最多 2 秒）。
     ///
-    /// `NSApp.activate(ignoringOtherApps:)` 只是**请求**激活，真正生效要等下一次
-    /// 激活通知；而 `NSPopover.show` 在应用不在前台时会**静默失败**（`isShown` 保持 false）。
+    /// `NSApp.activate(ignoringOtherApps:)` 只是**请求**激活，真正生效要等下一次激活通知；
+    /// 面板要拿到键盘焦点（Esc / 键盘导航）也得等应用真正在前台。
     @MainActor
     static func waitUntilAppIsActive() async {
         let deadline = Date().addingTimeInterval(2)

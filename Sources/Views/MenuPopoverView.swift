@@ -118,11 +118,10 @@ struct MenuPopoverView: View {
             actions
         }
         .frame(width: DesignTokens.Size.menuPopoverWidth)
-        // **面板自己必须画背景**：`NSPopover` 的窗口自带材质是 `.titlebar` 一档，
-        // 与主窗口的 `.underWindowBackground` 不是同一块玻璃（见
-        // `NSPopover.normalizeBackdropMaterial()`）。这里补上与主窗口完全相同的
-        // ``GlassSurface``（材质 + `--bg-glass` + 0.5px 外描边），
-        // 两块玻璃才真正是同一套规则画出来的。
+        // **面板自己必须画背景**：2026-11-10 起菜单面板是自绘的 ``StatusPanel``
+        // （无边框透明窗口），背景完全由这里这块 ``GlassSurface`` 决定 ——
+        // 与主窗口同一套规则（材质 + `--bg-glass` + 0.5px 外描边），
+        // 也不再需要对齐系统 popover 那层 `.titlebar` 材质。
         //
         // **必须用 `.background(...)`，不能放进 `ZStack`**：`GlassSurface` 里是
         // `NSViewRepresentable`，被 `sizeThatFits(in: .greatestFiniteMagnitude)` 量到时

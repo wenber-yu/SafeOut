@@ -87,6 +87,9 @@ struct EjectAlertModel: Equatable {
     let subtitle: String
     let section: Section?
     let callout: Callout?
+    /// 是否在 callout 下方多渲染一个「打开聚焦隐私设置」按钮。
+    /// 典型场景：Spotlight mds 占用反复推不出 —— 关进程治标，排除索引才是根源。
+    let showSpotlightPrivacyButton: Bool
     /// 操作区左侧小标（设计稿 `.alert__foot-note`，只有 A 变体有）。
     let footNote: String?
     let actions: [Action]
@@ -101,20 +104,39 @@ extension EjectAlertModel {
     /// 破坏性按钮标红、默认按钮是「关闭并推出」、操作区带「此操作不可撤销」小标。
     @MainActor
     static func busy(disk: DiskInfo, occupying: [OccupyingProcess]) -> EjectAlertModel {
-        EjectAlertModel(
+        // 是否应该引导用户去 Spotlight 隐私设置 —— 两条场景分流：
+        //
+        // 1. **lsof 结果里真有 mds/mdworker** → 直接命中（罕见但真实）；
+        // 2. **lsof 空 + 系统有 Spotlight 活跃**（常见场景）→ 旁路补抓。
+        //
+        // ⚠️ 关键约束：不能在「lsof 抓到了 BugBnB / Finder 等真实 App 占用」时
+        // 用 Spotlight 旁路信号 —— 否则弹窗会错把 BugBnB 的占用说成 Spotlight，
+        // 让用户点 Spotlight 按钮去解决一个根因完全不同的问题。
+        //
+        // 为什么需要旁路信号：mdworker 读文件不用常规 FD，lsof 看不到它；
+        // 但 Spotlight 确实会阻止磁盘卸载，表现为「eject 报忙 + lsof 说没人」。
+        let hasMdsInLsof = Self.hasSpotlightProcess(occupying)
+        let lsofEmpty = occupying.isEmpty
+        // 读**轮询周期里算好的纯值**，不在这里现起 `ps` 子进程：
+        // 同步起 `ps` 会因输出超过管道缓冲而死锁（详见 ``OccupancyDetector/hasActiveSpotlightIndexing()``）。
+        let hasSpotlight =
+            hasMdsInLsof
+            || (lsofEmpty && OccupancyStore.shared.spotlightActiveIndexing)
+
+        return EjectAlertModel(
             icon: .warning,
             // 标题带磁盘名（设计稿文案原则：「多块盘时，用户必须确认操作对象没选错」）。
             title: String(format: L10n.tr(.ejectBusyTitle), disk.displayName),
-            subtitle: EjectFlowController.shared.busyMessage(disk: disk, occupying: occupying),
+            subtitle: hasSpotlight
+                ? String(format: L10n.tr(.spotlightHintBodyFormat), disk.displayName)
+                : EjectFlowController.shared.busyMessage(disk: disk, occupying: occupying),
             section: occupying.isEmpty
                 ? nil
                 : .processes(
                     label: String(format: L10n.tr(.ejectBusyOccupiedHeaderFormat), occupying.count),
                     items: occupying),
-            callout: Callout(
-                kind: .danger,
-                systemImage: "exclamationmark.triangle",
-                text: EjectUI.busyWarningText),
+            callout: Self.busyCallout(occupying: occupying),
+            showSpotlightPrivacyButton: hasSpotlight,
             footNote: L10n.tr(.ejectBusyIrreversibleCaption),
             actions: [
                 Action(
@@ -124,6 +146,47 @@ extension EjectAlertModel {
                     title: L10n.tr(.closeAndEject), variant: .danger, choice: .closeAndEject,
                     isDefault: true, isCancel: false),
             ])
+    }
+
+    /// 占用者列表里是否有 Spotlight mds / mdworker 进程。
+    ///
+    /// 这是「该不该引导用户去 Spotlight 隐私设置」的唯一信号 ——
+    /// 不是所有系统守护进程都该跳去那里，只有 Spotlight 索引才对应那一条。
+    private static func hasSpotlightProcess(_ processes: [OccupyingProcess]) -> Bool {
+        processes.contains {
+            $0.processName.hasPrefix("mds") || $0.processName.hasPrefix("mdworker")
+        }
+    }
+
+    /// `.busy` 弹窗的 callout —— 根据占用者动态选择：
+    ///
+    /// 1. **主要是 Spotlight（mds 系）** → info callout 提示 Spotlight 索引占用（按钮在 callout 下方）；
+    ///    这种情况「关闭并推出」其实大概率也解决不了，因为 Spotlight 会在退出后重启索引。
+    /// 2. **有其他系统守护进程** → info callout 弱化警告：强行关闭可能影响系统功能；
+    /// 3. **纯普通 App** → danger callout（丢失未保存内容警告）。
+    ///
+    /// 为什么在这里分流：它是弹窗内容的**单一事实来源**，UI 层只负责渲染。
+    @MainActor
+    private static func busyCallout(occupying: [OccupyingProcess]) -> Callout {
+        let hasSpotlight = Self.hasSpotlightProcess(occupying)
+        let hasSystemDaemon = hasSpotlight || occupying.contains { $0.isSystemDaemon }
+
+        if hasSpotlight {
+            return Callout(
+                kind: .info,
+                systemImage: "magnifyingglass",
+                text: L10n.tr(.spotlightHintTitle))
+        } else if hasSystemDaemon {
+            return Callout(
+                kind: .info,
+                systemImage: "lock.shield",
+                text: L10n.tr(.systemDaemonTooltip))
+        } else {
+            return Callout(
+                kind: .danger,
+                systemImage: "exclamationmark.triangle",
+                text: EjectUI.busyWarningText)
+        }
     }
 
     /// B · 推出失败（设计稿 `03-eject-flow.html` B 变体）。
@@ -145,6 +208,7 @@ extension EjectAlertModel {
                 kind: .info,
                 systemImage: "doc",
                 text: L10n.tr(.ejectFailedLoggedHint)),
+            showSpotlightPrivacyButton: false,
             footNote: nil,
             actions: [
                 Action(
@@ -206,6 +270,23 @@ struct EjectAlertView: View {
                     accent: accent
                 )
                 .padding(.top, DesignTokens.Spacing.md)
+            }
+            if model.showSpotlightPrivacyButton {
+                // Spotlight 场景专属 —— 在 callout 下方放一个跳转系统设置的小按钮。
+                // 用户关掉 mds 只是治标，索引会自动重启；真正的解法是把盘加到排除列表。
+                Button {
+                    AppSettings.openSpotlightPrivacySettings()
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: DesignTokens.FontSize.footnote, weight: .medium))
+                        Text(L10n.tr(.spotlightHintAction))
+                            .font(.system(size: DesignTokens.FontSize.body, weight: .medium))
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(accent.swiftUIColor)
+                .padding(.top, DesignTokens.Spacing.xs)
             }
         }
         .padding(.horizontal, DesignTokens.Spacing.xl)
@@ -288,18 +369,39 @@ struct EjectAlertView: View {
     ///
     /// **奇数行底色不是装饰**：多进程时它把每行从「一串连续的图标+名字」切成可数的条目，
     /// 用户要确认的是「一共几个、都是谁」。
+    ///
+    /// **系统守护进程的区分**：在进程名前加盾牌图标（`lock.shield`）+ 行尾标识改为「系统服务」，
+    /// 让用户一眼看出来这是系统进程，终止它可能有副作用。同时悬停提示里说明风险。
     private func processRow(_ process: OccupyingProcess, striped: Bool) -> some View {
         HStack(spacing: DesignTokens.Spacing.sm) {
             processIcon(process)
+                .overlay(alignment: .topTrailing) {
+                    if process.isSystemDaemon {
+                        // 盾牌小徽章叠在右上角，圆角 + 轻微背景让它从图标里跳出来。
+                        Image(systemName: "lock.shield.fill")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(DesignTokens.Palette.mutedForeground)
+                            .padding(1)
+                            .background(
+                                Circle().fill(DesignTokens.Palette.popoverBackground(for: colorScheme))
+                            )
+                    }
+                }
             // 展示应用显示名（`Bunny`），不是进程可执行名（`IMVIDEO`）。
             Text(process.displayName)
                 .font(.system(size: DesignTokens.FontSize.body))
-                .foregroundStyle(DesignTokens.Palette.foreground)
+                .foregroundStyle(
+                    process.isSystemDaemon
+                        ? DesignTokens.Palette.mutedForeground
+                        : DesignTokens.Palette.foreground
+                )
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .help(process.isSystemDaemon ? L10n.tr(.systemDaemonTooltip) : "")
             // 磁盘映像没有 pid——它的「pid」是合成负值（仅作 Identifiable 身份），
             // 显示「PID -1073…」是彻头彻尾的噪音；标明种类才是对用户有用的信息。
+            // 系统守护进程也不展示 PID（对用户无意义），改成「系统服务」标签。
             Text(kindLabel(for: process))
                 .font(.system(size: DesignTokens.FontSize.footnote).monospacedDigit())
                 .foregroundStyle(DesignTokens.Palette.mutedForeground)
@@ -313,8 +415,11 @@ struct EjectAlertView: View {
         )
     }
 
-    /// 行尾标识：真进程显示 PID，磁盘映像显示「磁盘映像」。
+    /// 行尾标识：真进程显示 PID，磁盘映像显示「磁盘映像」，系统守护进程显示「系统服务」。
     private func kindLabel(for process: OccupyingProcess) -> String {
+        if process.isSystemDaemon {
+            return L10n.tr(.systemDaemonLabel)
+        }
         switch process.kind {
         case .process:
             return String(format: L10n.tr(.processPidFormat), process.pid)
